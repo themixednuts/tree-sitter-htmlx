@@ -7,6 +7,7 @@ Cargo.lock
 **/src/tree_sitter/
 **/src/grammar.json
 **/src/node-types.json
+**/log.html
 
 # Build artifacts
 *.o

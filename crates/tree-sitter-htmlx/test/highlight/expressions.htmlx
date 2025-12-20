@@ -1,0 +1,6 @@
+{name}
+<!-- <- punctuation.bracket -->
+<!--  ^ punctuation.bracket -->
+
+<p>{message}</p>
+<!-- ^ embedded -->

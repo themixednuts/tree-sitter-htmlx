@@ -1,0 +1,18 @@
+<input bind:value={name} />
+<!--   ^^^^ keyword -->
+<!--       ^ punctuation.delimiter -->
+<!--        ^^^^^ property -->
+
+<button on:click={handler}></button>
+<!--    ^^ keyword -->
+<!--      ^ punctuation.delimiter -->
+<!--       ^^^^^ property -->
+
+<div class:active={isActive}></div>
+<!-- ^^^^^ keyword -->
+<!--      ^ punctuation.delimiter -->
+<!--       ^^^^^^ property -->
+
+<button on:click|preventDefault={handler}></button>
+<!--            ^ punctuation.delimiter -->
+<!--             ^^^^^^^^^^^^^^ attribute -->

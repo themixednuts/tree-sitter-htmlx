@@ -1,0 +1,14 @@
+<div class="container">
+<!-- <- punctuation.bracket -->
+ <!-- <- tag -->
+<!--  ^^^^^ attribute -->
+<!--        ^^^^^^^^^ string -->
+</div>
+
+<MyComponent />
+ <!-- <- type -->
+
+<svelte:head></svelte:head>
+ <!-- <- keyword -->
+<!--   ^ punctuation.delimiter -->
+<!--    ^^^^ tag -->
