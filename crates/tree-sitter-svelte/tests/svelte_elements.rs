@@ -90,7 +90,7 @@ fn test_svelte_window_basic() {
 fn test_svelte_window_on_event() {
     assert_eq!(
         parse("<svelte:window on:keydown={handleKey} />"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)) (expression content: (js)))))))"
+        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js))))))"
     );
 }
 
@@ -98,7 +98,7 @@ fn test_svelte_window_on_event() {
 fn test_svelte_window_bind_scrolly() {
     assert_eq!(
         parse("<svelte:window bind:scrollY={y} />"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)) (expression content: (js)))))))"
+        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js))))))"
     );
 }
 
@@ -106,7 +106,7 @@ fn test_svelte_window_bind_scrolly() {
 fn test_svelte_window_bind_innerwidth() {
     assert_eq!(
         parse("<svelte:window bind:innerWidth={width} bind:innerHeight={height} />"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)) (expression content: (js)))) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)) (expression content: (js)))))))"
+        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js))) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js))))))"
     );
 }
 
@@ -126,7 +126,7 @@ fn test_svelte_document_basic() {
 fn test_svelte_document_on_event() {
     assert_eq!(
         parse("<svelte:document on:visibilitychange={handleVisibility} />"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)) (expression content: (js)))))))"
+        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js))))))"
     );
 }
 
@@ -146,7 +146,7 @@ fn test_svelte_body_basic() {
 fn test_svelte_body_on_event() {
     assert_eq!(
         parse("<svelte:body on:mouseenter={handleEnter} on:mouseleave={handleLeave} />"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)) (expression content: (js)))) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)) (expression content: (js)))))))"
+        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js))) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js))))))"
     );
 }
 
@@ -263,7 +263,7 @@ fn test_svelte_fragment_with_slot() {
 fn test_svelte_fragment_let_directive() {
     assert_eq!(
         parse("<svelte:fragment let:item>{item}</svelte:fragment>"),
-        "(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value))))) (expression content: (js)) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name (attribute_directive) (attribute_identifier)))) (expression content: (js)) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }
 

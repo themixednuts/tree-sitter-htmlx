@@ -63,7 +63,7 @@ fn test_const_in_await() {
 fn test_const_in_component_slot() {
     assert_eq!(
         parse("<Component let:value>{@const doubled = value * 2}{doubled}</Component>"),
-        "(document (element (start_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value))))) (tag kind: (tag_kind) expression: (expression_value)) (expression content: (js)) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)))) (tag kind: (tag_kind) expression: (expression_value)) (expression content: (js)) (end_tag (tag_name))))"
     );
 }
 

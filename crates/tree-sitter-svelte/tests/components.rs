@@ -81,7 +81,7 @@ fn test_component_multiple_props() {
 fn test_component_event_handler() {
     assert_eq!(
         parse("<Button on:click={handleClick} />"),
-        "(document (element (self_closing_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)) (expression content: (js)))))))"
+        "(document (element (self_closing_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js))))))"
     );
 }
 
@@ -89,7 +89,7 @@ fn test_component_event_handler() {
 fn test_component_event_forwarding() {
     assert_eq!(
         parse("<Button on:click />"),
-        "(document (element (self_closing_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)))))))"
+        "(document (element (self_closing_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier))))))"
     );
 }
 
@@ -97,7 +97,7 @@ fn test_component_event_forwarding() {
 fn test_component_bind() {
     assert_eq!(
         parse("<Input bind:value />"),
-        "(document (element (self_closing_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)))))))"
+        "(document (element (self_closing_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier))))))"
     );
 }
 
@@ -105,7 +105,7 @@ fn test_component_bind() {
 fn test_component_bind_with_value() {
     assert_eq!(
         parse("<Input bind:value={name} />"),
-        "(document (element (self_closing_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)) (expression content: (js)))))))"
+        "(document (element (self_closing_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js))))))"
     );
 }
 
@@ -113,7 +113,7 @@ fn test_component_bind_with_value() {
 fn test_component_let_directive() {
     assert_eq!(
         parse("<Component let:item>{item}</Component>"),
-        "(document (element (start_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value))))) (expression content: (js)) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)))) (expression content: (js)) (end_tag (tag_name))))"
     );
 }
 
@@ -121,7 +121,7 @@ fn test_component_let_directive() {
 fn test_component_let_renamed() {
     assert_eq!(
         parse("<Component let:item={i}>{i}</Component>"),
-        "(document (element (start_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)) (expression content: (js))))) (expression content: (js)) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (expression content: (js)) (end_tag (tag_name))))"
     );
 }
 
@@ -129,7 +129,7 @@ fn test_component_let_renamed() {
 fn test_component_let_destructure() {
     assert_eq!(
         parse("<Component let:data={{ name, value }}>{name}: {value}</Component>"),
-        "(document (element (start_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)) (expression content: (js))))) (expression content: (js)) (text) (expression content: (js)) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (expression content: (js)) (text) (expression content: (js)) (end_tag (tag_name))))"
     );
 }
 
@@ -173,6 +173,6 @@ fn test_component_with_generics() {
 fn test_component_bind_this() {
     assert_eq!(
         parse("<Component bind:this={componentRef} />"),
-        "(document (element (self_closing_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)) (expression content: (js)))))))"
+        "(document (element (self_closing_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js))))))"
     );
 }

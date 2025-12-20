@@ -136,7 +136,7 @@ fn test_element_multiple_attributes() {
 fn test_element_event_handler() {
     assert_eq!(
         parse("<button on:click={handleClick}></button>"),
-        "(document (element (start_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)) (expression content: (js))))) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (end_tag (tag_name))))"
     );
 }
 
@@ -144,7 +144,7 @@ fn test_element_event_handler() {
 fn test_element_event_forwarding() {
     assert_eq!(
         parse("<button on:click></button>"),
-        "(document (element (start_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value))))) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)))) (end_tag (tag_name))))"
     );
 }
 
@@ -152,7 +152,7 @@ fn test_element_event_forwarding() {
 fn test_element_event_modifiers() {
     assert_eq!(
         parse("<button on:click|once|preventDefault={handler}></button>"),
-        "(document (element (start_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value) modifiers: (directive_modifiers (directive_modifier) (directive_modifier))) (expression content: (js))))) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier) (attribute_modifiers (attribute_modifier) (attribute_modifier))) (expression content: (js)))) (end_tag (tag_name))))"
     );
 }
 
@@ -160,7 +160,7 @@ fn test_element_event_modifiers() {
 fn test_element_bind_value() {
     assert_eq!(
         parse("<input bind:value={name} />"),
-        "(document (element (self_closing_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)) (expression content: (js)))))))"
+        "(document (element (self_closing_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js))))))"
     );
 }
 
@@ -168,7 +168,7 @@ fn test_element_bind_value() {
 fn test_element_bind_shorthand() {
     assert_eq!(
         parse("<input bind:value />"),
-        "(document (element (self_closing_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)))))))"
+        "(document (element (self_closing_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier))))))"
     );
 }
 
@@ -176,7 +176,7 @@ fn test_element_bind_shorthand() {
 fn test_element_bind_this() {
     assert_eq!(
         parse("<canvas bind:this={canvas} />"),
-        "(document (element (self_closing_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)) (expression content: (js)))))))"
+        "(document (element (self_closing_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js))))))"
     );
 }
 
@@ -184,7 +184,7 @@ fn test_element_bind_this() {
 fn test_element_bind_group() {
     assert_eq!(
         parse(r#"<input type="radio" bind:group={selected} value="a" />"#),
-        r#"(document (element (self_closing_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)) (expression content: (js)))) (attribute (attribute_name) (quoted_attribute_value (attribute_value))))))"#
+        r#"(document (element (self_closing_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js))) (attribute (attribute_name) (quoted_attribute_value (attribute_value))))))"#
     );
 }
 
@@ -192,7 +192,7 @@ fn test_element_bind_group() {
 fn test_element_class_directive() {
     assert_eq!(
         parse("<div class:active={isActive}></div>"),
-        "(document (element (start_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)) (expression content: (js))))) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (end_tag (tag_name))))"
     );
 }
 
@@ -200,7 +200,7 @@ fn test_element_class_directive() {
 fn test_element_class_directive_shorthand() {
     assert_eq!(
         parse("<div class:active></div>"),
-        "(document (element (start_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value))))) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)))) (end_tag (tag_name))))"
     );
 }
 
@@ -208,7 +208,7 @@ fn test_element_class_directive_shorthand() {
 fn test_element_style_directive() {
     assert_eq!(
         parse("<div style:color={textColor}></div>"),
-        "(document (element (start_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)) (expression content: (js))))) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (end_tag (tag_name))))"
     );
 }
 
@@ -216,7 +216,7 @@ fn test_element_style_directive() {
 fn test_element_style_directive_important() {
     assert_eq!(
         parse("<div style:color|important={color}></div>"),
-        "(document (element (start_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value) modifiers: (directive_modifiers (directive_modifier))) (expression content: (js))))) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier) (attribute_modifiers (attribute_modifier))) (expression content: (js)))) (end_tag (tag_name))))"
     );
 }
 
@@ -224,7 +224,7 @@ fn test_element_style_directive_important() {
 fn test_element_use_directive() {
     assert_eq!(
         parse("<div use:action></div>"),
-        "(document (element (start_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value))))) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)))) (end_tag (tag_name))))"
     );
 }
 
@@ -232,7 +232,7 @@ fn test_element_use_directive() {
 fn test_element_use_directive_with_params() {
     assert_eq!(
         parse("<div use:action={params}></div>"),
-        "(document (element (start_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)) (expression content: (js))))) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (end_tag (tag_name))))"
     );
 }
 
@@ -240,7 +240,7 @@ fn test_element_use_directive_with_params() {
 fn test_element_transition() {
     assert_eq!(
         parse("<div transition:fade></div>"),
-        "(document (element (start_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value))))) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)))) (end_tag (tag_name))))"
     );
 }
 
@@ -248,7 +248,7 @@ fn test_element_transition() {
 fn test_element_transition_with_params() {
     assert_eq!(
         parse("<div transition:fade={{ duration: 300 }}></div>"),
-        "(document (element (start_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)) (expression content: (js))))) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (end_tag (tag_name))))"
     );
 }
 
@@ -256,7 +256,7 @@ fn test_element_transition_with_params() {
 fn test_element_in_out() {
     assert_eq!(
         parse("<div in:fly out:fade></div>"),
-        "(document (element (start_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value)))) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value))))) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier))) (attribute (attribute_name (attribute_directive) (attribute_identifier)))) (end_tag (tag_name))))"
     );
 }
 
@@ -264,7 +264,7 @@ fn test_element_in_out() {
 fn test_element_animate() {
     assert_eq!(
         parse("<div animate:flip></div>"),
-        "(document (element (start_tag (tag_name) (attribute (directive_attribute (directive_name (directive_prefix) name: (directive_value))))) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)))) (end_tag (tag_name))))"
     );
 }
 

@@ -12,14 +12,3 @@ pub fn parse(source: &str) -> String {
     let tree = parser.parse(source, None).expect("Failed to parse");
     tree.root_node().to_sexp()
 }
-
-/// Parse and return whether the tree has any errors
-pub fn has_error(source: &str) -> bool {
-    let mut parser = tree_sitter::Parser::new();
-    parser
-        .set_language(&LANGUAGE.into())
-        .expect("Failed to load Svelte grammar");
-
-    let tree = parser.parse(source, None).expect("Failed to parse");
-    tree.root_node().has_error()
-}
