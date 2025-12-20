@@ -27,7 +27,7 @@ enum {
     TS_LANG_MARKER,
     EXPRESSION_JS,
     EXPRESSION_TS,
-    ATTRIBUTE_DIRECTIVE,
+    DIRECTIVE_MARKER,
 };
 
 typedef struct {
@@ -291,24 +291,30 @@ static bool scan_expression(State *state, TSLexer *lexer) {
     return true;
 }
 
+// Returns: 1 = matched, 0 = not at identifier, -1 = identifier without colon
+static int check_directive_marker(TSLexer *lexer) {
+    while (is_space(lexer->lookahead)) skip(lexer);
+    lexer->mark_end(lexer);
+
+    if (!is_ident_start(lexer->lookahead)) return 0;
+    while (is_ident_char(lexer->lookahead)) advance(lexer);
+    if (lexer->lookahead != ':') return -1;
+
+    lexer->result_symbol = DIRECTIVE_MARKER;
+    return 1;
+}
+
 static bool scan(State *state, TSLexer *lexer, const bool *valid) {
     if (valid[TS_LANG_MARKER] && scan_ts_lang_marker(state, lexer)) {
         return true;
     }
 
-    while (is_space(lexer->lookahead)) skip(lexer);
-
-    if (valid[ATTRIBUTE_DIRECTIVE] && is_ident_start(lexer->lookahead)) {
-        lexer->mark_end(lexer);
-        while (is_ident_char(lexer->lookahead)) advance(lexer);
-
-        if (lexer->lookahead == ':') {
-            lexer->mark_end(lexer);
-            lexer->result_symbol = ATTRIBUTE_DIRECTIVE;
-            return true;
-        }
-        return false;
+    if (valid[DIRECTIVE_MARKER]) {
+        int result = check_directive_marker(lexer);
+        if (result != 0) return result == 1;
     }
+
+    while (is_space(lexer->lookahead)) skip(lexer);
 
     if ((valid[EXPRESSION_JS] || valid[EXPRESSION_TS]) && scan_expression(state, lexer)) {
         return true;
