@@ -52,17 +52,14 @@
 // ============================================================================
 
 enum TokenType {
-  START_TAG_NAME,             // 0
-  SCRIPT_START_TAG_NAME,      // 1
-  STYLE_START_TAG_NAME,       // 2
-  TEXTAREA_START_TAG_NAME,    // 3
-  TITLE_START_TAG_NAME,       // 4
-  END_TAG_NAME,               // 5
-  ERRONEOUS_END_TAG_NAME,     // 6
-  SELF_CLOSING_TAG_DELIMITER, // 7
-  IMPLICIT_END_TAG,           // 8
-  RAW_TEXT,                   // 9
-  COMMENT,                    // 10
+  START_TAG_NAME,             // 0 - Normal element start tag
+  RAW_TEXT_START_TAG_NAME,    // 1 - Raw/escapable raw text element (script, style, textarea, title)
+  END_TAG_NAME,               // 2
+  ERRONEOUS_END_TAG_NAME,     // 3
+  SELF_CLOSING_TAG_DELIMITER, // 4
+  IMPLICIT_END_TAG,           // 5
+  RAW_TEXT,                   // 6
+  COMMENT,                    // 7
 };
 
 // ============================================================================
@@ -107,8 +104,12 @@ static ALWAYS_INLINE void advance(TSLexer *lexer) {
   lexer->advance(lexer, false);
 }
 
-static ALWAYS_INLINE void skip_whitespace(TSLexer *lexer) {
+static ALWAYS_INLINE void skip(TSLexer *lexer) {
   lexer->advance(lexer, true);
+}
+
+static ALWAYS_INLINE void skip_whitespace(TSLexer *lexer) {
+  skip(lexer);
 }
 
 // ============================================================================
@@ -458,19 +459,13 @@ static bool scan_start_tag_name(Scanner *scanner, TSLexer *lexer) {
   Tag tag = tag_for_name(tag_name);
   array_push(&scanner->tags, tag);
 
-  // Determine token type based on element category
+  // Determine token type: raw text elements vs normal elements
   switch (tag.type) {
   case SCRIPT:
-    lexer->result_symbol = SCRIPT_START_TAG_NAME;
-    break;
   case STYLE:
-    lexer->result_symbol = STYLE_START_TAG_NAME;
-    break;
   case TEXTAREA:
-    lexer->result_symbol = TEXTAREA_START_TAG_NAME;
-    break;
   case TITLE:
-    lexer->result_symbol = TITLE_START_TAG_NAME;
+    lexer->result_symbol = RAW_TEXT_START_TAG_NAME;
     break;
   default:
     lexer->result_symbol = START_TAG_NAME;

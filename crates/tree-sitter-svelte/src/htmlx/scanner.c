@@ -21,13 +21,12 @@
 #undef tree_sitter_html_external_scanner_serialize
 #undef tree_sitter_html_external_scanner_deserialize
 
-// HTMLX external token indices (after HTML's 11 tokens: 0-10)
-// HTML tokens: START_TAG_NAME(0), SCRIPT_START_TAG_NAME(1), STYLE_START_TAG_NAME(2),
-//              TEXTAREA_START_TAG_NAME(3), TITLE_START_TAG_NAME(4), END_TAG_NAME(5),
-//              ERRONEOUS_END_TAG_NAME(6), SELF_CLOSING_TAG_DELIMITER(7),
-//              IMPLICIT_END_TAG(8), RAW_TEXT(9), COMMENT(10)
+// HTMLX external token indices (after HTML's 8 tokens: 0-7)
+// HTML tokens: START_TAG_NAME(0), RAW_TEXT_START_TAG_NAME(1), END_TAG_NAME(2),
+//              ERRONEOUS_END_TAG_NAME(3), SELF_CLOSING_TAG_DELIMITER(4),
+//              IMPLICIT_END_TAG(5), RAW_TEXT(6), COMMENT(7)
 enum {
-    TAG_NAMESPACE = 11,
+    TAG_NAMESPACE = 8,
     TAG_LOCAL_NAME,
     TS_LANG_MARKER,
     EXPRESSION_JS,
@@ -94,21 +93,21 @@ static bool scan_start_tag(State *state, TSLexer *lexer, const bool *valid) {
         return true;
     }
 
-    if (name.size > 0 && (valid[START_TAG_NAME] ||
-                          valid[SCRIPT_START_TAG_NAME] ||
-                          valid[STYLE_START_TAG_NAME] ||
-                          valid[TEXTAREA_START_TAG_NAME] ||
-                          valid[TITLE_START_TAG_NAME])) {
+    if (name.size > 0 && (valid[START_TAG_NAME] || valid[RAW_TEXT_START_TAG_NAME])) {
         lexer->mark_end(lexer);
         Tag tag = tag_for_name(name);
         array_push(&state->html->tags, tag);
 
         switch (tag.type) {
-            case SCRIPT:   lexer->result_symbol = SCRIPT_START_TAG_NAME; break;
-            case STYLE:    lexer->result_symbol = STYLE_START_TAG_NAME; break;
-            case TEXTAREA: lexer->result_symbol = TEXTAREA_START_TAG_NAME; break;
-            case TITLE:    lexer->result_symbol = TITLE_START_TAG_NAME; break;
-            default:       lexer->result_symbol = START_TAG_NAME; break;
+            case SCRIPT:
+            case STYLE:
+            case TEXTAREA:
+            case TITLE:
+                lexer->result_symbol = RAW_TEXT_START_TAG_NAME;
+                break;
+            default:
+                lexer->result_symbol = START_TAG_NAME;
+                break;
         }
         return true;
     }
@@ -346,8 +345,7 @@ static bool scan(State *state, TSLexer *lexer, const bool *valid) {
 
     if (is_alpha(c)) {
         if (valid[TAG_NAMESPACE] || valid[START_TAG_NAME] ||
-            valid[SCRIPT_START_TAG_NAME] || valid[STYLE_START_TAG_NAME] ||
-            valid[TEXTAREA_START_TAG_NAME] || valid[TITLE_START_TAG_NAME]) {
+            valid[RAW_TEXT_START_TAG_NAME]) {
             if (scan_start_tag(state, lexer, valid)) return true;
         }
         if (valid[TAG_NAMESPACE] || valid[END_TAG_NAME]) {
