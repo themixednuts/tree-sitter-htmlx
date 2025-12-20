@@ -13,8 +13,15 @@
       "file-types": [
         "svelte"
       ],
-      "highlights": "queries/highlights.scm",
-      "injections": "queries/injections.scm",
+      "highlights": [
+        "../../external/tree-sitter-html/queries/highlights.scm",
+        "../tree-sitter-htmlx/queries/highlights.scm",
+        "queries/highlights.scm"
+      ],
+      "injections": [
+        "../tree-sitter-htmlx/queries/injections.scm",
+        "queries/injections.scm"
+      ],
       "injection-regex": "svelte"
     }
   ],

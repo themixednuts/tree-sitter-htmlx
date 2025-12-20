@@ -10,12 +10,14 @@ fn main() {
     let manifest_path = Path::new(&manifest_dir);
     let src_dir = manifest_path.join("src");
     
-    // Rerun if grammar or scanner changes
+    // Rerun if grammar, scanner, or queries change
     println!("cargo:rerun-if-changed=grammar.js");
     println!("cargo:rerun-if-changed=src/scanner.c");
+    println!("cargo:rerun-if-changed=queries");
     // Also rerun if HTMLX changes (since we extend it)
     println!("cargo:rerun-if-changed=../tree-sitter-htmlx/grammar.js");
     println!("cargo:rerun-if-changed=../tree-sitter-htmlx/src/scanner.c");
+    println!("cargo:rerun-if-changed=../tree-sitter-htmlx/queries");
 
     // Run tree-sitter generate
     let status = Command::new("tree-sitter")

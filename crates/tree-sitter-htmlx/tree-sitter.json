@@ -12,7 +12,13 @@
       "file-types": [
         "htmlx"
       ],
-      "highlights": "queries/highlights.scm",
+      "highlights": [
+        "../../external/tree-sitter-html/queries/highlights.scm",
+        "queries/highlights.scm"
+      ],
+      "injections": [
+        "queries/injections.scm"
+      ],
       "injection-regex": "htmlx"
     }
   ],
