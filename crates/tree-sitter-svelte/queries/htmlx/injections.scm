@@ -1,22 +1,30 @@
 ; Auto-vendored during build. Do not edit manually.
 
 ; Script content (TypeScript)
-((script_element
+((element
   (start_tag
+    (tag_name) @_tag
     (attribute
       (attribute_name) @_lang
       (quoted_attribute_value (attribute_value) @_ts)))
   (raw_text) @injection.content)
+  (#eq? @_tag "script")
   (#eq? @_lang "lang")
   (#eq? @_ts "ts")
   (#set! injection.language "typescript"))
 
 ; Script content (JavaScript - default)
-((script_element (raw_text) @injection.content)
+((element
+  (start_tag (tag_name) @_tag)
+  (raw_text) @injection.content)
+  (#eq? @_tag "script")
   (#set! injection.language "javascript"))
 
 ; Style content
-((style_element (raw_text) @injection.content)
+((element
+  (start_tag (tag_name) @_tag)
+  (raw_text) @injection.content)
+  (#eq? @_tag "style")
   (#set! injection.language "css"))
 
 ; Inline style attribute
