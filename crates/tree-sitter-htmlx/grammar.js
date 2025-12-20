@@ -29,10 +29,29 @@ module.exports = grammar(HTML, {
     ),
 
     element: $ => choice(
+      // Normal elements - content is parsed as nodes
       seq($.start_tag, repeat($._node), choice($.end_tag, $._implicit_end_tag)),
+      // Namespaced elements
       seq(alias($._namespaced_start_tag, $.start_tag), repeat($._node), alias($._namespaced_end_tag, $.end_tag)),
+      // Raw text elements (script, style, textarea, title)
+      $._raw_text_element,
+      // Self-closing tags
       $.self_closing_tag,
       alias($._namespaced_self_closing_tag, $.self_closing_tag),
+    ),
+
+    // Override raw text element to use HTMLX-aware attribute handling
+    _raw_text_element: $ => seq(
+      alias($._raw_text_start_tag, $.start_tag),
+      optional($.raw_text),
+      $.end_tag,
+    ),
+
+    _raw_text_start_tag: $ => seq(
+      '<',
+      alias($._raw_text_start_tag_name, $.tag_name),
+      repeat($.attribute),
+      '>',
     ),
 
     _namespaced_start_tag: $ => seq(
@@ -77,7 +96,7 @@ module.exports = grammar(HTML, {
 
     attribute_name: $ => choice(
       $.__attribute_directive,
-      /[^<>{}"':\\/=\s|][^<>{}"':\\/=\s|]*/,
+      /[^<>{}\"':\\/=\s|][^<>{}\"':\\/=\s|]*/,
     ),
 
     expression: $ => seq(
