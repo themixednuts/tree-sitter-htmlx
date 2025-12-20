@@ -19,6 +19,7 @@ module.exports = grammar(HTML, {
     $._ts_lang_marker,    // Zero-width marker that sets TypeScript mode
     $._expression_js,     // Expression content in JavaScript mode
     $._expression_ts,     // Expression content in TypeScript mode
+    $._attribute_directive, // Identifier followed by : (lookahead, doesn't consume :)
   ]),
 
   rules: {
@@ -67,7 +68,6 @@ module.exports = grammar(HTML, {
     attribute: $ => choice(
       // TypeScript lang attribute - zero-width marker sets mode, then parse normally
       seq($._ts_lang_marker, $.attribute_name, '=', $.quoted_attribute_value),
-      prec(2, $.directive_attribute),
       prec(1, $.spread_attribute),
       $.shorthand_attribute,
       seq(
@@ -78,6 +78,12 @@ module.exports = grammar(HTML, {
           $.expression,
         ))),
       ),
+    ),
+
+    // Attribute name can be a simple identifier or a directive
+    attribute_name: $ => choice(
+      prec(2, $.__attribute_directive),
+      /[^<>{}"':\\/=\s|][^<>{}"':\\/=\s|]*/,
     ),
 
     // Expressions - scanner determines JS or TS based on script lang
@@ -92,34 +98,20 @@ module.exports = grammar(HTML, {
     spread_attribute: $ => /\{\.\.\.([^}]*)\}/,
     shorthand_attribute: $ => /\{[^.}][^}]*\}|\{[.][^.}][^}]*\}|\{[.][.][^.}][^}]*\}|\{\}/,
 
-    // Directives
-    directive_attribute: $ => seq(
-      $.directive_name,
-      optional(seq('=', choice(
-        $.attribute_value,
-        $.quoted_attribute_value,
-        $.expression,
-      ))),
+    // Directives (e.g., bind:value, on:click|preventDefault)
+    // Nested inside attribute_name for HTML spec compatibility
+    __attribute_directive: $ => seq(
+      alias($._attribute_directive, $.attribute_directive),
+      ':',
+      $.attribute_identifier,
+      optional($.attribute_modifiers),
     ),
-
-    directive_name: $ => seq(
-      $.directive_prefix,
-      field('name', $.directive_value),
-      optional(field('modifiers', $.directive_modifiers)),
-    ),
-
-    directive_prefix: $ => token(seq(
-      choice('bind', 'on', 'class', 'style', 'use', 'transition', 'in', 'out', 'animate', 'let'),
-      ':'
-    )),
-
-    directive_value: $ => /[a-zA-Z_$][a-zA-Z0-9_$]*/,
-    directive_modifiers: $ => repeat1(seq('|', $.directive_modifier)),
-    directive_modifier: $ => /[a-zA-Z_$][a-zA-Z0-9_$]*/,
+    attribute_identifier: $ => /[a-zA-Z_$][a-zA-Z0-9_$-]*/,
+    attribute_modifiers: $ => repeat1(seq('|', $.attribute_modifier)),
+    attribute_modifier: $ => /[a-zA-Z_$][a-zA-Z0-9_$]*/,
 
     // Overrides
     text: $ => /[^<>&{}\s]([^<>&{}]*[^<>&{}\s])?/,
-    attribute_name: $ => /[^<>{}"':\\/=\s|][^<>{}"':\\/=\s|]*/,
     attribute_value: $ => /[^<>{}"'/=\s]+/,
   },
 });

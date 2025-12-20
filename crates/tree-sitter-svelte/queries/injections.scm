@@ -1,5 +1,3 @@
-; inherits: htmlx
-
 ; Style preprocessors
 ((style_element
   (start_tag

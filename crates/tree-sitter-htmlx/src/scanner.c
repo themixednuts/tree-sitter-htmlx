@@ -1,25 +1,6 @@
-/**
- * HTMLX External Scanner
- *
- * Extends HTML with namespaced tags and expression support.
- */
-
 #include "tree_sitter/parser.h"
-#include <wctype.h>
-#include <string.h>
 
-#define TokenType                  HtmlTokenType
-#define START_TAG_NAME             HTML_START_TAG_NAME
-#define SCRIPT_START_TAG_NAME      HTML_SCRIPT_START_TAG_NAME
-#define STYLE_START_TAG_NAME       HTML_STYLE_START_TAG_NAME
-#define END_TAG_NAME               HTML_END_TAG_NAME
-#define ERRONEOUS_END_TAG_NAME     HTML_ERRONEOUS_END_TAG_NAME
-#define SELF_CLOSING_TAG_DELIMITER HTML_SELF_CLOSING_TAG_DELIMITER
-#define IMPLICIT_END_TAG           HTML_IMPLICIT_END_TAG
-#define RAW_TEXT                   HTML_RAW_TEXT
-#define COMMENT                    HTML_COMMENT
-#define scan                       html_scan
-
+#define scan html_scan
 #define tree_sitter_html_external_scanner_create      html_create
 #define tree_sitter_html_external_scanner_destroy     html_destroy
 #define tree_sitter_html_external_scanner_scan        html_scanner_scan
@@ -28,16 +9,6 @@
 
 #include "../../../external/tree-sitter-html/src/scanner.c"
 
-#undef TokenType
-#undef START_TAG_NAME
-#undef SCRIPT_START_TAG_NAME
-#undef STYLE_START_TAG_NAME
-#undef END_TAG_NAME
-#undef ERRONEOUS_END_TAG_NAME
-#undef SELF_CLOSING_TAG_DELIMITER
-#undef IMPLICIT_END_TAG
-#undef RAW_TEXT
-#undef COMMENT
 #undef scan
 #undef tree_sitter_html_external_scanner_create
 #undef tree_sitter_html_external_scanner_destroy
@@ -45,21 +16,13 @@
 #undef tree_sitter_html_external_scanner_serialize
 #undef tree_sitter_html_external_scanner_deserialize
 
-enum TokenType {
-    START_TAG_NAME,
-    SCRIPT_START_TAG_NAME,
-    STYLE_START_TAG_NAME,
-    END_TAG_NAME,
-    ERRONEOUS_END_TAG_NAME,
-    SELF_CLOSING_TAG_DELIMITER,
-    IMPLICIT_END_TAG,
-    RAW_TEXT,
-    COMMENT,
-    TAG_NAMESPACE,
+enum {
+    TAG_NAMESPACE = 9,
     TAG_LOCAL_NAME,
-    TS_LANG_MARKER,  // Zero-width marker that sets TypeScript mode
+    TS_LANG_MARKER,
     EXPRESSION_JS,
     EXPRESSION_TS,
+    ATTRIBUTE_DIRECTIVE,
 };
 
 typedef struct {
@@ -69,15 +32,27 @@ typedef struct {
 } State;
 
 static inline bool is_alpha(int32_t c) {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+    return (unsigned)(c | 0x20) - 'a' < 26;
+}
+
+static inline bool is_digit(int32_t c) {
+    return (unsigned)(c - '0') < 10;
 }
 
 static inline bool is_alnum(int32_t c) {
-    return is_alpha(c) || (c >= '0' && c <= '9');
+    return is_alpha(c) || is_digit(c);
 }
 
 static inline bool is_name_char(int32_t c) {
     return is_alnum(c) || c == '-' || c == '_';
+}
+
+static inline bool is_ident_start(int32_t c) {
+    return is_alpha(c) || c == '_' || c == '$';
+}
+
+static inline bool is_ident_char(int32_t c) {
+    return is_alnum(c) || c == '_' || c == '$';
 }
 
 static inline bool is_space(int32_t c) {
@@ -85,11 +60,11 @@ static inline bool is_space(int32_t c) {
 }
 
 static inline int32_t to_upper(int32_t c) {
-    return (c >= 'a' && c <= 'z') ? (c & ~0x20) : c;
+    return is_alpha(c) ? (c & ~0x20) : c;
 }
 
 static inline int32_t to_lower(int32_t c) {
-    return (c >= 'A' && c <= 'Z') ? (c | 0x20) : c;
+    return is_alpha(c) ? (c | 0x20) : c;
 }
 
 static bool scan_start_tag(State *state, TSLexer *lexer, const bool *valid) {
@@ -98,7 +73,7 @@ static bool scan_start_tag(State *state, TSLexer *lexer, const bool *valid) {
     String name = array_new();
     while (is_name_char(lexer->lookahead)) {
         array_push(&name, (char)to_upper(lexer->lookahead));
-        lexer->advance(lexer, false);
+        advance(lexer);
     }
 
     if (lexer->lookahead == ':' && valid[TAG_NAMESPACE]) {
@@ -131,9 +106,7 @@ static bool scan_start_tag(State *state, TSLexer *lexer, const bool *valid) {
 static bool scan_local_name(State *state, TSLexer *lexer) {
     if (!is_alpha(lexer->lookahead)) return false;
 
-    while (is_name_char(lexer->lookahead)) {
-        lexer->advance(lexer, false);
-    }
+    while (is_name_char(lexer->lookahead)) advance(lexer);
 
     lexer->mark_end(lexer);
     lexer->result_symbol = TAG_LOCAL_NAME;
@@ -147,7 +120,7 @@ static bool scan_end_tag(State *state, TSLexer *lexer, const bool *valid) {
     String name = array_new();
     while (is_name_char(lexer->lookahead)) {
         array_push(&name, (char)to_upper(lexer->lookahead));
-        lexer->advance(lexer, false);
+        advance(lexer);
     }
 
     if (lexer->lookahead == ':' && valid[TAG_NAMESPACE]) {
@@ -183,10 +156,10 @@ static bool scan_end_tag(State *state, TSLexer *lexer, const bool *valid) {
 }
 
 static bool scan_self_closing(State *state, TSLexer *lexer) {
-    lexer->advance(lexer, false);
+    advance(lexer);
     if (lexer->lookahead != '>') return false;
 
-    lexer->advance(lexer, false);
+    advance(lexer);
     lexer->mark_end(lexer);
 
     if (state->html->tags.size > 0) {
@@ -202,17 +175,16 @@ static inline bool skip_string(TSLexer *lexer) {
     int32_t quote = lexer->lookahead;
     if (quote != '"' && quote != '\'' && quote != '`') return false;
 
-    lexer->advance(lexer, false);
+    advance(lexer);
     while (lexer->lookahead && lexer->lookahead != quote) {
         int32_t c = lexer->lookahead;
         if (c == '\\') {
-            lexer->advance(lexer, false);
-            if (lexer->lookahead) lexer->advance(lexer, false);
+            advance(lexer);
+            if (lexer->lookahead) advance(lexer);
         } else if (quote == '`' && c == '$') {
-            lexer->advance(lexer, false);
+            advance(lexer);
             if (lexer->lookahead == '{') {
-                // Skip ${...} interpolation with balanced brace tracking
-                lexer->advance(lexer, false);
+                advance(lexer);
                 for (int depth = 1; lexer->lookahead && depth > 0;) {
                     c = lexer->lookahead;
                     if (c == '"' || c == '\'' || c == '`') {
@@ -220,15 +192,15 @@ static inline bool skip_string(TSLexer *lexer) {
                     } else {
                         if (c == '{') depth++;
                         else if (c == '}') depth--;
-                        lexer->advance(lexer, false);
+                        advance(lexer);
                     }
                 }
             }
         } else {
-            lexer->advance(lexer, false);
+            advance(lexer);
         }
     }
-    if (lexer->lookahead == quote) lexer->advance(lexer, false);
+    if (lexer->lookahead == quote) advance(lexer);
     return true;
 }
 
@@ -251,72 +223,58 @@ static bool scan_balanced_expr(TSLexer *lexer) {
             case ')': case ']': case '}': if (--depth < 0) return has_content; break;
         }
 
-        lexer->advance(lexer, false);
+        advance(lexer);
         has_content = true;
     }
 
     return has_content;
 }
 
-// Lookahead to check if this is lang="ts" or lang="typescript" without consuming input
 static bool check_ts_lang_attr(TSLexer *lexer) {
-    // Skip whitespace
-    while (is_space(lexer->lookahead)) lexer->advance(lexer, false);
+    while (is_space(lexer->lookahead)) advance(lexer);
 
-    const char *lang = "lang";
-    for (int i = 0; lang[i]; i++) {
+    static const char lang[] = "lang";
+    for (int i = 0; i < 4; i++) {
         if (to_lower(lexer->lookahead) != lang[i]) return false;
-        lexer->advance(lexer, false);
+        advance(lexer);
     }
 
-    while (is_space(lexer->lookahead)) lexer->advance(lexer, false);
+    while (is_space(lexer->lookahead)) advance(lexer);
     if (lexer->lookahead != '=') return false;
-    lexer->advance(lexer, false);
-    while (is_space(lexer->lookahead)) lexer->advance(lexer, false);
+    advance(lexer);
+    while (is_space(lexer->lookahead)) advance(lexer);
 
     int32_t quote = lexer->lookahead;
     if (quote != '"' && quote != '\'') return false;
-    lexer->advance(lexer, false);
+    advance(lexer);
 
-    int32_t c = to_lower(lexer->lookahead);
-    if (c != 't') return false;
-    lexer->advance(lexer, false);
+    if (to_lower(lexer->lookahead) != 't') return false;
+    advance(lexer);
+    if (to_lower(lexer->lookahead) != 's') return false;
+    advance(lexer);
 
-    c = to_lower(lexer->lookahead);
-    if (c != 's') return false;
-    lexer->advance(lexer, false);
+    if (lexer->lookahead == quote) return true;
 
-    // Check for "ts" (short form)
-    if (lexer->lookahead == quote) {
-        return true;
-    }
-
-    // Check for "typescript" (long form)
-    const char *cript = "cript";
-    for (int i = 0; cript[i]; i++) {
+    static const char cript[] = "cript";
+    for (int i = 0; i < 5; i++) {
         if (to_lower(lexer->lookahead) != cript[i]) return false;
-        lexer->advance(lexer, false);
+        advance(lexer);
     }
 
     return lexer->lookahead == quote;
 }
 
-// Zero-width token that sets TypeScript mode without consuming input
 static bool scan_ts_lang_marker(State *state, TSLexer *lexer) {
-    // Mark end at current position (zero-width)
     lexer->mark_end(lexer);
-
-    // Lookahead to check if this is a TypeScript lang attribute
     if (!check_ts_lang_attr(lexer)) return false;
 
-    // Set TypeScript mode and return zero-width token
     state->is_typescript = true;
     lexer->result_symbol = TS_LANG_MARKER;
     return true;
 }
 
 static bool scan_expression(State *state, TSLexer *lexer) {
-    while (is_space(lexer->lookahead)) lexer->advance(lexer, true);
+    while (is_space(lexer->lookahead)) skip(lexer);
 
     int32_t c = lexer->lookahead;
     if (c == '#' || c == ':' || c == '@' || c == '/') return false;
@@ -333,6 +291,20 @@ static bool scan(State *state, TSLexer *lexer, const bool *valid) {
         return true;
     }
 
+    while (is_space(lexer->lookahead)) skip(lexer);
+
+    if (valid[ATTRIBUTE_DIRECTIVE] && is_ident_start(lexer->lookahead)) {
+        lexer->mark_end(lexer);
+        while (is_ident_char(lexer->lookahead)) advance(lexer);
+
+        if (lexer->lookahead == ':') {
+            lexer->mark_end(lexer);
+            lexer->result_symbol = ATTRIBUTE_DIRECTIVE;
+            return true;
+        }
+        return false;
+    }
+
     if ((valid[EXPRESSION_JS] || valid[EXPRESSION_TS]) && scan_expression(state, lexer)) {
         return true;
     }
@@ -340,8 +312,6 @@ static bool scan(State *state, TSLexer *lexer, const bool *valid) {
     if (valid[RAW_TEXT] && !valid[START_TAG_NAME] && !valid[END_TAG_NAME]) {
         return html_scanner_scan(state->html, lexer, valid);
     }
-
-    while (is_space(lexer->lookahead)) lexer->advance(lexer, true);
 
     if (state->awaiting_local_name && valid[TAG_LOCAL_NAME]) {
         return scan_local_name(state, lexer);
