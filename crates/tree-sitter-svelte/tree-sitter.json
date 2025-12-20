@@ -1,0 +1,29 @@
+{
+  "grammars": [
+    {
+      "name": "svelte",
+      "camelcase": "Svelte",
+      "scope": "source.svelte",
+      "path": ".",
+      "external-files": [
+        "../../external/tree-sitter-html/src/tag.h",
+        "../../external/tree-sitter-html/src/scanner.c",
+        "../tree-sitter-htmlx/src/scanner.c"
+      ],
+      "file-types": [
+        "svelte"
+      ],
+      "highlights": "queries/highlights.scm",
+      "injections": "queries/injections.scm",
+      "injection-regex": "svelte"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "MIT",
+    "description": "Svelte 5 grammar for tree-sitter"
+  },
+  "bindings": {
+    "rust": true
+  }
+}

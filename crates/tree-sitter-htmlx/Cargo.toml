@@ -1,0 +1,20 @@
+[package]
+name = "tree-sitter-htmlx"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Tree-sitter grammar for HTMLX (expression-enhanced HTML)"
+repository = "https://github.com/user/tree-sitter-htmlx"
+keywords = ["tree-sitter", "parser", "html", "htmlx", "svelte"]
+categories = ["parsing", "text-editors"]
+build = "build.rs"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+tree-sitter = { workspace = true }
+tree-sitter-language = "0.1"
+
+[build-dependencies]
+cc = { workspace = true }

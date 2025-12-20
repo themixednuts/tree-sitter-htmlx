@@ -1,0 +1,27 @@
+{
+  "grammars": [
+    {
+      "name": "htmlx",
+      "camelcase": "HTMLX",
+      "scope": "source.htmlx",
+      "path": ".",
+      "external-files": [
+        "../../external/tree-sitter-html/src/tag.h",
+        "../../external/tree-sitter-html/src/scanner.c"
+      ],
+      "file-types": [
+        "htmlx"
+      ],
+      "highlights": "queries/highlights.scm",
+      "injection-regex": "htmlx"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "MIT",
+    "description": "HTMLX grammar for tree-sitter (expression-enhanced HTML)"
+  },
+  "bindings": {
+    "rust": true
+  }
+}

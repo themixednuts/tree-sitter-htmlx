@@ -1,0 +1,20 @@
+[package]
+name = "tree-sitter-svelte"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Tree-sitter grammar for Svelte 5"
+build = "build.rs"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+tree-sitter = { workspace = true }
+tree-sitter-language = "0.1"
+
+[build-dependencies]
+cc = { workspace = true }
+
+[dev-dependencies]
+rstest = "0.23"
