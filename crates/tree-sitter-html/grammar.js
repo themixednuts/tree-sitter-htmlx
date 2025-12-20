@@ -29,10 +29,7 @@ module.exports = grammar({
 
   externals: $ => [
     $._start_tag_name,
-    $._script_start_tag_name,
-    $._style_start_tag_name,
-    $._textarea_start_tag_name,
-    $._title_start_tag_name,
+    $._raw_text_start_tag_name,
     $._end_tag_name,
     $.erroneous_end_tag_name,
     '/>',
@@ -84,11 +81,10 @@ module.exports = grammar({
 
     // Raw text elements: script, style, textarea, title
     // Content is raw_text (not parsed as nodes)
-    _raw_text_element: $ => choice(
-      seq(alias($._script_start_tag, $.start_tag), optional($.raw_text), $.end_tag),
-      seq(alias($._style_start_tag, $.start_tag), optional($.raw_text), $.end_tag),
-      seq(alias($._textarea_start_tag, $.start_tag), optional($.raw_text), $.end_tag),
-      seq(alias($._title_start_tag, $.start_tag), optional($.raw_text), $.end_tag),
+    _raw_text_element: $ => seq(
+      alias($._raw_text_start_tag, $.start_tag),
+      optional($.raw_text),
+      $.end_tag,
     ),
 
     // Start tags for different element kinds
@@ -99,30 +95,9 @@ module.exports = grammar({
       '>',
     ),
 
-    _script_start_tag: $ => seq(
+    _raw_text_start_tag: $ => seq(
       '<',
-      alias($._script_start_tag_name, $.tag_name),
-      repeat($.attribute),
-      '>',
-    ),
-
-    _style_start_tag: $ => seq(
-      '<',
-      alias($._style_start_tag_name, $.tag_name),
-      repeat($.attribute),
-      '>',
-    ),
-
-    _textarea_start_tag: $ => seq(
-      '<',
-      alias($._textarea_start_tag_name, $.tag_name),
-      repeat($.attribute),
-      '>',
-    ),
-
-    _title_start_tag: $ => seq(
-      '<',
-      alias($._title_start_tag_name, $.tag_name),
+      alias($._raw_text_start_tag_name, $.tag_name),
       repeat($.attribute),
       '>',
     ),
