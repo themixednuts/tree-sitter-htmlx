@@ -1,6 +1,6 @@
 //! Build script for tree-sitter-svelte
 //!
-//! Vendors HTMLX, HTML scanners and queries from workspace (if available) and compiles the parser.
+//! Vendors HTMLX and HTML scanners/queries from workspace crates and compiles the parser.
 
 use std::fs;
 use std::path::Path;
@@ -37,28 +37,28 @@ fn main() {
     let htmlx_queries_dir = queries_dir.join("htmlx");
     let html_queries_dir = htmlx_queries_dir.join("html");
 
-    // Source paths (only exist in workspace development)
+    // Source paths from workspace crates
     let htmlx_crate = manifest_path.join("../tree-sitter-htmlx");
     let htmlx_src_dir = htmlx_crate.join("src");
     let htmlx_queries = htmlx_crate.join("queries");
-    let html_submodule = manifest_path.join("../../external/tree-sitter-html");
-    let html_submodule_src = html_submodule.join("src");
-    let html_submodule_queries = html_submodule.join("queries");
+    let html_crate = manifest_path.join("../tree-sitter-html");
+    let html_src_dir = html_crate.join("src");
+    let html_crate_queries = html_crate.join("queries");
 
-    // Vendor files if sources exist (development mode)
-    if htmlx_src_dir.exists() && html_submodule_src.exists() {
+    // Vendor files if sources exist
+    if htmlx_src_dir.exists() && html_src_dir.exists() {
         // Create vendor directories
         fs::create_dir_all(&html_vendor_dir).expect("Failed to create vendor directories");
         fs::create_dir_all(&html_queries_dir).expect("Failed to create query directories");
 
         // Vendor HTML scanner files into htmlx/html/
         vendor_file(
-            &html_submodule_src.join("tag.h"),
+            &html_src_dir.join("tag.h"),
             &html_vendor_dir.join("tag.h"),
             VENDOR_HEADER_C,
         );
         vendor_file(
-            &html_submodule_src.join("scanner.c"),
+            &html_src_dir.join("scanner.c"),
             &html_vendor_dir.join("scanner.c"),
             VENDOR_HEADER_C,
         );
@@ -71,15 +71,15 @@ fn main() {
         );
 
         // Vendor HTML query files
-        if html_submodule_queries.exists() {
+        if html_crate_queries.exists() {
             vendor_file(
-                &html_submodule_queries.join("highlights.scm"),
+                &html_crate_queries.join("highlights.scm"),
                 &html_queries_dir.join("highlights.scm"),
                 VENDOR_HEADER_SCM,
             );
-            if html_submodule_queries.join("injections.scm").exists() {
+            if html_crate_queries.join("injections.scm").exists() {
                 vendor_file(
-                    &html_submodule_queries.join("injections.scm"),
+                    &html_crate_queries.join("injections.scm"),
                     &html_queries_dir.join("injections.scm"),
                     VENDOR_HEADER_SCM,
                 );
@@ -102,14 +102,14 @@ fn main() {
 
         println!("cargo:rerun-if-changed={}", htmlx_src_dir.display());
         println!("cargo:rerun-if-changed={}", htmlx_queries.display());
-        println!("cargo:rerun-if-changed={}", html_submodule.display());
+        println!("cargo:rerun-if-changed={}", html_crate.display());
     }
 
     // Verify vendored files exist
     if !htmlx_vendor_dir.join("scanner.c").exists() {
         panic!(
             "Vendored HTMLX scanner not found at {:?}. \
-             If building from git, ensure you're in the workspace.",
+             Ensure workspace crates exist.",
             htmlx_vendor_dir
         );
     }

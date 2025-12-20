@@ -8,7 +8,7 @@
 /// <reference types="tree-sitter-cli/dsl" />
 // @ts-check
 
-const HTML = require('../../external/tree-sitter-html/grammar');
+const HTML = require('../tree-sitter-html/grammar');
 
 module.exports = grammar(HTML, {
   name: 'htmlx',

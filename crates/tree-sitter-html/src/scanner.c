@@ -1,10 +1,4 @@
 /**
- * Vendored from tree-sitter-html
- *
- * This file is auto-generated during build. Do not edit manually.
- */
-
-/**
  * External scanner for HTML grammar
  *
  * Follows the WHATWG HTML Living Standard:

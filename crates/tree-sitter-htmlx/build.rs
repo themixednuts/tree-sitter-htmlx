@@ -1,6 +1,6 @@
 //! Build script for tree-sitter-htmlx
 //!
-//! Vendors HTML scanner and queries from submodule (if available) and compiles the parser.
+//! Vendors HTML scanner and queries from tree-sitter-html crate and compiles the parser.
 
 use std::fs;
 use std::path::Path;
@@ -8,16 +8,13 @@ use std::process::Command;
 
 const VENDOR_HEADER_C: &str = r#"/**
  * Vendored from tree-sitter-html
- * https://github.com/tree-sitter/tree-sitter-html
  *
  * This file is auto-generated during build. Do not edit manually.
- * To update: run `git submodule update --remote external/tree-sitter-html`
  */
 
 "#;
 
 const VENDOR_HEADER_SCM: &str = r#"; Vendored from tree-sitter-html
-; https://github.com/tree-sitter/tree-sitter-html
 ;
 ; This file is auto-generated during build. Do not edit manually.
 
@@ -40,52 +37,51 @@ fn main() {
     let queries_dir = manifest_path.join("queries");
     let html_queries_dir = queries_dir.join("html");
 
-    // External submodule path (only exists in development)
-    let html_submodule = manifest_path.join("../../external/tree-sitter-html");
-    let html_submodule_src = html_submodule.join("src");
-    let html_submodule_queries = html_submodule.join("queries");
+    // Source from tree-sitter-html crate in workspace
+    let html_crate = manifest_path.join("../tree-sitter-html");
+    let html_crate_src = html_crate.join("src");
+    let html_crate_queries = html_crate.join("queries");
 
-    // Vendor files if submodule exists
-    if html_submodule_src.exists() {
+    // Vendor files from tree-sitter-html crate
+    if html_crate_src.exists() {
         // Vendor C source files
         fs::create_dir_all(&html_vendor_dir).expect("Failed to create html vendor directory");
         vendor_file(
-            &html_submodule_src.join("tag.h"),
+            &html_crate_src.join("tag.h"),
             &html_vendor_dir.join("tag.h"),
             VENDOR_HEADER_C,
         );
         vendor_file(
-            &html_submodule_src.join("scanner.c"),
+            &html_crate_src.join("scanner.c"),
             &html_vendor_dir.join("scanner.c"),
             VENDOR_HEADER_C,
         );
 
         // Vendor query files
-        if html_submodule_queries.exists() {
+        if html_crate_queries.exists() {
             fs::create_dir_all(&html_queries_dir).expect("Failed to create html queries directory");
             vendor_file(
-                &html_submodule_queries.join("highlights.scm"),
+                &html_crate_queries.join("highlights.scm"),
                 &html_queries_dir.join("highlights.scm"),
                 VENDOR_HEADER_SCM,
             );
-            if html_submodule_queries.join("injections.scm").exists() {
+            if html_crate_queries.join("injections.scm").exists() {
                 vendor_file(
-                    &html_submodule_queries.join("injections.scm"),
+                    &html_crate_queries.join("injections.scm"),
                     &html_queries_dir.join("injections.scm"),
                     VENDOR_HEADER_SCM,
                 );
             }
         }
 
-        println!("cargo:rerun-if-changed={}", html_submodule.display());
+        println!("cargo:rerun-if-changed={}", html_crate.display());
     }
 
-    // Verify vendored files exist (either from submodule or pre-vendored for crates.io)
+    // Verify vendored files exist
     if !html_vendor_dir.join("scanner.c").exists() {
         panic!(
             "Vendored HTML scanner not found at {:?}. \
-             If building from git, ensure submodules are initialized: \
-             git submodule update --init --recursive",
+             Ensure tree-sitter-html crate exists in the workspace.",
             html_vendor_dir
         );
     }

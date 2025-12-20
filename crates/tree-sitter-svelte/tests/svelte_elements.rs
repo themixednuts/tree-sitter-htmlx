@@ -164,9 +164,10 @@ fn test_svelte_head_empty() {
 
 #[test]
 fn test_svelte_head_with_title() {
+    // title is an escapable raw text element per HTML spec, so content is raw_text
     assert_eq!(
         parse("<svelte:head><title>Page Title</title></svelte:head>"),
-        "(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name))) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name))) (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }
 
@@ -180,9 +181,11 @@ fn test_svelte_head_with_meta() {
 
 #[test]
 fn test_svelte_head_dynamic_title() {
+    // title is an escapable raw text element per HTML spec, so content is raw_text
+    // Note: Svelte expressions within title become part of raw_text
     assert_eq!(
         parse("<svelte:head><title>{pageTitle}</title></svelte:head>"),
-        "(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name))) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name))) (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }
 

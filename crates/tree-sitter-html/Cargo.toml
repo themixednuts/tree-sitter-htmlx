@@ -1,9 +1,12 @@
 [package]
-name = "tree-sitter-svelte"
+name = "tree-sitter-html"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "Tree-sitter grammar for Svelte 5"
+description = "Tree-sitter grammar for HTML following the WHATWG HTML Living Standard"
+repository = "https://github.com/user/tree-sitter-htmlx"
+keywords = ["tree-sitter", "parser", "html", "whatwg"]
+categories = ["parsing", "text-editors"]
 build = "build.rs"
 
 [lib]
@@ -12,11 +15,6 @@ path = "src/lib.rs"
 [dependencies]
 tree-sitter = { workspace = true }
 tree-sitter-language = { workspace = true }
-tree-sitter-html = { workspace = true }
-tree-sitter-htmlx = { workspace = true }
 
 [build-dependencies]
 cc = { workspace = true }
-
-[dev-dependencies]
-rstest = "0.23"

@@ -1,5 +1,3 @@
-; Auto-vendored during build. Do not edit manually.
-
 ; Injection queries for HTML
 ; Injects JavaScript into script elements and CSS into style elements
 ;

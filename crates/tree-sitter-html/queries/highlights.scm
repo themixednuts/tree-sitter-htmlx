@@ -1,5 +1,3 @@
-; Auto-vendored during build. Do not edit manually.
-
 ; HTML syntax highlighting queries
 ; Following the WHATWG HTML Living Standard
 

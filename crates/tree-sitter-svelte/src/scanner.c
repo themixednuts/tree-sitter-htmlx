@@ -7,8 +7,10 @@
 // Vendored by build.rs from tree-sitter-htmlx (includes html scanner)
 #include "htmlx/scanner.c"
 
+// Svelte external token indices (after HTMLX's 17 tokens: 0-16)
+// HTML tokens (0-10) + HTMLX tokens (11-16)
 enum {
-    ITERATOR_EXPRESSION = 15,
+    ITERATOR_EXPRESSION = 17,
     BINDING_PATTERN,
     KEY_EXPRESSION,
     TAG_EXPRESSION,

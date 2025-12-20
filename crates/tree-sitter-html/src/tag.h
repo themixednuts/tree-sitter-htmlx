@@ -1,10 +1,4 @@
 /**
- * Vendored from tree-sitter-html
- *
- * This file is auto-generated during build. Do not edit manually.
- */
-
-/**
  * HTML tag definitions following the WHATWG HTML Living Standard
  * https://html.spec.whatwg.org/
  *

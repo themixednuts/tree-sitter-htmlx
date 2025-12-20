@@ -1,0 +1,28 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+  "grammars": [
+    {
+      "name": "html",
+      "path": ".",
+      "scope": "text.html.basic",
+      "file-types": ["html", "htm", "xhtml"],
+      "injection-regex": "^html$",
+      "highlights": "queries/highlights.scm",
+      "injections": "queries/injections.scm"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "MIT",
+    "description": "HTML grammar for tree-sitter following the WHATWG HTML Living Standard",
+    "authors": [
+      {
+        "name": "Jon Fowler"
+      }
+    ],
+    "links": {
+      "repository": "https://github.com/user/tree-sitter-htmlx"
+    }
+  }
+}
+

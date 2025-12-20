@@ -9,4 +9,7 @@ license = "MIT"
 
 [workspace.dependencies]
 tree-sitter = "0.26"
+tree-sitter-language = "0.1"
+tree-sitter-html = { path = "crates/tree-sitter-html" }
+tree-sitter-htmlx = { path = "crates/tree-sitter-htmlx" }
 cc = "1.2"
