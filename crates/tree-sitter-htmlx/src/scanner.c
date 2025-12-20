@@ -204,9 +204,26 @@ static inline bool skip_string(TSLexer *lexer) {
 
     lexer->advance(lexer, false);
     while (lexer->lookahead && lexer->lookahead != quote) {
-        if (lexer->lookahead == '\\') {
+        int32_t c = lexer->lookahead;
+        if (c == '\\') {
             lexer->advance(lexer, false);
             if (lexer->lookahead) lexer->advance(lexer, false);
+        } else if (quote == '`' && c == '$') {
+            lexer->advance(lexer, false);
+            if (lexer->lookahead == '{') {
+                // Skip ${...} interpolation with balanced brace tracking
+                lexer->advance(lexer, false);
+                for (int depth = 1; lexer->lookahead && depth > 0;) {
+                    c = lexer->lookahead;
+                    if (c == '"' || c == '\'' || c == '`') {
+                        skip_string(lexer);
+                    } else {
+                        if (c == '{') depth++;
+                        else if (c == '}') depth--;
+                        lexer->advance(lexer, false);
+                    }
+                }
+            }
         } else {
             lexer->advance(lexer, false);
         }

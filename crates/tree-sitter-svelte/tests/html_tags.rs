@@ -28,6 +28,22 @@ fn test_html_template_literal() {
 }
 
 #[test]
+fn test_html_template_literal_nested() {
+    assert_eq!(
+        parse("{@html `${`nested ${x}`}`}"),
+        "(document (tag kind: (tag_kind) expression: (expression_value)))"
+    );
+}
+
+#[test]
+fn test_html_template_literal_with_object() {
+    assert_eq!(
+        parse(r#"{@html `${ { class: "}" } }`}"#),
+        "(document (tag kind: (tag_kind) expression: (expression_value)))"
+    );
+}
+
+#[test]
 fn test_html_function_call() {
     assert_eq!(
         parse("{@html sanitize(userInput)}"),

@@ -60,6 +60,30 @@ fn test_expression_template_literal() {
 }
 
 #[test]
+fn test_expression_template_literal_nested() {
+    assert_eq!(
+        parse("{`${`nested ${deep}`}`}"),
+        "(document (expression content: (js)))"
+    );
+}
+
+#[test]
+fn test_expression_template_literal_with_braces() {
+    assert_eq!(
+        parse(r#"{`${ { key: "}" } }`}"#),
+        "(document (expression content: (js)))"
+    );
+}
+
+#[test]
+fn test_expression_template_literal_arrow_fn() {
+    assert_eq!(
+        parse("{`${ fn(() => { return x }) }`}"),
+        "(document (expression content: (js)))"
+    );
+}
+
+#[test]
 fn test_expression_arithmetic() {
     assert_eq!(
         parse("{a + b * c}"),
