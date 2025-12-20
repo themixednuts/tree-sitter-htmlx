@@ -280,6 +280,6 @@ fn test_element_data_attribute() {
 fn test_element_interpolated_attribute() {
     assert_eq!(
         parse(r#"<div class="item-{type}"></div>"#),
-        r#"(document (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (end_tag (tag_name))))"#
+        r#"(document (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value) (expression content: (js))))) (end_tag (tag_name))))"#
     );
 }

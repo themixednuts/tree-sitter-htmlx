@@ -105,6 +105,19 @@ module.exports = grammar(HTML, {
     attribute_modifier: $ => /[a-zA-Z_$][a-zA-Z0-9_$]*/,
 
     text: $ => /[^<>&{}\s]([^<>&{}]*[^<>&{}\s])?/,
-    attribute_value: $ => /[^<>{}"'/=\s]+/,
+    attribute_value: $ => /[^<>{}\"'/=\s]+/,
+
+    quoted_attribute_value: $ => choice(
+      seq("'", repeat($._quoted_attribute_content_single), "'"),
+      seq('"', repeat($._quoted_attribute_content_double), '"'),
+    ),
+    _quoted_attribute_content_single: $ => choice(
+      $.expression,
+      alias(/[^'{]+/, $.attribute_value),
+    ),
+    _quoted_attribute_content_double: $ => choice(
+      $.expression,
+      alias(/[^"{]+/, $.attribute_value),
+    ),
   },
 });
