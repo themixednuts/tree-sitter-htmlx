@@ -80,14 +80,14 @@ fn test_namespaced_self_closing() {
 }
 
 // =============================================================================
-// Script and style elements
+// Script and style elements (raw text elements)
 // =============================================================================
 
 #[test]
 fn test_script_element() {
     assert_eq!(
         parse("<script>let x = 1;</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -95,6 +95,6 @@ fn test_script_element() {
 fn test_style_element() {
     assert_eq!(
         parse("<style>div { color: red; }</style>"),
-        "(document (style_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }

@@ -11,7 +11,7 @@ use utils::parse;
 fn test_props_basic() {
     assert_eq!(
         parse("<script>let { name } = $props();</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -19,7 +19,7 @@ fn test_props_basic() {
 fn test_props_multiple() {
     assert_eq!(
         parse("<script>let { a, b, c } = $props();</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -27,7 +27,7 @@ fn test_props_multiple() {
 fn test_props_with_defaults() {
     assert_eq!(
         parse("<script>let { name = 'default' } = $props();</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -35,7 +35,7 @@ fn test_props_with_defaults() {
 fn test_props_with_rest() {
     assert_eq!(
         parse("<script>let { a, ...rest } = $props();</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -43,7 +43,7 @@ fn test_props_with_rest() {
 fn test_props_typescript() {
     assert_eq!(
         parse(r#"<script lang="ts">let { name }: { name: string } = $props();</script>"#),
-        r#"(document (script_element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (raw_text) (end_tag (tag_name))))"#
+        r#"(document (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (raw_text) (end_tag (tag_name))))"#
     );
 }
 
@@ -51,7 +51,7 @@ fn test_props_typescript() {
 fn test_props_interface_typescript() {
     assert_eq!(
         parse(r#"<script lang="ts">interface Props { name: string; count?: number; } let { name, count = 0 }: Props = $props();</script>"#),
-        r#"(document (script_element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (raw_text) (end_tag (tag_name))))"#
+        r#"(document (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (raw_text) (end_tag (tag_name))))"#
     );
 }
 
@@ -63,7 +63,7 @@ fn test_props_interface_typescript() {
 fn test_state_basic() {
     assert_eq!(
         parse("<script>let count = $state(0);</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -71,7 +71,7 @@ fn test_state_basic() {
 fn test_state_object() {
     assert_eq!(
         parse("<script>let user = $state({ name: '', age: 0 });</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -79,7 +79,7 @@ fn test_state_object() {
 fn test_state_array() {
     assert_eq!(
         parse("<script>let items = $state([]);</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -87,7 +87,7 @@ fn test_state_array() {
 fn test_state_raw() {
     assert_eq!(
         parse("<script>let data = $state.raw({ big: 'object' });</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -95,7 +95,7 @@ fn test_state_raw() {
 fn test_state_snapshot() {
     assert_eq!(
         parse("<script>let count = $state(0); const snapshot = $state.snapshot(count);</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -107,7 +107,7 @@ fn test_state_snapshot() {
 fn test_derived_basic() {
     assert_eq!(
         parse("<script>let count = $state(0); let doubled = $derived(count * 2);</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -115,7 +115,7 @@ fn test_derived_basic() {
 fn test_derived_complex() {
     assert_eq!(
         parse("<script>let items = $state([]); let total = $derived(items.reduce((a, b) => a + b, 0));</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -123,7 +123,7 @@ fn test_derived_complex() {
 fn test_derived_by() {
     assert_eq!(
         parse("<script>let count = $state(0); let result = $derived.by(() => { return heavyComputation(count); });</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -135,7 +135,7 @@ fn test_derived_by() {
 fn test_effect_basic() {
     assert_eq!(
         parse("<script>let count = $state(0); $effect(() => { console.log(count); });</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -143,7 +143,7 @@ fn test_effect_basic() {
 fn test_effect_with_cleanup() {
     assert_eq!(
         parse("<script>$effect(() => { const id = setInterval(() => {}, 1000); return () => clearInterval(id); });</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -151,7 +151,7 @@ fn test_effect_with_cleanup() {
 fn test_effect_pre() {
     assert_eq!(
         parse("<script>$effect.pre(() => { console.log('before DOM update'); });</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -159,7 +159,7 @@ fn test_effect_pre() {
 fn test_effect_root() {
     assert_eq!(
         parse("<script>const cleanup = $effect.root(() => { $effect(() => {}); });</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -171,7 +171,7 @@ fn test_effect_root() {
 fn test_bindable_basic() {
     assert_eq!(
         parse("<script>let { value = $bindable() } = $props();</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -179,7 +179,7 @@ fn test_bindable_basic() {
 fn test_bindable_with_default() {
     assert_eq!(
         parse("<script>let { value = $bindable('default') } = $props();</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -187,7 +187,7 @@ fn test_bindable_with_default() {
 fn test_bindable_multiple() {
     assert_eq!(
         parse("<script>let { a = $bindable(), b = $bindable(0) } = $props();</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -199,7 +199,7 @@ fn test_bindable_multiple() {
 fn test_inspect_basic() {
     assert_eq!(
         parse("<script>let count = $state(0); $inspect(count);</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -207,7 +207,7 @@ fn test_inspect_basic() {
 fn test_inspect_with_fn() {
     assert_eq!(
         parse("<script>$inspect(value).with(console.trace);</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -219,7 +219,7 @@ fn test_inspect_with_fn() {
 fn test_host_basic() {
     assert_eq!(
         parse(r#"<svelte:options customElement="my-element" /><script>$effect(() => { $host().dispatchEvent(new CustomEvent('change')); });</script>"#),
-        r#"(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (quoted_attribute_value (attribute_value))))) (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"#
+        r#"(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (quoted_attribute_value (attribute_value))))) (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"#
     );
 }
 
@@ -243,7 +243,7 @@ fn test_runes_full_component() {
 <button onclick={() => count++}>
     {count} * 2 = {doubled}
 </button>"#),
-        r#"(document (script_element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (raw_text) (end_tag (tag_name))) (element (start_tag (tag_name) (attribute (attribute_name) (expression content: (ts)))) (expression content: (ts)) (text) (expression content: (ts)) (end_tag (tag_name))))"#
+        r#"(document (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (raw_text) (end_tag (tag_name))) (element (start_tag (tag_name) (attribute (attribute_name) (expression content: (ts)))) (expression content: (ts)) (text) (expression content: (ts)) (end_tag (tag_name))))"#
     );
 }
 
@@ -254,7 +254,7 @@ fn test_runes_with_generics() {
     let { items }: { items: T[] } = $props();
     let selected = $state<T | null>(null);
 </script>"#),
-        r#"(document (script_element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (raw_text) (end_tag (tag_name))))"#
+        r#"(document (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (raw_text) (end_tag (tag_name))))"#
     );
 }
 
@@ -266,6 +266,6 @@ fn test_runes_with_generics() {
 fn test_runes_mode_optin() {
     assert_eq!(
         parse("<svelte:options runes={true} />\n<script>let count = $state(0);</script>"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (expression content: (js))))) (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (expression content: (js))))) (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }

@@ -279,7 +279,7 @@ fn test_expression_multiline() {
 fn test_reactive_statement_in_script() {
     assert_eq!(
         parse("<script>$: doubled = count * 2;</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -287,7 +287,7 @@ fn test_reactive_statement_in_script() {
 fn test_reactive_block_in_script() {
     assert_eq!(
         parse("<script>$: { console.log(count); updateUI(); }</script>"),
-        "(document (script_element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
