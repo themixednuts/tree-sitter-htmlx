@@ -3,7 +3,6 @@
   "grammars": [
     {
       "name": "html",
-      "path": ".",
       "scope": "text.html.basic",
       "file-types": ["html", "htm", "xhtml"],
       "injection-regex": "^html$",
@@ -17,12 +16,14 @@
     "description": "HTML grammar for tree-sitter following the WHATWG HTML Living Standard",
     "authors": [
       {
-        "name": "Jon Fowler"
+        "name": "mixednuts"
       }
     ],
     "links": {
-      "repository": "https://github.com/user/tree-sitter-htmlx"
+      "repository": "https://github.com/themixednuts/tree-sitter-htmlx"
     }
+  },
+  "bindings": {
+    "rust": true
   }
 }
-

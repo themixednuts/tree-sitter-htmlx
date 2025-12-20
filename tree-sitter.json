@@ -2,9 +2,30 @@
   "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
   "grammars": [
     {
+      "name": "html",
+      "scope": "text.html.basic",
+      "path": "crates/tree-sitter-html",
+      "file-types": ["html", "htm", "xhtml"],
+      "injection-regex": "^html$",
+      "highlights": "queries/highlights.scm",
+      "injections": "queries/injections.scm"
+    },
+    {
+      "name": "htmlx",
+      "camelcase": "HTMLX",
+      "scope": "source.htmlx",
+      "path": "crates/tree-sitter-htmlx",
+      "external-files": ["src/html/tag.h", "src/html/scanner.c"],
+      "file-types": ["htmlx"],
+      "injection-regex": "^htmlx$",
+      "highlights": ["queries/html/highlights.scm", "queries/highlights.scm"],
+      "injections": "queries/injections.scm"
+    },
+    {
       "name": "svelte",
       "camelcase": "Svelte",
       "scope": "source.svelte",
+      "path": "crates/tree-sitter-svelte",
       "external-files": [
         "src/htmlx/html/tag.h",
         "src/htmlx/html/scanner.c",
@@ -23,7 +44,7 @@
   "metadata": {
     "version": "0.1.0",
     "license": "MIT",
-    "description": "Svelte 5 grammar for tree-sitter",
+    "description": "Tree-sitter grammars for HTML, HTMLX, and Svelte",
     "authors": [
       {
         "name": "mixednuts"

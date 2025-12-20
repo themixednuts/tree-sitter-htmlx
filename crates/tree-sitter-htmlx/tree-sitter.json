@@ -1,31 +1,29 @@
 {
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
   "grammars": [
     {
       "name": "htmlx",
       "camelcase": "HTMLX",
       "scope": "source.htmlx",
-      "path": ".",
-      "external-files": [
-        "src/html/tag.h",
-        "src/html/scanner.c"
-      ],
-      "file-types": [
-        "htmlx"
-      ],
-      "highlights": [
-        "queries/html/highlights.scm",
-        "queries/highlights.scm"
-      ],
-      "injections": [
-        "queries/injections.scm"
-      ],
-      "injection-regex": "htmlx"
+      "external-files": ["src/html/tag.h", "src/html/scanner.c"],
+      "file-types": ["htmlx"],
+      "injection-regex": "^htmlx$",
+      "highlights": ["queries/html/highlights.scm", "queries/highlights.scm"],
+      "injections": "queries/injections.scm"
     }
   ],
   "metadata": {
     "version": "0.1.0",
     "license": "MIT",
-    "description": "HTMLX grammar for tree-sitter (expression-enhanced HTML)"
+    "description": "HTMLX grammar for tree-sitter (expression-enhanced HTML)",
+    "authors": [
+      {
+        "name": "mixednuts"
+      }
+    ],
+    "links": {
+      "repository": "https://github.com/themixednuts/tree-sitter-htmlx"
+    }
   },
   "bindings": {
     "rust": true
