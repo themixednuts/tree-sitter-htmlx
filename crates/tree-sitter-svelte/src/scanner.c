@@ -4,7 +4,8 @@
 #define tree_sitter_htmlx_external_scanner_serialize   htmlx_serialize
 #define tree_sitter_htmlx_external_scanner_deserialize htmlx_deserialize
 
-#include "../../tree-sitter-htmlx/src/scanner.c"
+// Vendored by build.rs from tree-sitter-htmlx (includes html scanner)
+#include "htmlx/scanner.c"
 
 enum {
     ITERATOR_EXPRESSION = 15,

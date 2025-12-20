@@ -1,3 +1,7 @@
+/**
+ * Auto-vendored during build. Do not edit manually.
+ */
+
 #include "tree_sitter/parser.h"
 
 #define scan html_scan

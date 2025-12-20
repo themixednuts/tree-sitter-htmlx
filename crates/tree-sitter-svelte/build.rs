@@ -1,23 +1,124 @@
 //! Build script for tree-sitter-svelte
-//! 
-//! Runs tree-sitter generate and compiles the parser.
+//!
+//! Vendors HTMLX, HTML scanners and queries from workspace (if available) and compiles the parser.
 
+use std::fs;
 use std::path::Path;
 use std::process::Command;
+
+const VENDOR_HEADER_C: &str = r#"/**
+ * Auto-vendored during build. Do not edit manually.
+ */
+
+"#;
+
+const VENDOR_HEADER_SCM: &str = r#"; Auto-vendored during build. Do not edit manually.
+
+"#;
+
+fn vendor_file(src: &Path, dst: &Path, header: &str) {
+    if src.exists() {
+        let content = fs::read_to_string(src)
+            .unwrap_or_else(|e| panic!("Failed to read {}: {}", src.display(), e));
+        fs::write(dst, format!("{}{}", header, content))
+            .unwrap_or_else(|e| panic!("Failed to write {}: {}", dst.display(), e));
+    }
+}
 
 fn main() {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
     let manifest_path = Path::new(&manifest_dir);
     let src_dir = manifest_path.join("src");
-    
-    // Rerun if grammar, scanner, or queries change
+    let queries_dir = manifest_path.join("queries");
+
+    // Vendor directories
+    let htmlx_vendor_dir = src_dir.join("htmlx");
+    let html_vendor_dir = htmlx_vendor_dir.join("html");
+    let htmlx_queries_dir = queries_dir.join("htmlx");
+    let html_queries_dir = htmlx_queries_dir.join("html");
+
+    // Source paths (only exist in workspace development)
+    let htmlx_crate = manifest_path.join("../tree-sitter-htmlx");
+    let htmlx_src_dir = htmlx_crate.join("src");
+    let htmlx_queries = htmlx_crate.join("queries");
+    let html_submodule = manifest_path.join("../../external/tree-sitter-html");
+    let html_submodule_src = html_submodule.join("src");
+    let html_submodule_queries = html_submodule.join("queries");
+
+    // Vendor files if sources exist (development mode)
+    if htmlx_src_dir.exists() && html_submodule_src.exists() {
+        // Create vendor directories
+        fs::create_dir_all(&html_vendor_dir).expect("Failed to create vendor directories");
+        fs::create_dir_all(&html_queries_dir).expect("Failed to create query directories");
+
+        // Vendor HTML scanner files into htmlx/html/
+        vendor_file(
+            &html_submodule_src.join("tag.h"),
+            &html_vendor_dir.join("tag.h"),
+            VENDOR_HEADER_C,
+        );
+        vendor_file(
+            &html_submodule_src.join("scanner.c"),
+            &html_vendor_dir.join("scanner.c"),
+            VENDOR_HEADER_C,
+        );
+
+        // Vendor HTMLX scanner
+        vendor_file(
+            &htmlx_src_dir.join("scanner.c"),
+            &htmlx_vendor_dir.join("scanner.c"),
+            VENDOR_HEADER_C,
+        );
+
+        // Vendor HTML query files
+        if html_submodule_queries.exists() {
+            vendor_file(
+                &html_submodule_queries.join("highlights.scm"),
+                &html_queries_dir.join("highlights.scm"),
+                VENDOR_HEADER_SCM,
+            );
+            if html_submodule_queries.join("injections.scm").exists() {
+                vendor_file(
+                    &html_submodule_queries.join("injections.scm"),
+                    &html_queries_dir.join("injections.scm"),
+                    VENDOR_HEADER_SCM,
+                );
+            }
+        }
+
+        // Vendor HTMLX query files
+        if htmlx_queries.exists() {
+            vendor_file(
+                &htmlx_queries.join("highlights.scm"),
+                &htmlx_queries_dir.join("highlights.scm"),
+                VENDOR_HEADER_SCM,
+            );
+            vendor_file(
+                &htmlx_queries.join("injections.scm"),
+                &htmlx_queries_dir.join("injections.scm"),
+                VENDOR_HEADER_SCM,
+            );
+        }
+
+        println!("cargo:rerun-if-changed={}", htmlx_src_dir.display());
+        println!("cargo:rerun-if-changed={}", htmlx_queries.display());
+        println!("cargo:rerun-if-changed={}", html_submodule.display());
+    }
+
+    // Verify vendored files exist
+    if !htmlx_vendor_dir.join("scanner.c").exists() {
+        panic!(
+            "Vendored HTMLX scanner not found at {:?}. \
+             If building from git, ensure you're in the workspace.",
+            htmlx_vendor_dir
+        );
+    }
+
+    // Rerun triggers
     println!("cargo:rerun-if-changed=grammar.js");
     println!("cargo:rerun-if-changed=src/scanner.c");
+    println!("cargo:rerun-if-changed=src/htmlx");
     println!("cargo:rerun-if-changed=queries");
-    // Also rerun if HTMLX changes (since we extend it)
-    println!("cargo:rerun-if-changed=../tree-sitter-htmlx/grammar.js");
-    println!("cargo:rerun-if-changed=../tree-sitter-htmlx/src/scanner.c");
-    println!("cargo:rerun-if-changed=../tree-sitter-htmlx/queries");
 
     // Run tree-sitter generate
     let status = Command::new("tree-sitter")
@@ -26,24 +127,18 @@ fn main() {
         .status()
         .expect(
             "Failed to run 'tree-sitter generate'. \
-             Please install tree-sitter-cli: cargo install tree-sitter-cli"
+             Please install tree-sitter-cli: cargo install tree-sitter-cli",
         );
 
     if !status.success() {
         panic!("tree-sitter generate failed with status: {}", status);
     }
 
-    // Compile the generated parser and our scanner
-    // Include paths for HTML scanner's tag.h and HTMLX scanner
-    let html_src_dir = manifest_path.join("../../external/tree-sitter-html/src");
-    let htmlx_src_dir = manifest_path.join("../tree-sitter-htmlx/src");
-
+    // Compile the parser and scanner
     cc::Build::new()
         .include(&src_dir)
-        .include(&html_src_dir)
-        .include(&htmlx_src_dir)
         .file(src_dir.join("parser.c"))
         .file(src_dir.join("scanner.c"))
-        .warnings(false)  // Suppress warnings from generated code
+        .warnings(false)
         .compile("tree_sitter_svelte");
 }

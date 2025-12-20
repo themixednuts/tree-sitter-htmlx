@@ -6,20 +6,20 @@
       "scope": "source.svelte",
       "path": ".",
       "external-files": [
-        "../../external/tree-sitter-html/src/tag.h",
-        "../../external/tree-sitter-html/src/scanner.c",
-        "../tree-sitter-htmlx/src/scanner.c"
+        "src/htmlx/html/tag.h",
+        "src/htmlx/html/scanner.c",
+        "src/htmlx/scanner.c"
       ],
       "file-types": [
         "svelte"
       ],
       "highlights": [
-        "../../external/tree-sitter-html/queries/highlights.scm",
-        "../tree-sitter-htmlx/queries/highlights.scm",
+        "queries/htmlx/html/highlights.scm",
+        "queries/htmlx/highlights.scm",
         "queries/highlights.scm"
       ],
       "injections": [
-        "../tree-sitter-htmlx/queries/injections.scm",
+        "queries/htmlx/injections.scm",
         "queries/injections.scm"
       ],
       "injection-regex": "svelte"
