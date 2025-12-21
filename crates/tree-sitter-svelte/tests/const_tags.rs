@@ -47,7 +47,7 @@ fn test_const_function_call() {
 fn test_const_multiple() {
     assert_eq!(
         parse("{#each boxes as box}{@const area = box.w * box.h}{@const perimeter = 2 * (box.w + box.h)}{area} {perimeter}{/each}"),
-        "(document (block (block_start kind: (block_kind) expression: (expression) binding: (pattern)) (tag kind: (tag_kind) expression: (expression_value)) (tag kind: (tag_kind) expression: (expression_value)) (expression content: (js)) (expression content: (js)) (block_end kind: (block_kind))))"
+        "(document (block (block_start kind: (block_kind) expression: (expression) binding: (pattern)) (tag kind: (tag_kind) expression: (expression_value)) (tag kind: (tag_kind) expression: (expression_value)) (expression content: (js)) (text) (expression content: (js)) (block_end kind: (block_kind))))"
     );
 }
 

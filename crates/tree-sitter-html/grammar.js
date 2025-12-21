@@ -36,6 +36,7 @@ module.exports = grammar({
     $._implicit_end_tag,
     $.raw_text,
     $.comment,
+    $.text,
   ],
 
   rules: {
@@ -149,7 +150,6 @@ module.exports = grammar({
     // §13.1.4 - Character references (named, decimal, hex)
     entity: _ => /&(#([xX][0-9a-fA-F]{1,6}|[0-9]{1,7})|[A-Za-z][A-Za-z0-9]*);?/,
 
-    // Text content
-    text: _ => /[^<>&\s]([^<>&]*[^<>&\s])?/,
+    // §13.1.3 - Text content (handled by external scanner to preserve whitespace)
   },
 });

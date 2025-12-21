@@ -51,7 +51,7 @@ fn test_html_comment_in_markup() {
 fn test_html_comment_between_elements() {
     assert_eq!(
         parse("<div>\n  <!-- comment -->\n  <p>text</p>\n</div>"),
-        "(document (element (start_tag (tag_name)) (comment) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (text) (comment) (text) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (text) (end_tag (tag_name))))"
     );
 }
 
@@ -99,7 +99,7 @@ fn test_html_comment_with_expression() {
 fn test_comment_at_top() {
     assert_eq!(
         parse("<!-- Component description -->\n<script>let x = 1;</script>"),
-        "(document (comment) (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (comment) (text) (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 
@@ -107,7 +107,7 @@ fn test_comment_at_top() {
 fn test_comment_between_script_and_markup() {
     assert_eq!(
         parse("<script>let x = 1;</script>\n<!-- Markup below -->\n<p>{x}</p>"),
-        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))) (comment) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))) (text) (comment) (text) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))))"
     );
 }
 
@@ -115,7 +115,7 @@ fn test_comment_between_script_and_markup() {
 fn test_comment_before_style() {
     assert_eq!(
         parse("<p>text</p>\n<!-- Styles -->\n<style>p { color: red; }</style>"),
-        "(document (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (comment) (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (text) (comment) (text) (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }
 

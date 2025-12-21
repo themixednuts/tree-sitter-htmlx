@@ -17,12 +17,12 @@
 #undef tree_sitter_html_external_scanner_serialize
 #undef tree_sitter_html_external_scanner_deserialize
 
-// HTMLX external token indices (after HTML's 8 tokens: 0-7)
+// HTMLX external token indices (after HTML's 9 tokens: 0-8)
 // HTML tokens: START_TAG_NAME(0), RAW_TEXT_START_TAG_NAME(1), END_TAG_NAME(2),
 //              ERRONEOUS_END_TAG_NAME(3), SELF_CLOSING_TAG_DELIMITER(4),
-//              IMPLICIT_END_TAG(5), RAW_TEXT(6), COMMENT(7)
+//              IMPLICIT_END_TAG(5), RAW_TEXT(6), COMMENT(7), TEXT(8)
 enum {
-    TAG_NAMESPACE = 8,
+    TAG_NAMESPACE = 9,
     TAG_LOCAL_NAME,
     TS_LANG_MARKER,
     EXPRESSION_JS,
@@ -70,6 +70,36 @@ static inline int32_t to_upper(int32_t c) {
 
 static inline int32_t to_lower(int32_t c) {
     return is_alpha(c) ? (c | 0x20) : c;
+}
+
+/**
+ * Scan text content for HTMLX
+ *
+ * Extends HTML text scanning (§13.1.3) to also stop at '{' for expressions.
+ * Whitespace is significant and captured as part of the text node.
+ */
+static bool scan_htmlx_text(TSLexer *lexer) {
+    bool has_content = false;
+
+    while (lexer->lookahead != 0) {
+        int32_t c = lexer->lookahead;
+
+        // Stop at tag start, character reference, or expression start
+        if (c == '<' || c == '&' || c == '{') {
+            break;
+        }
+
+        advance(lexer);
+        has_content = true;
+    }
+
+    if (has_content) {
+        lexer->mark_end(lexer);
+        lexer->result_symbol = TEXT;
+        return true;
+    }
+
+    return false;
 }
 
 static bool scan_start_tag(State *state, TSLexer *lexer, const bool *valid) {
@@ -316,6 +346,19 @@ static bool scan(State *state, TSLexer *lexer, const bool *valid) {
     if (valid[DIRECTIVE_MARKER]) {
         int result = check_directive_marker(lexer);
         if (result != 0) return result == 1;
+    }
+
+    // Text content - handle before whitespace is skipped
+    // HTMLX text stops at '{' in addition to '<' and '&'
+    if (valid[TEXT]) {
+        if (scan_htmlx_text(lexer)) {
+            return true;
+        }
+        // At '{' means expression start - return false to let grammar handle it
+        // HTML scanner doesn't know about '{' so don't fall through
+        if (lexer->lookahead == '{') {
+            return false;
+        }
     }
 
     while (is_space(lexer->lookahead)) skip(lexer);

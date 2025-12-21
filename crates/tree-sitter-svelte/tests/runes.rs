@@ -243,7 +243,7 @@ fn test_runes_full_component() {
 <button onclick={() => count++}>
     {count} * 2 = {doubled}
 </button>"#),
-        r#"(document (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (raw_text) (end_tag (tag_name))) (element (start_tag (tag_name) (attribute (attribute_name) (expression content: (ts)))) (expression content: (ts)) (text) (expression content: (ts)) (end_tag (tag_name))))"#
+        r#"(document (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (raw_text) (end_tag (tag_name))) (text) (element (start_tag (tag_name) (attribute (attribute_name) (expression content: (ts)))) (text) (expression content: (ts)) (text) (expression content: (ts)) (text) (end_tag (tag_name))))"#
     );
 }
 
@@ -266,6 +266,6 @@ fn test_runes_with_generics() {
 fn test_runes_mode_optin() {
     assert_eq!(
         parse("<svelte:options runes={true} />\n<script>let count = $state(0);</script>"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (expression content: (js))))) (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (expression content: (js))))) (text) (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
     );
 }

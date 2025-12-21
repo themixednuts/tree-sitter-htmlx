@@ -123,7 +123,7 @@ module.exports = grammar(HTML, {
     attribute_modifiers: $ => repeat1(seq('|', $.attribute_modifier)),
     attribute_modifier: $ => /[a-zA-Z_$][a-zA-Z0-9_$]*/,
 
-    text: $ => /[^<>&{}\s]([^<>&{}]*[^<>&{}\s])?/,
+    // Text content handled by external scanner (stops at '{' for expressions)
     attribute_value: $ => /[^<>{}\"'/=\s]+/,
 
     quoted_attribute_value: $ => choice(

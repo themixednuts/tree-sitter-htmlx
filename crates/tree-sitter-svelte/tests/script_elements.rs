@@ -103,6 +103,6 @@ fn test_script_generics() {
 fn test_script_with_markup() {
     assert_eq!(
         parse("<script>let name = 'world';</script>\n<p>Hello {name}!</p>"),
-        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))) (element (start_tag (tag_name)) (text) (expression content: (js)) (text) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))) (text) (element (start_tag (tag_name)) (text) (expression content: (js)) (text) (end_tag (tag_name))))"
     );
 }

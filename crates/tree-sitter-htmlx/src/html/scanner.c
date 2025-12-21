@@ -62,6 +62,7 @@ enum TokenType {
   IMPLICIT_END_TAG,           // 5
   RAW_TEXT,                   // 6
   COMMENT,                    // 7
+  TEXT,                       // 8 - Text content including whitespace (§13.1.3)
 };
 
 // ============================================================================
@@ -523,6 +524,43 @@ static bool scan_self_closing_tag_delimiter(Scanner *scanner, TSLexer *lexer) {
 }
 
 // ============================================================================
+// Text content scanning
+// ============================================================================
+
+/**
+ * Scan text content per §13.1.3
+ *
+ * Text is allowed inside elements and may contain any characters except:
+ * - '<' (starts a tag)
+ * - '&' (starts a character reference)
+ *
+ * Whitespace is significant and captured as part of the text node.
+ */
+static bool scan_text(TSLexer *lexer) {
+  bool has_content = false;
+
+  while (lexer->lookahead != 0) {
+    int32_t c = lexer->lookahead;
+
+    // Stop at tag start or character reference
+    if (c == '<' || c == '&') {
+      break;
+    }
+
+    advance(lexer);
+    has_content = true;
+  }
+
+  if (LIKELY(has_content)) {
+    lexer->mark_end(lexer);
+    lexer->result_symbol = TEXT;
+    return true;
+  }
+
+  return false;
+}
+
+// ============================================================================
 // Main scan function
 // ============================================================================
 
@@ -533,14 +571,22 @@ static bool scan(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
     return scan_raw_text(scanner, lexer);
   }
 
-  // Skip whitespace
+  // Priority 2: Text content - capture before whitespace is skipped
+  // Text includes whitespace per §13.1.3
+  if (valid_symbols[TEXT]) {
+    if (scan_text(lexer)) {
+      return true;
+    }
+  }
+
+  // Skip whitespace (only when not in text content context)
   while (is_ascii_space(lexer->lookahead)) {
     skip_whitespace(lexer);
   }
 
   int32_t lookahead = lexer->lookahead;
 
-  // Priority 2: Check for tag/comment start
+  // Priority 3: Check for tag/comment start
   if (lookahead == '<') {
     lexer->mark_end(lexer);
     advance(lexer);
@@ -557,7 +603,7 @@ static bool scan(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
     return false;
   }
 
-  // Priority 3: EOF handling
+  // Priority 4: EOF handling
   if (lookahead == 0) {
     if (valid_symbols[IMPLICIT_END_TAG]) {
       return scan_implicit_end_tag(scanner, lexer);
@@ -565,12 +611,12 @@ static bool scan(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
     return false;
   }
 
-  // Priority 4: Self-closing tag delimiter
+  // Priority 5: Self-closing tag delimiter
   if (lookahead == '/' && valid_symbols[SELF_CLOSING_TAG_DELIMITER]) {
     return scan_self_closing_tag_delimiter(scanner, lexer);
   }
 
-  // Priority 5: Tag names (after < or </)
+  // Priority 6: Tag names (after < or </)
   if ((valid_symbols[START_TAG_NAME] || valid_symbols[END_TAG_NAME]) &&
       !valid_symbols[RAW_TEXT]) {
     if (valid_symbols[START_TAG_NAME]) {
