@@ -67,10 +67,14 @@ module.exports = grammar(HTMLX, {
     ),
 
     // {:kind expression?}
+    // Special case: {:else if expr} should have kind="else if", not kind="else" with expr="if ..."
     block_branch: $ => seq(
       '{',
       token.immediate(':'),
-      field('kind', $.block_kind),
+      field('kind', choice(
+        alias(token(seq('else', /\s+/, 'if')), $.block_kind),
+        $.block_kind,
+      )),
       optional(field('expression', alias($._tag_expression, $.expression_value))),
       '}',
     ),
