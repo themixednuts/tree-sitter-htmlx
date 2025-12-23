@@ -7,18 +7,21 @@
 // Vendored by build.rs from tree-sitter-htmlx (includes html scanner)
 #include "htmlx/scanner.c"
 
-// Svelte external token indices (after HTMLX's 15 tokens: 0-14)
-// HTML tokens (0-8) + HTMLX tokens (9-14)
+// Svelte external token indices (after HTMLX's 17 tokens: 0-16)
+// HTML tokens (0-8) + HTMLX tokens (9-16)
 enum {
-    ITERATOR_EXPRESSION = 15,
+    ITERATOR_EXPRESSION = 17,
     BINDING_PATTERN,
     KEY_EXPRESSION,
     TAG_EXPRESSION,
 };
 
+// Scan balanced expression, excluding trailing whitespace at depth 0.
+// Marks end position before any trailing whitespace.
 static bool scan_balanced(TSLexer *lexer, int32_t stop_char, bool stop_comma) {
     int depth = 0;
     bool has_content = false;
+    bool needs_mark = false;
 
     while (lexer->lookahead) {
         int32_t c = lexer->lookahead;
@@ -28,16 +31,33 @@ static bool scan_balanced(TSLexer *lexer, int32_t stop_char, bool stop_comma) {
 
         if (skip_string(lexer)) {
             has_content = true;
+            needs_mark = true;
+            continue;
+        }
+
+        // At depth 0, mark before whitespace (handles trailing ws)
+        if (depth == 0 && is_space(c)) {
+            if (needs_mark) {
+                lexer->mark_end(lexer);
+                needs_mark = false;
+            }
+            do { advance(lexer); } while (is_space(lexer->lookahead));
             continue;
         }
 
         switch (c) {
             case '(': case '[': case '{': depth++; break;
-            case ')': case ']': case '}': if (--depth < 0) return has_content; break;
+            case ')': case ']': case '}': if (--depth < 0) goto done; break;
         }
 
         advance(lexer);
         has_content = true;
+        needs_mark = true;
+    }
+
+done:
+    if (needs_mark) {
+        lexer->mark_end(lexer);
     }
 
     return has_content;
@@ -107,18 +127,18 @@ static bool scan_iterator(TSLexer *lexer) {
 
 static bool scan_binding(TSLexer *lexer) {
     while (is_space(lexer->lookahead)) advance(lexer);
+    // scan_balanced handles mark_end (excludes trailing whitespace)
     if (!scan_balanced(lexer, '(', true)) return false;
 
-    lexer->mark_end(lexer);
     lexer->result_symbol = BINDING_PATTERN;
     return true;
 }
 
 static bool scan_key(TSLexer *lexer) {
     while (is_space(lexer->lookahead)) advance(lexer);
+    // scan_balanced handles mark_end (excludes trailing whitespace)
     if (!scan_balanced(lexer, ')', false)) return false;
 
-    lexer->mark_end(lexer);
     lexer->result_symbol = KEY_EXPRESSION;
     return true;
 }
@@ -131,9 +151,51 @@ static bool scan_tag_expression(TSLexer *lexer) {
     }
 
     if (!has_space || lexer->lookahead == '}') return false;
-    if (!scan_balanced(lexer, '}', false)) return false;
 
-    lexer->mark_end(lexer);
+    // Scan balanced expression, excluding trailing whitespace.
+    // Strategy: mark_end before whitespace at depth 0, track if we need final mark.
+    int depth = 0;
+    bool has_content = false;
+    bool needs_mark = false;
+
+    while (lexer->lookahead) {
+        int32_t c = lexer->lookahead;
+
+        if (depth == 0 && c == '}') break;
+
+        if (skip_string(lexer)) {
+            has_content = true;
+            needs_mark = true;
+            continue;
+        }
+
+        // At depth 0, mark before whitespace run (handles trailing ws)
+        if (depth == 0 && is_space(c)) {
+            if (needs_mark) {
+                lexer->mark_end(lexer);
+                needs_mark = false;
+            }
+            do { advance(lexer); } while (is_space(lexer->lookahead));
+            continue;
+        }
+
+        switch (c) {
+            case '(': case '[': case '{': depth++; break;
+            case ')': case ']': case '}': if (--depth < 0) goto done; break;
+        }
+
+        advance(lexer);
+        has_content = true;
+        needs_mark = true;
+    }
+
+done:
+    if (needs_mark) {
+        lexer->mark_end(lexer);
+    }
+
+    if (!has_content) return false;
+
     lexer->result_symbol = TAG_EXPRESSION;
     return true;
 }
