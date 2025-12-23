@@ -32,6 +32,8 @@ enum {
     EXPRESSION_JS,
     EXPRESSION_TS,
     DIRECTIVE_MARKER,
+    MEMBER_TAG_OBJECT,    // First part of dotted component (UI in UI.Button)
+    MEMBER_TAG_PROPERTY,  // Subsequent parts (Button in UI.Button)
 };
 
 typedef struct {
@@ -115,10 +117,19 @@ static bool scan_start_tag(State *state, TSLexer *lexer, const bool *valid) {
         advance(lexer);
     }
 
+    // Check for namespaced tag (svelte:head)
     if (lexer->lookahead == ':' && valid[TAG_NAMESPACE]) {
         lexer->mark_end(lexer);
         lexer->result_symbol = TAG_NAMESPACE;
         state->awaiting_local_name = true;
+        array_delete(&name);
+        return true;
+    }
+
+    // Check for member/dotted tag (UI.Button) - return object part
+    if (lexer->lookahead == '.' && valid[MEMBER_TAG_OBJECT]) {
+        lexer->mark_end(lexer);
+        lexer->result_symbol = MEMBER_TAG_OBJECT;
         array_delete(&name);
         return true;
     }
@@ -166,10 +177,19 @@ static bool scan_end_tag(State *state, TSLexer *lexer, const bool *valid) {
         advance(lexer);
     }
 
+    // Check for namespaced tag (svelte:head)
     if (lexer->lookahead == ':' && valid[TAG_NAMESPACE]) {
         lexer->mark_end(lexer);
         lexer->result_symbol = TAG_NAMESPACE;
         state->awaiting_local_name = true;
+        array_delete(&name);
+        return true;
+    }
+
+    // Check for member/dotted tag (UI.Button) - return object part
+    if (lexer->lookahead == '.' && valid[MEMBER_TAG_OBJECT]) {
+        lexer->mark_end(lexer);
+        lexer->result_symbol = MEMBER_TAG_OBJECT;
         array_delete(&name);
         return true;
     }
@@ -247,9 +267,12 @@ static inline bool skip_string(TSLexer *lexer) {
     return true;
 }
 
+// Scan balanced expression, excluding trailing whitespace at depth 0.
+// Marks end position before any trailing whitespace.
 static bool scan_balanced_expr(TSLexer *lexer) {
     int depth = 0;
     bool has_content = false;
+    bool needs_mark = false;
 
     while (lexer->lookahead) {
         int32_t c = lexer->lookahead;
@@ -258,16 +281,33 @@ static bool scan_balanced_expr(TSLexer *lexer) {
 
         if (skip_string(lexer)) {
             has_content = true;
+            needs_mark = true;
+            continue;
+        }
+
+        // At depth 0, mark before whitespace (handles trailing ws)
+        if (depth == 0 && is_space(c)) {
+            if (needs_mark) {
+                lexer->mark_end(lexer);
+                needs_mark = false;
+            }
+            do { advance(lexer); } while (is_space(lexer->lookahead));
             continue;
         }
 
         switch (c) {
             case '(': case '[': case '{': depth++; break;
-            case ')': case ']': case '}': if (--depth < 0) return has_content; break;
+            case ')': case ']': case '}': if (--depth < 0) goto done; break;
         }
 
         advance(lexer);
         has_content = true;
+        needs_mark = true;
+    }
+
+done:
+    if (needs_mark) {
+        lexer->mark_end(lexer);
     }
 
     return has_content;
@@ -322,9 +362,9 @@ static bool scan_expression(State *state, TSLexer *lexer) {
     int32_t c = lexer->lookahead;
     if (c == '#' || c == ':' || c == '@' || c == '/') return false;
 
+    // scan_balanced_expr handles mark_end (excludes trailing whitespace)
     if (!scan_balanced_expr(lexer)) return false;
 
-    lexer->mark_end(lexer);
     lexer->result_symbol = state->is_typescript ? EXPRESSION_TS : EXPRESSION_JS;
     return true;
 }
@@ -340,6 +380,21 @@ static int check_directive_marker(TSLexer *lexer) {
 
     lexer->result_symbol = DIRECTIVE_MARKER;
     return 1;
+}
+
+// Scan member tag property (part after '.' in dotted component like UI.Button)
+static bool scan_member_tag_property(TSLexer *lexer) {
+    while (is_space(lexer->lookahead)) skip(lexer);
+
+    if (!is_alpha(lexer->lookahead)) return false;
+
+    while (is_ident_char(lexer->lookahead)) {
+        advance(lexer);
+    }
+
+    lexer->mark_end(lexer);
+    lexer->result_symbol = MEMBER_TAG_PROPERTY;
+    return true;
 }
 
 static bool scan(State *state, TSLexer *lexer, const bool *valid) {
@@ -386,12 +441,16 @@ static bool scan(State *state, TSLexer *lexer, const bool *valid) {
         if (scan_self_closing(state, lexer)) return true;
     }
 
+    if (valid[MEMBER_TAG_PROPERTY] && scan_member_tag_property(lexer)) {
+        return true;
+    }
+
     if (is_alpha(c)) {
         if (valid[TAG_NAMESPACE] || valid[START_TAG_NAME] ||
-            valid[RAW_TEXT_START_TAG_NAME]) {
+            valid[RAW_TEXT_START_TAG_NAME] || valid[MEMBER_TAG_OBJECT]) {
             if (scan_start_tag(state, lexer, valid)) return true;
         }
-        if (valid[TAG_NAMESPACE] || valid[END_TAG_NAME]) {
+        if (valid[TAG_NAMESPACE] || valid[END_TAG_NAME] || valid[MEMBER_TAG_OBJECT]) {
             if (scan_end_tag(state, lexer, valid)) return true;
         }
     }

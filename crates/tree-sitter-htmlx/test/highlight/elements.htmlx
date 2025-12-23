@@ -8,6 +8,9 @@
 <MyComponent />
  <!-- <- type -->
 
+<UI.Button />
+ <!-- <- type -->
+
 <svelte:head></svelte:head>
  <!-- <- keyword -->
 <!--   ^ punctuation.delimiter -->

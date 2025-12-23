@@ -151,11 +151,35 @@ fn test_component_with_slot() {
 
 #[test]
 fn test_component_namespaced() {
-    // Note: Dotted names are currently parsed with the dot portion as an attribute
-    // This matches how the grammar handles it, but could be improved
+    // Dotted component names are parsed with object and property fields
     assert_eq!(
         parse("<Namespace.Component />"),
-        "(document (element (self_closing_tag (tag_name) (attribute (attribute_name)))))"
+        "(document (element (self_closing_tag (tag_name object: (tag_member) property: (tag_member)))))"
+    );
+}
+
+#[test]
+fn test_component_dotted_with_children() {
+    assert_eq!(
+        parse("<UI.Button>Click</UI.Button>"),
+        "(document (element (start_tag (tag_name object: (tag_member) property: (tag_member))) (text) (end_tag (tag_name object: (tag_member) property: (tag_member)))))"
+    );
+}
+
+#[test]
+fn test_component_deeply_dotted() {
+    // Multiple property fields for deeply nested: Lib.UI.Button.Primary
+    assert_eq!(
+        parse("<Lib.UI.Button.Primary />"),
+        "(document (element (self_closing_tag (tag_name object: (tag_member) property: (tag_member) property: (tag_member) property: (tag_member)))))"
+    );
+}
+
+#[test]
+fn test_component_dotted_with_props() {
+    assert_eq!(
+        parse(r#"<Form.Input name="email" />"#),
+        r#"(document (element (self_closing_tag (tag_name object: (tag_member) property: (tag_member)) (attribute (attribute_name) (quoted_attribute_value (attribute_value))))))"#
     );
 }
 

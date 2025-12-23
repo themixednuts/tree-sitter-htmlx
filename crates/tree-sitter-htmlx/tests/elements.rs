@@ -59,6 +59,32 @@ fn test_component_with_children() {
     );
 }
 
+#[test]
+fn test_component_dotted() {
+    // Dotted components are parsed with object and property fields containing tag_member nodes
+    assert_eq!(
+        parse("<UI.Button />"),
+        "(document (element (self_closing_tag (tag_name object: (tag_member) property: (tag_member)))))"
+    );
+}
+
+#[test]
+fn test_component_dotted_with_children() {
+    assert_eq!(
+        parse("<UI.Card>content</UI.Card>"),
+        "(document (element (start_tag (tag_name object: (tag_member) property: (tag_member))) (text) (end_tag (tag_name object: (tag_member) property: (tag_member)))))"
+    );
+}
+
+#[test]
+fn test_component_deeply_dotted() {
+    // Multiple levels of dotting: object + multiple property fields
+    assert_eq!(
+        parse("<Lib.UI.Button />"),
+        "(document (element (self_closing_tag (tag_name object: (tag_member) property: (tag_member) property: (tag_member)))))"
+    );
+}
+
 // =============================================================================
 // Namespaced elements
 // =============================================================================
