@@ -68,7 +68,8 @@ static inline bool match_keyword(TSLexer *lexer, const char *kw, int len) {
         if (lexer->lookahead != kw[i]) return false;
         advance(lexer);
     }
-    return is_space(lexer->lookahead) || lexer->lookahead == '{';
+    // Keyword must be followed by space, '{', or '}' (end of block)
+    return is_space(lexer->lookahead) || lexer->lookahead == '{' || lexer->lookahead == '}';
 }
 
 static bool scan_iterator(TSLexer *lexer) {

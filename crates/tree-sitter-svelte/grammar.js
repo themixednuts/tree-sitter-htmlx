@@ -57,9 +57,10 @@ module.exports = grammar(HTMLX, {
             optional(seq('(', field('key', alias($._key_expression, $.expression)), ')')),
           ),
           // {#await promise then value} or {#await promise catch error}
+          // Binding is optional: {#await promise then} is valid (shorthand for skipping pending)
           seq(
-            choice('then', 'catch'),
-            field('binding', alias($._binding_pattern, $.pattern)),
+            field('shorthand', choice('then', 'catch')),
+            optional(field('binding', alias($._binding_pattern, $.pattern))),
           ),
         )),
       )),

@@ -3,6 +3,28 @@
 mod utils;
 use utils::parse;
 
+/// Parse and return the expression node's byte range from a block_start
+fn get_block_expression_range(source: &str) -> Option<(usize, usize, String)> {
+    let mut parser = tree_sitter::Parser::new();
+    parser
+        .set_language(&tree_sitter_svelte::LANGUAGE.into())
+        .expect("Failed to load Svelte grammar");
+
+    let tree = parser.parse(source, None).expect("Failed to parse");
+    let root = tree.root_node();
+    
+    // Find block -> block_start -> expression field
+    let block = root.child(0)?;
+    let block_start = block.child(0)?;
+    let expr = block_start.child_by_field_name("expression")?;
+    
+    let start = expr.start_byte();
+    let end = expr.end_byte();
+    let text = source[start..end].to_string();
+    
+    Some((start, end, text))
+}
+
 #[test]
 fn test_await_pending_only() {
     assert_eq!(
@@ -41,6 +63,27 @@ fn test_await_then_shorthand() {
         parse("{#await promise then value}{value}{/await}"),
         "(document (block (block_start kind: (block_kind) expression: (expression) binding: (pattern)) (expression content: (js)) (block_end kind: (block_kind))))"
     );
+}
+
+#[test]
+fn test_await_then_shorthand_no_binding() {
+    // {#await promise then} - shorthand then with no binding
+    // Expression should be "promise" only, not "promise then"
+    assert_eq!(
+        parse("{#await somePromise then}{/await}"),
+        "(document (block (block_start kind: (block_kind) expression: (expression)) (block_end kind: (block_kind))))"
+    );
+}
+
+#[test]
+fn test_await_then_shorthand_no_binding_span() {
+    // Verify the expression span is correct: should be "somePromise" (8-19), not "somePromise then"
+    let source = "{#await somePromise then}{/await}";
+    let (start, end, text) = get_block_expression_range(source).unwrap();
+    
+    assert_eq!(start, 8, "Expression should start at byte 8");
+    assert_eq!(end, 19, "Expression should end at byte 19");
+    assert_eq!(text, "somePromise", "Expression should be 'somePromise' only, not include 'then'");
 }
 
 #[test]
