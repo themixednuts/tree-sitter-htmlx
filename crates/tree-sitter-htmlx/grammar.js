@@ -13,6 +13,13 @@ const HTML = require('../tree-sitter-html/grammar');
 module.exports = grammar(HTML, {
   name: 'htmlx',
 
+  conflicts: $ => [
+    // Conflict between attribute ending with plain _attribute_value
+    // vs continuing with unquoted_attribute_value (text{expr} pattern)
+    // We prefer the longer unquoted_attribute_value match
+    [$.attribute, $.unquoted_attribute_value],
+  ],
+
   externals: ($, original) => original.concat([
     $._tag_namespace,
     $._tag_local_name,
@@ -22,6 +29,7 @@ module.exports = grammar(HTML, {
     $._directive_marker,
     $._member_tag_object,    // First part of dotted component (UI in UI.Button)
     $._member_tag_property,  // Subsequent parts (.Button, .Card)
+    $._attribute_value,      // Unquoted attribute value that stops at { or whitespace
   ]),
 
   rules: {
@@ -117,14 +125,17 @@ module.exports = grammar(HTML, {
       seq($._ts_lang_marker, $.attribute_name, '=', $.quoted_attribute_value),
       prec(1, $.spread_attribute),
       $.shorthand_attribute,
-      seq(
+      // Use dynamic precedence to prefer longer unquoted_attribute_value matches
+      // over shorter attribute_value + shorthand_attribute sequences
+      prec.dynamic(2, seq(
         $.attribute_name,
         optional(seq('=', choice(
-          $.attribute_value,
+          $.unquoted_attribute_value,  // Match text{expr} patterns
           $.quoted_attribute_value,
           $.expression,
+          alias($._attribute_value, $.attribute_value),  // Plain text value via external scanner
         ))),
-      ),
+      )),
     ),
 
     attribute_name: $ => choice(
@@ -141,8 +152,20 @@ module.exports = grammar(HTML, {
       ))),
       '}',
     ),
+    // Spread attribute: {...props}
+    // Keep as regex since it has a distinctive pattern with ...
     spread_attribute: $ => /\{\.\.\.([^}]*)\}/,
-    shorthand_attribute: $ => /\{[^.}][^}]*\}|\{[.][^.}][^}]*\}|\{[.][.][^.}][^}]*\}|\{\}/,
+    // Shorthand attribute: {identifier} - an expression used as an attribute
+    // Uses expression structure (not regex) to allow proper precedence resolution
+    // with unquoted_attribute_value (text{expr} patterns like style:attr=string{mixed})
+    shorthand_attribute: $ => seq(
+      '{',
+      optional(field('content', choice(
+        alias($._expression_js, $.js),
+        alias($._expression_ts, $.ts),
+      ))),
+      '}',
+    ),
 
     // Directives: bind:value, on:click|preventDefault
     __attribute_directive: $ => seq(
@@ -157,8 +180,16 @@ module.exports = grammar(HTML, {
     attribute_modifiers: $ => repeat1(seq('|', $.attribute_modifier)),
     attribute_modifier: $ => /[a-zA-Z_$][a-zA-Z0-9_$]*/,
 
-    // Text content handled by external scanner (stops at '{' for expressions)
-    attribute_value: $ => /[^<>{}\"'/=\s]+/,
+    // Unquoted attribute value with embedded expressions: text{expr} or text{expr}text
+    // This allows patterns like style:color=red{expr} or class=item-{type}-active
+    // Uses external scanner _attribute_value to properly handle lookahead for {
+    unquoted_attribute_value: $ => prec.right(seq(
+      alias($._attribute_value, $.attribute_value),  // Required leading text via external scanner
+      repeat1(seq(
+        $.expression,
+        optional(alias($._attribute_value, $.attribute_value)),  // Optional trailing text
+      )),
+    )),
 
     quoted_attribute_value: $ => choice(
       seq("'", repeat($._quoted_attribute_content_single), "'"),

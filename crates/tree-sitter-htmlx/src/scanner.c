@@ -30,6 +30,7 @@ enum {
     DIRECTIVE_MARKER,
     MEMBER_TAG_OBJECT,    // First part of dotted component (UI in UI.Button)
     MEMBER_TAG_PROPERTY,  // Subsequent parts (Button in UI.Button)
+    ATTRIBUTE_VALUE,      // Unquoted attribute value text segment
 };
 
 typedef struct {
@@ -393,6 +394,35 @@ static bool scan_member_tag_property(TSLexer *lexer) {
     return true;
 }
 
+// Scan unquoted attribute value segment
+// Matches: [^<>{}\"'/=\s]+
+// This is used for attribute values like: class=foo or style:color=red
+static bool scan_attribute_value(TSLexer *lexer) {
+    bool has_content = false;
+
+    while (lexer->lookahead) {
+        int32_t c = lexer->lookahead;
+
+        // Stop at characters that end unquoted attribute values
+        if (c == '<' || c == '>' || c == '{' || c == '}' ||
+            c == '"' || c == '\'' || c == '/' || c == '=' ||
+            is_space(c)) {
+            break;
+        }
+
+        advance(lexer);
+        has_content = true;
+    }
+
+    if (has_content) {
+        lexer->mark_end(lexer);
+        lexer->result_symbol = ATTRIBUTE_VALUE;
+        return true;
+    }
+
+    return false;
+}
+
 static bool scan(State *state, TSLexer *lexer, const bool *valid) {
     if (valid[TS_LANG_MARKER] && scan_ts_lang_marker(state, lexer)) {
         return true;
@@ -438,6 +468,10 @@ static bool scan(State *state, TSLexer *lexer, const bool *valid) {
     }
 
     if (valid[MEMBER_TAG_PROPERTY] && scan_member_tag_property(lexer)) {
+        return true;
+    }
+
+    if (valid[ATTRIBUTE_VALUE] && scan_attribute_value(lexer)) {
         return true;
     }
 

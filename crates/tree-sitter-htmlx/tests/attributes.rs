@@ -29,9 +29,10 @@ fn test_attribute_expression_value() {
 
 #[test]
 fn test_shorthand_attribute() {
+    // shorthand_attribute now uses expression structure with content field
     assert_eq!(
         parse("<div {hidden}></div>"),
-        "(document (element (start_tag (tag_name) (attribute (shorthand_attribute))) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name) (attribute (shorthand_attribute content: (js)))) (end_tag (tag_name))))"
     );
 }
 
@@ -39,7 +40,7 @@ fn test_shorthand_attribute() {
 fn test_shorthand_attribute_multiple() {
     assert_eq!(
         parse("<div {id} {hidden}></div>"),
-        "(document (element (start_tag (tag_name) (attribute (shorthand_attribute)) (attribute (shorthand_attribute))) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name) (attribute (shorthand_attribute content: (js))) (attribute (shorthand_attribute content: (js)))) (end_tag (tag_name))))"
     );
 }
 
@@ -104,6 +105,17 @@ fn test_directive_style() {
     assert_eq!(
         parse("<div style:color={textColor}></div>"),
         "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
+fn test_directive_style_unquoted_mixed_value() {
+    // Regression test: style:attr=string{mixed} should parse as a single attribute
+    // with an unquoted_attribute_value containing text and expression,
+    // NOT as two separate attributes (style:attr=string and {mixed} shorthand)
+    assert_eq!(
+        parse("<div style:attr=string{mixed}></div>"),
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (unquoted_attribute_value (attribute_value) (expression content: (js))))) (end_tag (tag_name))))"
     );
 }
 
