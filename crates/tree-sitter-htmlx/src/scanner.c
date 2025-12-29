@@ -31,6 +31,7 @@ enum {
     MEMBER_TAG_OBJECT,    // First part of dotted component (UI in UI.Button)
     MEMBER_TAG_PROPERTY,  // Subsequent parts (Button in UI.Button)
     ATTRIBUTE_VALUE,      // Unquoted attribute value text segment
+    PIPE_ATTRIBUTE_NAME,  // Attribute name starting with | (like |-wtf)
 };
 
 typedef struct {
@@ -423,6 +424,53 @@ static bool scan_attribute_value(TSLexer *lexer) {
     return false;
 }
 
+// Scan attribute name starting with | (like |-wtf)
+// This is distinct from directive modifiers because modifiers start with an
+// identifier character [a-zA-Z_$] after the |, while unusual attribute names
+// start with other characters (like |-wtf starting with -).
+// Matches: \|[^a-zA-Z_$<>{}\"':\\/=\s|.][^<>{}\"':\\/=\s|.]*
+// Caller should check that lexer->lookahead == '|'
+static bool scan_pipe_attribute_name(TSLexer *lexer) {
+    // Must start with |
+    if (lexer->lookahead != '|') return false;
+    
+    advance(lexer);
+    
+    // If the first character after | is an identifier start, this is likely
+    // a directive modifier (like |preventDefault), not a pipe attribute name.
+    // Let the grammar handle it with the | literal token.
+    if (is_ident_start(lexer->lookahead)) {
+        return false;
+    }
+    
+    bool has_content = false;
+    
+    while (lexer->lookahead) {
+        int32_t c = lexer->lookahead;
+        
+        // Stop at characters that end attribute names
+        // Same as regex: [^<>{}\"':\\/=\s|.]
+        if (c == '<' || c == '>' || c == '{' || c == '}' ||
+            c == '"' || c == '\'' || c == ':' || c == '\\' ||
+            c == '/' || c == '=' || c == '|' || c == '.' ||
+            is_space(c)) {
+            break;
+        }
+        
+        advance(lexer);
+        has_content = true;
+    }
+    
+    // Must have at least one character after the |
+    if (has_content) {
+        lexer->mark_end(lexer);
+        lexer->result_symbol = PIPE_ATTRIBUTE_NAME;
+        return true;
+    }
+    
+    return false;
+}
+
 static bool scan(State *state, TSLexer *lexer, const bool *valid) {
     if (valid[TS_LANG_MARKER] && scan_ts_lang_marker(state, lexer)) {
         return true;
@@ -468,6 +516,13 @@ static bool scan(State *state, TSLexer *lexer, const bool *valid) {
     }
 
     if (valid[MEMBER_TAG_PROPERTY] && scan_member_tag_property(lexer)) {
+        return true;
+    }
+
+    // Pipe-starting attribute names (like |-wtf) - must check before ATTRIBUTE_VALUE
+    // The grammar's precedence should handle the ambiguity between pipe attribute names
+    // and directive modifiers - we just need to match when the token is valid
+    if (valid[PIPE_ATTRIBUTE_NAME] && c == '|' && scan_pipe_attribute_name(lexer)) {
         return true;
     }
 
