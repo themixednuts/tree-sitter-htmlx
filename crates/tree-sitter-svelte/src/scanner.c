@@ -4,7 +4,7 @@
 #define tree_sitter_htmlx_external_scanner_serialize   htmlx_serialize
 #define tree_sitter_htmlx_external_scanner_deserialize htmlx_deserialize
 
-// Vendored by build.rs from tree-sitter-htmlx (includes html scanner)
+// Vendored HTMLX scanner (committed in this crate for portability).
 #include "htmlx/scanner.c"
 
 // Svelte external token indices (after HTMLX's 22 tokens: 0-21)

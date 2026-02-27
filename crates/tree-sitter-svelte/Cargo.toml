@@ -5,6 +5,16 @@ edition.workspace = true
 license.workspace = true
 description = "Tree-sitter grammar for Svelte 5"
 build = "build.rs"
+include = [
+  "src/**",
+  "queries/**",
+  "grammar.js",
+  "tree-sitter.json",
+  "build.rs",
+  "Cargo.toml",
+  "README*",
+  "LICENSE*",
+]
 
 [lib]
 path = "src/lib.rs"
@@ -12,8 +22,6 @@ path = "src/lib.rs"
 [dependencies]
 tree-sitter = { workspace = true }
 tree-sitter-language = { workspace = true }
-tree-sitter-html = { workspace = true }
-tree-sitter-htmlx = { workspace = true }
 
 [build-dependencies]
 cc = { workspace = true }
