@@ -7,10 +7,10 @@
 // Vendored by build.rs from tree-sitter-htmlx (includes html scanner)
 #include "htmlx/scanner.c"
 
-// Svelte external token indices (after HTMLX's 19 tokens: 0-18)
-// HTML tokens (0-8) + HTMLX tokens (9-18, includes PIPE_ATTRIBUTE_NAME at 18)
+// Svelte external token indices (after HTMLX's 22 tokens: 0-21)
+// HTML tokens (0-8) + HTMLX tokens (9-21, includes UNTERMINATED_TAG_END at 21)
 enum {
-    ITERATOR_EXPRESSION = 19,
+    ITERATOR_EXPRESSION = 22,
     BINDING_PATTERN,
     KEY_EXPRESSION,
     TAG_EXPRESSION,
@@ -18,16 +18,42 @@ enum {
 
 // Scan balanced expression, excluding trailing whitespace at depth 0.
 // Marks end position before any trailing whitespace.
+// Returns false if we reach EOF without finding a valid terminator.
 static bool scan_balanced(TSLexer *lexer, int32_t stop_char, bool stop_comma) {
     int depth = 0;
     bool has_content = false;
     bool needs_mark = false;
+    bool found_terminator = false;
 
     while (lexer->lookahead) {
         int32_t c = lexer->lookahead;
 
-        if (depth == 0 && (c == stop_char || c == '}')) break;
-        if (depth == 0 && stop_comma && c == ',') break;
+        if (depth == 0 && (c == stop_char || c == '}')) {
+            found_terminator = true;
+            break;
+        }
+        if (depth == 0 && stop_comma && c == ',') {
+            found_terminator = true;
+            break;
+        }
+        // At depth 0, classify '<' as either tag boundary or expression operator.
+        if (depth == 0 && c == '<') {
+            if (needs_mark) {
+                lexer->mark_end(lexer);
+                needs_mark = false;
+            }
+
+            advance(lexer);
+            int32_t next = lexer->lookahead;
+            if (next == '/' || next == '!') {
+                found_terminator = true;
+                break;
+            }
+
+            has_content = true;
+            needs_mark = true;
+            continue;
+        }
 
         if (skip_string(lexer)) {
             has_content = true;
@@ -60,7 +86,7 @@ done:
         lexer->mark_end(lexer);
     }
 
-    return has_content;
+    return has_content && found_terminator;
 }
 
 static inline bool match_keyword(TSLexer *lexer, const char *kw, int len) {
@@ -75,13 +101,30 @@ static inline bool match_keyword(TSLexer *lexer, const char *kw, int len) {
 static bool scan_iterator(TSLexer *lexer) {
     int depth = 0;
     bool has_content = false;
+    bool found_terminator = false;
 
     while (is_space(lexer->lookahead)) skip(lexer);
 
     while (lexer->lookahead) {
         int32_t c = lexer->lookahead;
 
-        if (depth == 0 && c == '}') break;
+        if (depth == 0 && c == '}') {
+            found_terminator = true;
+            break;
+        }
+        
+        // At depth 0, classify '<' as either tag boundary or expression operator.
+        if (depth == 0 && c == '<') {
+            advance(lexer);
+            int32_t next = lexer->lookahead;
+            if (next == '/' || next == '!') {
+                found_terminator = true;
+                break;
+            }
+
+            has_content = true;
+            continue;
+        }
 
         if (depth == 0 && is_space(c)) {
             lexer->mark_end(lexer);
@@ -119,11 +162,13 @@ static bool scan_iterator(TSLexer *lexer) {
         has_content = true;
     }
 
-    if (has_content) {
+    // Only return true if we found a valid terminator
+    if (has_content && found_terminator) {
         lexer->mark_end(lexer);
         lexer->result_symbol = ITERATOR_EXPRESSION;
+        return true;
     }
-    return has_content;
+    return false;
 }
 
 static bool scan_binding(TSLexer *lexer) {
@@ -158,11 +203,34 @@ static bool scan_tag_expression(TSLexer *lexer) {
     int depth = 0;
     bool has_content = false;
     bool needs_mark = false;
+    bool found_terminator = false;
 
     while (lexer->lookahead) {
         int32_t c = lexer->lookahead;
 
-        if (depth == 0 && c == '}') break;
+        if (depth == 0 && c == '}') {
+            found_terminator = true;
+            break;
+        }
+        
+        // At depth 0, classify '<' as either tag boundary or expression operator.
+        if (depth == 0 && c == '<') {
+            if (needs_mark) {
+                lexer->mark_end(lexer);
+                needs_mark = false;
+            }
+
+            advance(lexer);
+            int32_t next = lexer->lookahead;
+            if (next == '/' || next == '!') {
+                found_terminator = true;
+                break;
+            }
+
+            has_content = true;
+            needs_mark = true;
+            continue;
+        }
 
         if (skip_string(lexer)) {
             has_content = true;
@@ -195,7 +263,8 @@ done:
         lexer->mark_end(lexer);
     }
 
-    if (!has_content) return false;
+    // Only return true if we found a valid terminator
+    if (!has_content || !found_terminator) return false;
 
     lexer->result_symbol = TAG_EXPRESSION;
     return true;

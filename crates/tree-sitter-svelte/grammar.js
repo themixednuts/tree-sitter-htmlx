@@ -23,11 +23,41 @@ module.exports = grammar(HTMLX, {
       // Note: _ts_lang_attr, _expression_js, _expression_ts are inherited from HTMLX
     ]),
 
+  conflicts: ($, original) => original || [],
+
   rules: {
-    _node: ($, original) => choice(prec(2, $.block), prec(2, $.tag), original),
+    _node: ($) =>
+      choice(
+        prec(2, $.block),
+        prec(2, $.tag),
+        $.doctype,
+        $.entity,
+        $.text,
+        $.element,
+        $.erroneous_end_tag,
+        prec(-1, $.expression),
+      ),
+
+    element: ($, original) => original,
 
     // {#kind expression?}...{:kind expression?}...{/kind}
-    block: ($) => seq($.block_start, repeat($._block_content), $.block_end),
+    block: ($) =>
+      choice(
+        seq($.block_start, repeat($._block_content), $.block_end),
+        // Recovery: allow one trailing unclosed element start tag before block end.
+        prec(
+          -1,
+          seq(
+            $.block_start,
+            repeat($._block_content),
+            $.start_tag,
+            optional($._block_recovery_ws),
+            $.block_end,
+          ),
+        ),
+      ),
+
+    _block_recovery_ws: ($) => /[ \t\r\n]+/,
 
     _block_content: ($) => choice($.block_branch, $._node),
 
@@ -63,7 +93,10 @@ module.exports = grammar(HTMLX, {
                 // {#await promise then value} or {#await promise catch error}
                 // Binding is optional: {#await promise then} is valid (shorthand for skipping pending)
                 seq(
-                  field("shorthand", choice("then", "catch")),
+                  field(
+                    "shorthand",
+                    alias(choice("then", "catch"), $.block_kind),
+                  ),
                   optional(
                     field("binding", alias($._binding_pattern, $.pattern)),
                   ),
@@ -76,22 +109,35 @@ module.exports = grammar(HTMLX, {
       ),
 
     // {:kind expression?}
+    // {:kind expression?}
     // Special case: {:else if expr} should have kind="else if", not kind="else" with expr="if ..."
     block_branch: ($) =>
-      seq(
-        "{",
-        token.immediate(":"),
-        field(
-          "kind",
-          choice(
-            alias(token(seq("else", /\s+/, "if")), $.block_kind),
-            $.block_kind,
+      choice(
+        // {:else if condition}
+        seq(
+          "{",
+          token.immediate(":"),
+          field("kind", alias(token(seq("else", /\s+/, "if")), $.block_kind)),
+          optional(
+            field("expression", alias($._tag_expression, $.expression_value)),
           ),
+          "}",
         ),
-        optional(
-          field("expression", alias($._tag_expression, $.expression_value)),
+        // {:then value} / {:catch error}
+        seq(
+          "{",
+          token.immediate(":"),
+          field("kind", alias(choice("then", "catch"), $.block_kind)),
+          optional(field("binding", alias($._binding_pattern, $.pattern))),
+          "}",
         ),
-        "}",
+        // {:else}
+        seq(
+          "{",
+          token.immediate(":"),
+          field("kind", alias("else", $.block_kind)),
+          "}",
+        ),
       ),
 
     // {/kind}

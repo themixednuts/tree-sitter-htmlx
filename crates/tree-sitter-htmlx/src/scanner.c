@@ -32,6 +32,9 @@ enum {
     MEMBER_TAG_PROPERTY,  // Subsequent parts (Button in UI.Button)
     ATTRIBUTE_VALUE,      // Unquoted attribute value text segment
     PIPE_ATTRIBUTE_NAME,  // Attribute name starting with | (like |-wtf)
+    LINE_TAG_COMMENT,     // // comment in tag attribute list
+    BLOCK_TAG_COMMENT,    // /* comment */ in tag attribute list
+    UNTERMINATED_TAG_END, // malformed start tag ended by newline boundary
 };
 
 typedef struct {
@@ -110,6 +113,7 @@ static bool scan_start_tag(State *state, TSLexer *lexer, const bool *valid) {
     if (!is_alpha(lexer->lookahead)) return false;
 
     String name = array_new();
+    bool preserve_mark_end = false;
     while (is_name_char(lexer->lookahead)) {
         array_push(&name, (char)to_upper(lexer->lookahead));
         advance(lexer);
@@ -124,16 +128,24 @@ static bool scan_start_tag(State *state, TSLexer *lexer, const bool *valid) {
         return true;
     }
 
-    // Check for member/dotted tag (UI.Button) - return object part
-    if (lexer->lookahead == '.' && valid[MEMBER_TAG_OBJECT]) {
+    // Handle dot after a tag identifier:
+    // - If followed by identifier and member tags are valid, emit MEMBER_TAG_OBJECT.
+    // - Otherwise, consume the stray dot so newline-based unterminated recovery can fire.
+    if (lexer->lookahead == '.') {
         lexer->mark_end(lexer);
-        lexer->result_symbol = MEMBER_TAG_OBJECT;
-        array_delete(&name);
-        return true;
+        advance(lexer);
+        if (is_alpha(lexer->lookahead) && valid[MEMBER_TAG_OBJECT]) {
+            lexer->result_symbol = MEMBER_TAG_OBJECT;
+            array_delete(&name);
+            return true;
+        }
+        preserve_mark_end = true;
     }
 
     if (name.size > 0 && (valid[START_TAG_NAME] || valid[RAW_TEXT_START_TAG_NAME])) {
-        lexer->mark_end(lexer);
+        if (!preserve_mark_end) {
+            lexer->mark_end(lexer);
+        }
         Tag tag = tag_for_name(name);
         array_push(&state->html->tags, tag);
 
@@ -170,6 +182,7 @@ static bool scan_end_tag(State *state, TSLexer *lexer, const bool *valid) {
     if (!is_alpha(lexer->lookahead)) return false;
 
     String name = array_new();
+    bool preserve_mark_end = false;
     while (is_name_char(lexer->lookahead)) {
         array_push(&name, (char)to_upper(lexer->lookahead));
         advance(lexer);
@@ -184,12 +197,16 @@ static bool scan_end_tag(State *state, TSLexer *lexer, const bool *valid) {
         return true;
     }
 
-    // Check for member/dotted tag (UI.Button) - return object part
-    if (lexer->lookahead == '.' && valid[MEMBER_TAG_OBJECT]) {
+    // Handle dot after an end-tag identifier (mirrors start-tag behavior).
+    if (lexer->lookahead == '.') {
         lexer->mark_end(lexer);
-        lexer->result_symbol = MEMBER_TAG_OBJECT;
-        array_delete(&name);
-        return true;
+        advance(lexer);
+        if (is_alpha(lexer->lookahead) && valid[MEMBER_TAG_OBJECT]) {
+            lexer->result_symbol = MEMBER_TAG_OBJECT;
+            array_delete(&name);
+            return true;
+        }
+        preserve_mark_end = true;
     }
 
     if (name.size == 0) {
@@ -197,7 +214,9 @@ static bool scan_end_tag(State *state, TSLexer *lexer, const bool *valid) {
         return false;
     }
 
-    lexer->mark_end(lexer);
+    if (!preserve_mark_end) {
+        lexer->mark_end(lexer);
+    }
 
     if (valid[END_TAG_NAME]) {
         Tag tag = tag_for_name(name);
@@ -216,20 +235,56 @@ static bool scan_end_tag(State *state, TSLexer *lexer, const bool *valid) {
     return false;
 }
 
-static bool scan_self_closing(State *state, TSLexer *lexer) {
-    advance(lexer);
-    if (lexer->lookahead != '>') return false;
+static bool scan_slash_prefixed(State *state, TSLexer *lexer, const bool *valid) {
+    if (lexer->lookahead != '/') return false;
 
     advance(lexer);
-    lexer->mark_end(lexer);
 
-    if (state->html->tags.size > 0) {
-        Tag popped = array_pop(&state->html->tags);
-        tag_free(&popped);
+    // Self-closing delimiter: />
+    if (lexer->lookahead == '>' && valid[SELF_CLOSING_TAG_DELIMITER]) {
+        advance(lexer);
+        lexer->mark_end(lexer);
+
+        if (state->html->tags.size > 0) {
+            Tag popped = array_pop(&state->html->tags);
+            tag_free(&popped);
+        }
+
+        lexer->result_symbol = SELF_CLOSING_TAG_DELIMITER;
+        return true;
     }
 
-    lexer->result_symbol = SELF_CLOSING_TAG_DELIMITER;
-    return true;
+    // Line comment in tag attributes: // ...
+    if (lexer->lookahead == '/' && !valid[ATTRIBUTE_VALUE] && valid[LINE_TAG_COMMENT]) {
+        advance(lexer);
+        while (lexer->lookahead && lexer->lookahead != '\n' && lexer->lookahead != '\r' && lexer->lookahead != '>') {
+            advance(lexer);
+        }
+        lexer->mark_end(lexer);
+        lexer->result_symbol = LINE_TAG_COMMENT;
+        return true;
+    }
+
+    // Block comment in tag attributes: /* ... */
+    if (lexer->lookahead == '*' && !valid[ATTRIBUTE_VALUE] && valid[BLOCK_TAG_COMMENT]) {
+        advance(lexer);
+        while (lexer->lookahead) {
+            if (lexer->lookahead != '*') {
+                advance(lexer);
+                continue;
+            }
+
+            advance(lexer);
+            if (lexer->lookahead == '/') {
+                advance(lexer);
+                lexer->mark_end(lexer);
+                lexer->result_symbol = BLOCK_TAG_COMMENT;
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 static inline bool skip_string(TSLexer *lexer) {
@@ -267,15 +322,43 @@ static inline bool skip_string(TSLexer *lexer) {
 
 // Scan balanced expression, excluding trailing whitespace at depth 0.
 // Marks end position before any trailing whitespace.
+// If '<' appears at depth 0, peek one byte ahead:
+// - '</', '<!', or '<' followed by alpha is treated as a tag boundary
+// - otherwise '<' is treated as a normal expression character
+// Returns false if we reach EOF without finding a valid terminator.
 static bool scan_balanced_expr(TSLexer *lexer) {
     int depth = 0;
     bool has_content = false;
     bool needs_mark = false;
+    bool found_terminator = false;
 
     while (lexer->lookahead) {
         int32_t c = lexer->lookahead;
 
-        if (depth == 0 && c == '}') break;
+        // Stop at } at depth 0
+        if (depth == 0 && c == '}') {
+            found_terminator = true;
+            break;
+        }
+
+        // At depth 0, classify '<' as either tag boundary or expression operator
+        if (depth == 0 && c == '<') {
+            if (needs_mark) {
+                lexer->mark_end(lexer);
+                needs_mark = false;
+            }
+
+            advance(lexer);
+            int32_t next = lexer->lookahead;
+            if (next == '/' || next == '!') {
+                found_terminator = true;
+                break;
+            }
+
+            has_content = true;
+            needs_mark = true;
+            continue;
+        }
 
         if (skip_string(lexer)) {
             has_content = true;
@@ -308,11 +391,16 @@ done:
         lexer->mark_end(lexer);
     }
 
-    return has_content;
+    return has_content && found_terminator;
 }
 
 static bool check_ts_lang_attr(TSLexer *lexer) {
-    while (is_space(lexer->lookahead)) advance(lexer);
+    // Skip horizontal whitespace only; do not consume newlines here.
+    while (lexer->lookahead == ' ' || lexer->lookahead == '\t') skip(lexer);
+
+    // Quick check: if first char isn't 'l', this isn't lang=
+    // Return early WITHOUT consuming input.
+    if (to_lower(lexer->lookahead) != 'l') return false;
 
     static const char lang[] = "lang";
     for (int i = 0; i < 4; i++) {
@@ -368,14 +456,25 @@ static bool scan_expression(State *state, TSLexer *lexer) {
 }
 
 // Returns: 1 = matched, 0 = not at identifier, -1 = identifier without colon
+// This function checks if we're at a directive (identifier followed by colon)
+// It consumes the directive name and returns it as the token content.
 static int check_directive_marker(TSLexer *lexer) {
-    while (is_space(lexer->lookahead)) skip(lexer);
-    lexer->mark_end(lexer);
-
+    // If at whitespace, return 0 to let tree-sitter handle it via extras
+    if (is_space(lexer->lookahead)) return 0;
+    
+    // If not at identifier start, not a directive
     if (!is_ident_start(lexer->lookahead)) return 0;
-    while (is_ident_char(lexer->lookahead)) advance(lexer);
+    
+    // Consume the identifier
+    while (is_ident_char(lexer->lookahead)) {
+        advance(lexer);
+    }
+    
+    // Check for colon - if not present, this isn't a directive
     if (lexer->lookahead != ':') return -1;
 
+    // Mark the end after consuming the directive name
+    lexer->mark_end(lexer);
     lexer->result_symbol = DIRECTIVE_MARKER;
     return 1;
 }
@@ -422,6 +521,101 @@ static bool scan_attribute_value(TSLexer *lexer) {
     }
 
     return false;
+}
+
+static bool scan_unterminated_tag_end(State *state, TSLexer *lexer) {
+    if (lexer->lookahead != '\n' && lexer->lookahead != '\r') return false;
+
+    skip(lexer);
+    if (lexer->lookahead == '\n') {
+        skip(lexer);
+    }
+
+    while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
+        skip(lexer);
+    }
+
+    // Boundary token spans newline + indentation only.
+    lexer->mark_end(lexer);
+
+    int32_t next = lexer->lookahead;
+
+    if (next == '{') {
+        // Peek marker to distinguish malformed block/tag starts from valid
+        // multiline shorthand/spread attributes.
+        advance(lexer);
+        int32_t marker = lexer->lookahead;
+        while (marker == ' ' || marker == '\t') {
+            advance(lexer);
+            marker = lexer->lookahead;
+        }
+
+        if (marker == '#' || marker == ':' || marker == '@' || marker == '/') {
+            if (state->html->tags.size > 0) {
+                Tag popped = array_pop(&state->html->tags);
+                tag_free(&popped);
+            }
+            lexer->result_symbol = UNTERMINATED_TAG_END;
+            return true;
+        }
+
+        return false;
+    }
+
+    // Continue parsing valid multiline tag attributes/comments/closers.
+    if (next == '>' || next == '/' || next == '|' || next == '"' || next == '\'' || is_ident_start(next)) {
+        return false;
+    }
+
+    if (state->html->tags.size > 0) {
+        Tag popped = array_pop(&state->html->tags);
+        tag_free(&popped);
+    }
+
+    lexer->result_symbol = UNTERMINATED_TAG_END;
+    return true;
+}
+
+static bool scan_block_close_boundary(State *state, TSLexer *lexer) {
+    if (state->html->tags.size == 0) return false;
+    if (lexer->lookahead != '{') return false;
+
+    // Zero-width element boundary before Svelte-style block close marker.
+    lexer->mark_end(lexer);
+
+    advance(lexer);
+    if (lexer->lookahead != '/') return false;
+    advance(lexer);
+
+    int len = 0;
+    char kind[8];
+    if (!is_alpha(lexer->lookahead) && lexer->lookahead != '_') return false;
+    while (is_ident_char(lexer->lookahead)) {
+        if (len < (int)sizeof(kind)) {
+            kind[len++] = (char)to_lower(lexer->lookahead);
+        }
+        advance(lexer);
+    }
+
+    bool is_block_kind =
+        (len == 2 && kind[0] == 'i' && kind[1] == 'f') ||
+        (len == 3 && kind[0] == 'k' && kind[1] == 'e' && kind[2] == 'y') ||
+        (len == 4 && kind[0] == 'e' && kind[1] == 'a' && kind[2] == 'c' && kind[3] == 'h') ||
+        (len == 5 && kind[0] == 'a' && kind[1] == 'w' && kind[2] == 'a' && kind[3] == 'i' && kind[4] == 't') ||
+        (len == 7 && kind[0] == 's' && kind[1] == 'n' && kind[2] == 'i' && kind[3] == 'p' && kind[4] == 'p' && kind[5] == 'e' && kind[6] == 't');
+    if (!is_block_kind) return false;
+
+    while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
+        advance(lexer);
+    }
+
+    if (lexer->lookahead != '}') return false;
+
+    Tag popped = array_pop(&state->html->tags);
+    tag_free(&popped);
+
+    lexer->result_symbol = UNTERMINATED_TAG_END;
+    return true;
 }
 
 // Scan attribute name starting with | (like |-wtf)
@@ -472,15 +666,6 @@ static bool scan_pipe_attribute_name(TSLexer *lexer) {
 }
 
 static bool scan(State *state, TSLexer *lexer, const bool *valid) {
-    if (valid[TS_LANG_MARKER] && scan_ts_lang_marker(state, lexer)) {
-        return true;
-    }
-
-    if (valid[DIRECTIVE_MARKER]) {
-        int result = check_directive_marker(lexer);
-        if (result != 0) return result == 1;
-    }
-
     // Text content - handle before whitespace is skipped
     // HTMLX text stops at '{' in addition to '<' and '&'
     if (valid[TEXT]) {
@@ -490,11 +675,31 @@ static bool scan(State *state, TSLexer *lexer, const bool *valid) {
         // At '{' means expression start - return false to let grammar handle it
         // HTML scanner doesn't know about '{' so don't fall through
         if (lexer->lookahead == '{') {
+            if (valid[UNTERMINATED_TAG_END] && scan_block_close_boundary(state, lexer)) {
+                return true;
+            }
             return false;
         }
     }
 
+    if (valid[UNTERMINATED_TAG_END] && scan_block_close_boundary(state, lexer)) {
+        return true;
+    }
+
+    if (valid[UNTERMINATED_TAG_END] && scan_unterminated_tag_end(state, lexer)) {
+        return true;
+    }
+
     while (is_space(lexer->lookahead)) skip(lexer);
+
+    if (valid[TS_LANG_MARKER] && scan_ts_lang_marker(state, lexer)) {
+        return true;
+    }
+
+    if (valid[DIRECTIVE_MARKER]) {
+        int result = check_directive_marker(lexer);
+        if (result != 0) return result == 1;
+    }
 
     if ((valid[EXPRESSION_JS] || valid[EXPRESSION_TS]) && scan_expression(state, lexer)) {
         return true;
@@ -510,9 +715,9 @@ static bool scan(State *state, TSLexer *lexer, const bool *valid) {
 
     int32_t c = lexer->lookahead;
 
-    if (c == '/' && valid[SELF_CLOSING_TAG_DELIMITER]) {
-        lexer->mark_end(lexer);
-        if (scan_self_closing(state, lexer)) return true;
+    if (c == '/'
+        && (valid[SELF_CLOSING_TAG_DELIMITER] || valid[LINE_TAG_COMMENT] || valid[BLOCK_TAG_COMMENT])) {
+        if (scan_slash_prefixed(state, lexer, valid)) return true;
     }
 
     if (valid[MEMBER_TAG_PROPERTY] && scan_member_tag_property(lexer)) {

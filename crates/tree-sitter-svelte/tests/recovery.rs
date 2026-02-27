@@ -1,0 +1,90 @@
+//! Recovery-focused tests for malformed Svelte block syntax.
+
+mod utils;
+use utils::parse;
+
+#[test]
+fn test_unclosed_if_block_has_local_recovery_shape() {
+    let tree = parse("{#if ready}<a></a><p></p>");
+    assert!(
+        tree.contains("(ERROR"),
+        "Expected recovery ERROR node in malformed parse: {tree}"
+    );
+    assert!(tree.matches("(element").count() >= 2);
+}
+
+#[test]
+fn test_unclosed_each_block_has_local_recovery_shape() {
+    let tree = parse("{#each items as item}<li>{item}</li><li>tail</li>");
+    assert!(
+        tree.contains("(ERROR"),
+        "Expected recovery ERROR node in malformed parse: {tree}"
+    );
+    assert!(tree.matches("(element").count() >= 2);
+}
+
+#[test]
+fn test_unclosed_await_block_has_local_recovery_shape() {
+    let tree = parse("{#await promise}<p>Loading</p>{:then value}<p>{value}</p>");
+    assert!(
+        tree.contains("(ERROR"),
+        "Expected recovery ERROR node in malformed parse: {tree}"
+    );
+    assert!(tree.contains("(block_branch"));
+}
+
+#[test]
+fn test_loose_unclosed_open_tag_does_not_swallow_following_blocks() {
+    let source = "<div>\n\t<Comp foo={bar}\n</div>\n\n<div>\n\t<span foo={bar}\n</div>\n\n{#if foo}\n\t<Comp foo={bar}\n{/if}\n\n{#if foo}\n\t<Comp foo={bar}\n\t{#if bar}\n\t\t{bar}\n\t{/if}\n{/if}\n\n<div foo={bar}";
+    let tree = parse(source);
+
+    assert!(
+        !tree.contains("(ERROR (block_start"),
+        "Malformed open tags should not collapse later blocks into one error: {tree}"
+    );
+    assert!(tree.matches("(block (block_start").count() >= 2);
+}
+
+#[test]
+fn test_loose_unclosed_tag_prefix_recovers_without_root_error() {
+    let source = "<div>\n\t<Comp>\n</div>\n\n<div>\n\t<Comp foo={bar}\n</div>\n\n<div>\n\t<span\n</div>\n\n<div>\n\t<Comp.\n</div>\n\n<div>\n\t<comp.\n</div>\n";
+    let tree = parse(source);
+
+    assert!(
+        !tree.contains("(ERROR"),
+        "Malformed prefix should recover without root ERROR: {tree}"
+    );
+}
+
+#[test]
+fn test_loose_unclosed_tag_recovers_without_root_error() {
+    let source = "<div>\n\t<Comp>\n</div>\n\n<div>\n\t<Comp foo={bar}\n</div>\n\n<div>\n\t<span\n</div>\n\n<div>\n\t<Comp.\n</div>\n\n<div>\n\t<comp.\n</div>\n\n{#if foo}\n\t<div>\n{/if}\n\n{#if foo}\n\t<Comp foo={bar}\n{/if}\n\n<div>\n<p>hi</p>\n\n<open-ended\n";
+    let tree = parse(source);
+
+    assert!(
+        !tree.contains("(ERROR"),
+        "Full loose-unclosed-tag sample should avoid root ERROR: {tree}"
+    );
+}
+
+#[test]
+fn test_if_block_with_unclosed_element_recovers_locally() {
+    let source = "{#if foo}\n\t<div>\n{/if}";
+    let tree = parse(source);
+
+    assert!(
+        !tree.contains("(ERROR"),
+        "Unclosed element inside if block should recover without root ERROR: {tree}"
+    );
+}
+
+#[test]
+fn test_if_block_with_nested_unclosed_elements_recovers_locally() {
+    let source = "{#if foo}\n\t<div>\n\t\t<span>\n{/if}";
+    let tree = parse(source);
+
+    assert!(
+        !tree.contains("(ERROR"),
+        "Nested unclosed elements before block close should recover without root ERROR: {tree}"
+    );
+}
