@@ -22,10 +22,7 @@ fn test_element_self_closing() {
 #[test]
 fn test_element_void() {
     // Void elements like <br> are parsed as start_tag (HTML behavior)
-    assert_eq!(
-        parse("<br>"),
-        "(document (element (start_tag (tag_name))))"
-    );
+    assert_eq!(parse("<br>"), "(document (element (start_tag (tag_name))))");
 }
 
 #[test]
@@ -104,7 +101,15 @@ fn test_element_expression_attribute() {
 fn test_element_shorthand_attribute() {
     assert_eq!(
         parse("<div {id}></div>"),
-        "(document (element (start_tag (tag_name) (attribute (shorthand_attribute))) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name) (attribute (shorthand_attribute content: (js)))) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
+fn test_element_multiline_shorthand_attribute() {
+    assert_eq!(
+        parse("<div\n {id}\n></div>"),
+        "(document (element (start_tag (tag_name) (attribute (shorthand_attribute content: (js)))) (end_tag (tag_name))))"
     );
 }
 
@@ -112,7 +117,7 @@ fn test_element_shorthand_attribute() {
 fn test_element_spread_attribute() {
     assert_eq!(
         parse("<div {...props}></div>"),
-        "(document (element (start_tag (tag_name) (attribute (spread_attribute))) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name) (attribute (spread_attribute content: (js)))) (end_tag (tag_name))))"
     );
 }
 
@@ -128,7 +133,7 @@ fn test_element_boolean_attribute() {
 fn test_element_multiple_attributes() {
     assert_eq!(
         parse(r#"<div class="a" id={b} {c} {...d}></div>"#),
-        r#"(document (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (attribute (attribute_name) (expression content: (js))) (attribute (shorthand_attribute)) (attribute (spread_attribute))) (end_tag (tag_name))))"#
+        r#"(document (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (attribute (attribute_name) (expression content: (js))) (attribute (shorthand_attribute content: (js))) (attribute (spread_attribute content: (js)))) (end_tag (tag_name))))"#
     );
 }
 
@@ -136,6 +141,22 @@ fn test_element_multiple_attributes() {
 fn test_element_event_handler() {
     assert_eq!(
         parse("<button on:click={handleClick}></button>"),
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
+fn test_element_multiline_event_handler() {
+    assert_eq!(
+        parse("<button\n\ton:click={handleClick}\n></button>"),
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
+fn test_element_event_handler_comment_prefix_expression() {
+    assert_eq!(
+        parse("<button\n\ton:click={// comment\n\t\t() => {\n\t\t\tfn();\n\t\t}}\n></button>"),
         "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (end_tag (tag_name))))"
     );
 }
@@ -213,6 +234,14 @@ fn test_element_style_directive() {
 }
 
 #[test]
+fn test_element_style_directive_custom_property() {
+    assert_eq!(
+        parse("<div style:--color={textColor}></div>"),
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
 fn test_element_style_directive_important() {
     assert_eq!(
         parse("<div style:color|important={color}></div>"),
@@ -232,6 +261,14 @@ fn test_element_use_directive() {
 fn test_element_use_directive_with_params() {
     assert_eq!(
         parse("<div use:action={params}></div>"),
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
+fn test_element_use_directive_store_member_action() {
+    assert_eq!(
+        parse("<div use:$store.action={text}></div>"),
         "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (end_tag (tag_name))))"
     );
 }

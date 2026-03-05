@@ -27,23 +27,41 @@ module.exports = grammar(HTML, {
       $._ts_lang_marker,
       $._expression_js,
       $._expression_ts,
+      $._attribute_expression_js,
+      $._attribute_expression_ts,
       $._directive_marker,
       $._member_tag_object, // First part of dotted component (UI in UI.Button)
       $._member_tag_property, // Subsequent parts (.Button, .Card)
       $._attribute_value, // Unquoted attribute value that stops at { or whitespace
       $._pipe_attribute_name, // Attribute name starting with | (like |-wtf)
+      $._line_tag_comment, // // comment in tag attribute list
+      $._block_tag_comment, // /* comment */ in tag attribute list
+      $._unterminated_tag_end, // newline-delimited malformed start tag terminator
     ]),
 
   rules: {
-    _node: ($, original) => choice(original, $.expression),
+    _node: ($, original) => choice(original, prec(-1, $.expression)),
 
     element: ($) =>
       choice(
+        // Unterminated start tags recover as standalone elements.
+        seq(alias($._unterminated_start_tag, $.start_tag)),
+        prec(
+          -1,
+          seq(alias($._broken_member_unterminated_start_tag, $.start_tag)),
+        ),
+        seq(alias($._namespaced_unterminated_start_tag, $.start_tag)),
+        seq(alias($._member_unterminated_start_tag, $.start_tag)),
+        seq(alias($._raw_text_unterminated_start_tag, $.start_tag)),
         // Normal elements - content is parsed as nodes
         seq(
           $.start_tag,
           repeat($._node),
-          choice($.end_tag, $._implicit_end_tag),
+          choice(
+            prec(1, $.end_tag),
+            prec(10, $._unterminated_tag_end),
+            $._implicit_end_tag,
+          ),
         ),
         // Namespaced elements (svelte:head)
         seq(
@@ -65,6 +83,38 @@ module.exports = grammar(HTML, {
         alias($._member_self_closing_tag, $.self_closing_tag),
       ),
 
+    start_tag: ($) =>
+      seq(
+        "<",
+        alias($._start_tag_name, $.tag_name),
+        repeat($._tag_attribute_item),
+        ">",
+      ),
+
+    _unterminated_start_tag: ($) =>
+      seq(
+        "<",
+        alias($._start_tag_name, $.tag_name),
+        repeat($._tag_attribute_item),
+        $._unterminated_tag_end,
+      ),
+
+    _broken_member_unterminated_start_tag: ($) =>
+      seq(
+        "<",
+        alias($._start_tag_name, $.tag_name),
+        ".",
+        $._unterminated_tag_end,
+      ),
+
+    self_closing_tag: ($) =>
+      seq(
+        "<",
+        alias($._start_tag_name, $.tag_name),
+        repeat($._tag_attribute_item),
+        "/>",
+      ),
+
     // Override raw text element to use HTMLX-aware attribute handling
     _raw_text_element: ($) =>
       seq(
@@ -77,23 +127,39 @@ module.exports = grammar(HTML, {
       seq(
         "<",
         alias($._raw_text_start_tag_name, $.tag_name),
-        repeat($.attribute),
+        repeat($._tag_attribute_item),
         ">",
+      ),
+
+    _raw_text_unterminated_start_tag: ($) =>
+      seq(
+        "<",
+        alias($._raw_text_start_tag_name, $.tag_name),
+        repeat($._tag_attribute_item),
+        $._unterminated_tag_end,
       ),
 
     _namespaced_start_tag: ($) =>
       seq(
         "<",
         alias($._namespaced_tag_name, $.tag_name),
-        repeat($.attribute),
+        repeat($._tag_attribute_item),
         ">",
+      ),
+
+    _namespaced_unterminated_start_tag: ($) =>
+      seq(
+        "<",
+        alias($._namespaced_tag_name, $.tag_name),
+        repeat($._tag_attribute_item),
+        $._unterminated_tag_end,
       ),
 
     _namespaced_self_closing_tag: ($) =>
       seq(
         "<",
         alias($._namespaced_tag_name, $.tag_name),
-        repeat($.attribute),
+        repeat($._tag_attribute_item),
         "/>",
       ),
 
@@ -109,14 +175,35 @@ module.exports = grammar(HTML, {
 
     // Member/dotted component tags: UI.Button, Lib.UI.Card
     _member_start_tag: ($) =>
-      seq("<", alias($._member_tag_name, $.tag_name), repeat($.attribute), ">"),
+      seq(
+        "<",
+        alias($._member_tag_name, $.tag_name),
+        repeat($._tag_attribute_item),
+        ">",
+      ),
+
+    _member_unterminated_start_tag: ($) =>
+      seq(
+        "<",
+        alias($._member_tag_name, $.tag_name),
+        repeat($._tag_attribute_item),
+        $._unterminated_tag_end,
+      ),
 
     _member_self_closing_tag: ($) =>
       seq(
         "<",
         alias($._member_tag_name, $.tag_name),
-        repeat($.attribute),
+        repeat($._tag_attribute_item),
         "/>",
+      ),
+
+    _tag_attribute_item: ($) => choice($.attribute, $.tag_comment),
+
+    tag_comment: ($) =>
+      choice(
+        field("kind", alias($._line_tag_comment, $.line_comment)),
+        field("kind", alias($._block_tag_comment, $.block_comment)),
       ),
 
     _member_end_tag: ($) =>
@@ -154,7 +241,7 @@ module.exports = grammar(HTML, {
                 choice(
                   $.unquoted_attribute_value, // Match text{expr} patterns
                   $.quoted_attribute_value,
-                  $.expression,
+                  alias($.attribute_expression, $.expression),
                   alias($._attribute_value, $.attribute_value), // Plain text value via external scanner
                 ),
               ),
@@ -169,9 +256,9 @@ module.exports = grammar(HTML, {
         // Attribute names starting with | (like |-wtf) - handled by external scanner
         // to distinguish from directive modifiers (on:click|preventDefault)
         $._pipe_attribute_name,
-        // Exclude '.' and '|' from the start to avoid conflicts with dotted component
-        // properties and directive modifiers
-        /[^<>{}\"':\\/=\s|.][^<>{}\"':\\/=\s|]*/,
+        // Exclude '.', '|', '(' and ')' from the start to avoid conflicts with dotted
+        // component properties, directive modifiers, and malformed expression tails
+        /[^<>{}\"':\\/=\s|.()][^<>{}\"':\\/=\s|()]*/,
       ),
 
     expression: ($) =>
@@ -188,9 +275,35 @@ module.exports = grammar(HTML, {
         ),
         "}",
       ),
-    // Spread attribute: {...props}
-    // Keep as regex since it has a distinctive pattern with ...
-    spread_attribute: ($) => /\{\.\.\.([^}]*)\}/,
+
+    attribute_expression: ($) =>
+      seq(
+        "{",
+        optional(
+          field(
+            "content",
+            choice(
+              alias($._attribute_expression_js, $.js),
+              alias($._attribute_expression_ts, $.ts),
+            ),
+          ),
+        ),
+        "}",
+      ),
+    // Spread attribute: {...expr}
+    // Keep this expression-based so nested braces are handled correctly.
+    spread_attribute: ($) =>
+      seq(
+        "{...",
+        field(
+          "content",
+          choice(
+            alias($._attribute_expression_js, $.js),
+            alias($._attribute_expression_ts, $.ts),
+          ),
+        ),
+        "}",
+      ),
     // Shorthand attribute: {identifier} - an expression used as an attribute
     // Uses expression structure (not regex) to allow proper precedence resolution
     // with unquoted_attribute_value (text{expr} patterns like style:attr=string{mixed})
@@ -210,16 +323,20 @@ module.exports = grammar(HTML, {
       ),
 
     // Directives: bind:value, on:click|preventDefault
+    // The _directive_marker external scanner consumes the directive name (bind, on, let, etc.)
+    // and checks for the following colon. It returns the directive name as the token.
     __attribute_directive: ($) =>
       seq(
-        $._directive_marker,
-        $.attribute_directive,
+        alias($._directive_marker, $.attribute_directive),
         ":",
         $.attribute_identifier,
         optional($.attribute_modifiers),
       ),
-    attribute_directive: ($) => /[a-zA-Z_$][a-zA-Z0-9_$]*/,
-    attribute_identifier: ($) => /[a-zA-Z_$][a-zA-Z0-9_$-]*/,
+    // Source JS parser accepts directive names as raw tag token text up to
+    // delimiters and then splits modifiers with `|`.
+    // Keep identifier permissive so names like `--color` and `$store.action`
+    // are parsed in CST and validated later in semantic phases.
+    attribute_identifier: ($) => /[^<>{}"':\\\/=\s|]+/,
     attribute_modifiers: ($) => repeat1(seq("|", $.attribute_modifier)),
     attribute_modifier: ($) => /[a-zA-Z_$][a-zA-Z0-9_$]*/,
 
@@ -232,7 +349,7 @@ module.exports = grammar(HTML, {
           alias($._attribute_value, $.attribute_value), // Required leading text via external scanner
           repeat1(
             seq(
-              $.expression,
+              alias($.attribute_expression, $.expression),
               optional(alias($._attribute_value, $.attribute_value)), // Optional trailing text
             ),
           ),
@@ -245,8 +362,14 @@ module.exports = grammar(HTML, {
         seq('"', repeat($._quoted_attribute_content_double), '"'),
       ),
     _quoted_attribute_content_single: ($) =>
-      choice($.expression, alias(/[^'{]+/, $.attribute_value)),
+      choice(
+        alias($.attribute_expression, $.expression),
+        alias(/[^'{]+/, $.attribute_value),
+      ),
     _quoted_attribute_content_double: ($) =>
-      choice($.expression, alias(/[^"{]+/, $.attribute_value)),
+      choice(
+        alias($.attribute_expression, $.expression),
+        alias(/[^"{]+/, $.attribute_value),
+      ),
   },
 });
