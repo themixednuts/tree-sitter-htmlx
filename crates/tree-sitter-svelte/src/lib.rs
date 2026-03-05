@@ -63,17 +63,19 @@ mod tests {
     #[test]
     fn test_can_load_grammar() {
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(&LANGUAGE.into()).expect("Failed to load Svelte grammar");
+        parser
+            .set_language(&LANGUAGE.into())
+            .expect("Failed to load Svelte grammar");
     }
 
     #[test]
     fn test_parse_simple_html() {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&LANGUAGE.into()).unwrap();
-        
+
         let source = "<div>Hello</div>";
         let tree = parser.parse(source, None).unwrap();
-        
+
         assert!(!tree.root_node().has_error());
     }
 
@@ -81,10 +83,10 @@ mod tests {
     fn test_parse_if_block() {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&LANGUAGE.into()).unwrap();
-        
+
         let source = r#"{#if visible}<p>Hello</p>{/if}"#;
         let tree = parser.parse(source, None).unwrap();
-        
+
         assert!(!tree.root_node().has_error());
     }
 
@@ -92,10 +94,10 @@ mod tests {
     fn test_parse_if_else_block() {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&LANGUAGE.into()).unwrap();
-        
+
         let source = r#"{#if count > 0}<p>{count}</p>{:else}<p>Zero</p>{/if}"#;
         let tree = parser.parse(source, None).unwrap();
-        
+
         assert!(!tree.root_node().has_error());
     }
 
@@ -103,10 +105,10 @@ mod tests {
     fn test_parse_each_block() {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&LANGUAGE.into()).unwrap();
-        
+
         let source = r#"{#each items as item}<li>{item}</li>{/each}"#;
         let tree = parser.parse(source, None).unwrap();
-        
+
         assert!(!tree.root_node().has_error());
     }
 
@@ -114,10 +116,11 @@ mod tests {
     fn test_parse_await_block() {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&LANGUAGE.into()).unwrap();
-        
-        let source = r#"{#await promise}{:then value}<p>{value}</p>{:catch error}<p>{error}</p>{/await}"#;
+
+        let source =
+            r#"{#await promise}{:then value}<p>{value}</p>{:catch error}<p>{error}</p>{/await}"#;
         let tree = parser.parse(source, None).unwrap();
-        
+
         assert!(!tree.root_node().has_error());
     }
 
@@ -125,10 +128,10 @@ mod tests {
     fn test_parse_snippet_block() {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&LANGUAGE.into()).unwrap();
-        
+
         let source = r#"{#snippet button(text)}<button>{text}</button>{/snippet}"#;
         let tree = parser.parse(source, None).unwrap();
-        
+
         assert!(!tree.root_node().has_error());
     }
 
@@ -136,10 +139,10 @@ mod tests {
     fn test_parse_render_tag() {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&LANGUAGE.into()).unwrap();
-        
+
         let source = r#"{@render button("Click me")}"#;
         let tree = parser.parse(source, None).unwrap();
-        
+
         assert!(!tree.root_node().has_error());
     }
 
@@ -147,10 +150,10 @@ mod tests {
     fn test_parse_html_tag() {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&LANGUAGE.into()).unwrap();
-        
+
         let source = r#"{@html content}"#;
         let tree = parser.parse(source, None).unwrap();
-        
+
         assert!(!tree.root_node().has_error());
     }
 
@@ -158,10 +161,10 @@ mod tests {
     fn test_parse_component() {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&LANGUAGE.into()).unwrap();
-        
+
         let source = r#"<Button onclick={handleClick}>Click me</Button>"#;
         let tree = parser.parse(source, None).unwrap();
-        
+
         assert!(!tree.root_node().has_error());
     }
 
@@ -169,10 +172,10 @@ mod tests {
     fn test_parse_self_closing_component() {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&LANGUAGE.into()).unwrap();
-        
+
         let source = r#"<Icon name="check" />"#;
         let tree = parser.parse(source, None).unwrap();
-        
+
         assert!(!tree.root_node().has_error());
     }
 
@@ -180,13 +183,13 @@ mod tests {
     fn test_parse_script_element() {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&LANGUAGE.into()).unwrap();
-        
+
         let source = r#"<script>
   let count = $state(0);
   let doubled = $derived(count * 2);
 </script>"#;
         let tree = parser.parse(source, None).unwrap();
-        
+
         assert!(!tree.root_node().has_error());
     }
 
@@ -194,10 +197,10 @@ mod tests {
     fn test_parse_key_block() {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&LANGUAGE.into()).unwrap();
-        
+
         let source = r#"{#key item.id}<Component />{/key}"#;
         let tree = parser.parse(source, None).unwrap();
-        
+
         assert!(!tree.root_node().has_error());
     }
 }

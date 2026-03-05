@@ -37,10 +37,7 @@ fn test_debug_property_access() {
 
 #[test]
 fn test_debug_empty() {
-    assert_eq!(
-        parse("{@debug}"),
-        "(document (tag kind: (tag_kind)))"
-    );
+    assert_eq!(parse("{@debug}"), "(document (tag kind: (tag_kind)))");
 }
 
 #[test]

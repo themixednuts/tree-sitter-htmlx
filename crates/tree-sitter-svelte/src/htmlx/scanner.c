@@ -31,6 +31,8 @@ enum {
     TS_LANG_MARKER,
     EXPRESSION_JS,
     EXPRESSION_TS,
+    ATTRIBUTE_EXPRESSION_JS,
+    ATTRIBUTE_EXPRESSION_TS,
     DIRECTIVE_MARKER,
     MEMBER_TAG_OBJECT,    // First part of dotted component (UI in UI.Button)
     MEMBER_TAG_PROPERTY,  // Subsequent parts (Button in UI.Button)
@@ -157,7 +159,6 @@ static bool scan_start_tag(State *state, TSLexer *lexer, const bool *valid) {
             case SCRIPT:
             case STYLE:
             case TEXTAREA:
-            case TITLE:
                 lexer->result_symbol = RAW_TEXT_START_TAG_NAME;
                 break;
             default:
@@ -370,6 +371,43 @@ static bool scan_balanced_expr(TSLexer *lexer) {
             continue;
         }
 
+        if (c == '/') {
+            advance(lexer);
+
+            if (lexer->lookahead == '/') {
+                advance(lexer);
+                while (lexer->lookahead && lexer->lookahead != '\n' && lexer->lookahead != '\r') {
+                    advance(lexer);
+                }
+                has_content = true;
+                needs_mark = true;
+                continue;
+            }
+
+            if (lexer->lookahead == '*') {
+                advance(lexer);
+                while (lexer->lookahead) {
+                    if (lexer->lookahead != '*') {
+                        advance(lexer);
+                        continue;
+                    }
+
+                    advance(lexer);
+                    if (lexer->lookahead == '/') {
+                        advance(lexer);
+                        break;
+                    }
+                }
+                has_content = true;
+                needs_mark = true;
+                continue;
+            }
+
+            has_content = true;
+            needs_mark = true;
+            continue;
+        }
+
         // At depth 0, mark before whitespace (handles trailing ws)
         if (depth == 0 && is_space(c)) {
             if (needs_mark) {
@@ -456,6 +494,20 @@ static bool scan_expression(State *state, TSLexer *lexer) {
     if (!scan_balanced_expr(lexer)) return false;
 
     lexer->result_symbol = state->is_typescript ? EXPRESSION_TS : EXPRESSION_JS;
+    return true;
+}
+
+static bool scan_attribute_expression(State *state, TSLexer *lexer) {
+    while (is_space(lexer->lookahead)) skip(lexer);
+
+    int32_t c = lexer->lookahead;
+    if (c == '#' || c == ':' || c == '@') return false;
+
+    // Attribute expression context can legitimately start with comments.
+    if (!scan_balanced_expr(lexer)) return false;
+
+    lexer->result_symbol =
+        state->is_typescript ? ATTRIBUTE_EXPRESSION_TS : ATTRIBUTE_EXPRESSION_JS;
     return true;
 }
 
@@ -580,40 +632,67 @@ static bool scan_unterminated_tag_end(State *state, TSLexer *lexer) {
     return true;
 }
 
-static bool scan_block_close_boundary(State *state, TSLexer *lexer) {
+static bool scan_block_boundary(State *state, TSLexer *lexer) {
     if (state->html->tags.size == 0) return false;
     if (lexer->lookahead != '{') return false;
 
-    // Zero-width element boundary before Svelte-style block close marker.
+    // Zero-width element boundary before Svelte-style block close/branch marker.
     lexer->mark_end(lexer);
 
     advance(lexer);
-    if (lexer->lookahead != '/') return false;
-    advance(lexer);
+    if (lexer->lookahead == '/') {
+        advance(lexer);
 
-    int len = 0;
-    char kind[8];
-    if (!is_alpha(lexer->lookahead) && lexer->lookahead != '_') return false;
-    while (is_ident_char(lexer->lookahead)) {
-        if (len < (int)sizeof(kind)) {
-            kind[len++] = (char)to_lower(lexer->lookahead);
+        int len = 0;
+        char kind[8];
+        if (!is_alpha(lexer->lookahead) && lexer->lookahead != '_') return false;
+        while (is_ident_char(lexer->lookahead)) {
+            if (len < (int)sizeof(kind)) {
+                kind[len++] = (char)to_lower(lexer->lookahead);
+            }
+            advance(lexer);
         }
+
+        bool is_block_kind =
+            (len == 2 && kind[0] == 'i' && kind[1] == 'f') ||
+            (len == 3 && kind[0] == 'k' && kind[1] == 'e' && kind[2] == 'y') ||
+            (len == 4 && kind[0] == 'e' && kind[1] == 'a' && kind[2] == 'c' && kind[3] == 'h') ||
+            (len == 5 && kind[0] == 'a' && kind[1] == 'w' && kind[2] == 'a' && kind[3] == 'i' && kind[4] == 't') ||
+            (len == 7 && kind[0] == 's' && kind[1] == 'n' && kind[2] == 'i' && kind[3] == 'p' && kind[4] == 'p' && kind[5] == 'e' && kind[6] == 't');
+        if (!is_block_kind) return false;
+
+        while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
+            advance(lexer);
+        }
+
+        if (lexer->lookahead != '}') return false;
+    } else if (lexer->lookahead == ':') {
         advance(lexer);
+
+        int len = 0;
+        char kind[8];
+        if (!is_alpha(lexer->lookahead)) return false;
+        while (is_ident_char(lexer->lookahead)) {
+            if (len < (int)sizeof(kind)) {
+                kind[len++] = (char)to_lower(lexer->lookahead);
+            }
+            advance(lexer);
+        }
+
+        bool is_branch_kind =
+            (len == 4 && kind[0] == 'e' && kind[1] == 'l' && kind[2] == 's' && kind[3] == 'e') ||
+            (len == 4 && kind[0] == 't' && kind[1] == 'h' && kind[2] == 'e' && kind[3] == 'n') ||
+            (len == 5 && kind[0] == 'c' && kind[1] == 'a' && kind[2] == 't' && kind[3] == 'c' && kind[4] == 'h');
+        if (!is_branch_kind) return false;
+
+        while (lexer->lookahead && lexer->lookahead != '}') {
+            advance(lexer);
+        }
+
+        if (lexer->lookahead != '}') return false;
+    } else {
+        return false;
     }
-
-    bool is_block_kind =
-        (len == 2 && kind[0] == 'i' && kind[1] == 'f') ||
-        (len == 3 && kind[0] == 'k' && kind[1] == 'e' && kind[2] == 'y') ||
-        (len == 4 && kind[0] == 'e' && kind[1] == 'a' && kind[2] == 'c' && kind[3] == 'h') ||
-        (len == 5 && kind[0] == 'a' && kind[1] == 'w' && kind[2] == 'a' && kind[3] == 'i' && kind[4] == 't') ||
-        (len == 7 && kind[0] == 's' && kind[1] == 'n' && kind[2] == 'i' && kind[3] == 'p' && kind[4] == 'p' && kind[5] == 'e' && kind[6] == 't');
-    if (!is_block_kind) return false;
-
-    while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
-        advance(lexer);
-    }
-
-    if (lexer->lookahead != '}') return false;
 
     Tag popped = array_pop(&state->html->tags);
     tag_free(&popped);
@@ -626,7 +705,7 @@ static bool scan_block_close_boundary(State *state, TSLexer *lexer) {
 // This is distinct from directive modifiers because modifiers start with an
 // identifier character [a-zA-Z_$] after the |, while unusual attribute names
 // start with other characters (like |-wtf starting with -).
-// Matches: \|[^a-zA-Z_$<>{}\"':\\/=\s|.][^<>{}\"':\\/=\s|.]*
+// Matches: \|[^a-zA-Z_$<>{}\"':\\/=\s|.()][^<>{}\"':\\/=\s|()]*
 // Caller should check that lexer->lookahead == '|'
 static bool scan_pipe_attribute_name(TSLexer *lexer) {
     // Must start with |
@@ -647,10 +726,11 @@ static bool scan_pipe_attribute_name(TSLexer *lexer) {
         int32_t c = lexer->lookahead;
         
         // Stop at characters that end attribute names
-        // Same as regex: [^<>{}\"':\\/=\s|.]
+        // Same as regex: [^<>{}\"':\\/=\s|.()]
         if (c == '<' || c == '>' || c == '{' || c == '}' ||
             c == '"' || c == '\'' || c == ':' || c == '\\' ||
             c == '/' || c == '=' || c == '|' || c == '.' ||
+            c == '(' || c == ')' ||
             is_space(c)) {
             break;
         }
@@ -679,14 +759,14 @@ static bool scan(State *state, TSLexer *lexer, const bool *valid) {
         // At '{' means expression start - return false to let grammar handle it
         // HTML scanner doesn't know about '{' so don't fall through
         if (lexer->lookahead == '{') {
-            if (valid[UNTERMINATED_TAG_END] && scan_block_close_boundary(state, lexer)) {
+            if (valid[UNTERMINATED_TAG_END] && scan_block_boundary(state, lexer)) {
                 return true;
             }
             return false;
         }
     }
 
-    if (valid[UNTERMINATED_TAG_END] && scan_block_close_boundary(state, lexer)) {
+    if (valid[UNTERMINATED_TAG_END] && scan_block_boundary(state, lexer)) {
         return true;
     }
 
@@ -706,6 +786,11 @@ static bool scan(State *state, TSLexer *lexer, const bool *valid) {
     }
 
     if ((valid[EXPRESSION_JS] || valid[EXPRESSION_TS]) && scan_expression(state, lexer)) {
+        return true;
+    }
+
+    if ((valid[ATTRIBUTE_EXPRESSION_JS] || valid[ATTRIBUTE_EXPRESSION_TS])
+        && scan_attribute_expression(state, lexer)) {
         return true;
     }
 

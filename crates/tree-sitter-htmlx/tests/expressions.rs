@@ -12,24 +12,21 @@ fn get_expression_content_range(source: &str) -> Option<(usize, usize, String)> 
 
     let tree = parser.parse(source, None).expect("Failed to parse");
     let root = tree.root_node();
-    
+
     // Find the expression node, then get content field
     let expr = root.child(0)?;
     let content = expr.child_by_field_name("content")?;
-    
+
     let start = content.start_byte();
     let end = content.end_byte();
     let text = source[start..end].to_string();
-    
+
     Some((start, end, text))
 }
 
 #[test]
 fn test_expression_simple() {
-    assert_eq!(
-        parse("{name}"),
-        "(document (expression content: (js)))"
-    );
+    assert_eq!(parse("{name}"), "(document (expression content: (js)))");
 }
 
 #[test]
@@ -81,17 +78,20 @@ fn test_expression_span_no_trailing_space() {
     // {value } should have expression content "value", not "value "
     let source = "{value }";
     let (start, end, text) = get_expression_content_range(source).unwrap();
-    
+
     assert_eq!(start, 1, "Expression content should start at byte 1");
     assert_eq!(end, 6, "Expression content should end at byte 6");
-    assert_eq!(text, "value", "Expression should not include trailing whitespace");
+    assert_eq!(
+        text, "value",
+        "Expression should not include trailing whitespace"
+    );
 }
 
 #[test]
 fn test_expression_span_multiple_trailing_spaces() {
     let source = "{foo + bar   }";
     let (start, end, text) = get_expression_content_range(source).unwrap();
-    
+
     assert_eq!(start, 1);
     assert_eq!(end, 10);
     assert_eq!(text, "foo + bar");

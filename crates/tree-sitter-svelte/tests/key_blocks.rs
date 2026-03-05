@@ -31,7 +31,7 @@ fn test_key_with_expression() {
 fn test_key_with_property_access() {
     assert_eq!(
         parse("{#key items.length}<List {items} />{/key}"),
-        "(document (block (block_start kind: (block_kind) expression: (expression)) (element (self_closing_tag (tag_name) (attribute (shorthand_attribute)))) (block_end kind: (block_kind))))"
+        "(document (block (block_start kind: (block_kind) expression: (expression)) (element (self_closing_tag (tag_name) (attribute (shorthand_attribute content: (js))))) (block_end kind: (block_kind))))"
     );
 }
 

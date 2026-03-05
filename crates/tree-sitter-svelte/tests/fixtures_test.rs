@@ -1,5 +1,5 @@
 //! Fixture-based tests for tree-sitter-svelte
-//! 
+//!
 //! These tests parse Svelte files from the fixtures directory and verify
 //! that they parse without errors. Tests are ported from the svelte2tsx
 //! and Svelte compiler test suites.
@@ -12,14 +12,14 @@ use tree_sitter_svelte::LANGUAGE;
 fn parse_fixture(path: &str) -> (String, tree_sitter::Tree) {
     let source = fs::read_to_string(path)
         .unwrap_or_else(|e| panic!("Failed to read fixture {}: {}", path, e));
-    
+
     let mut parser = tree_sitter::Parser::new();
-    parser.set_language(&LANGUAGE.into())
+    parser
+        .set_language(&LANGUAGE.into())
         .expect("Failed to load Svelte grammar");
-    
-    let tree = parser.parse(&source, None)
-        .expect("Failed to parse");
-    
+
+    let tree = parser.parse(&source, None).expect("Failed to parse");
+
     (source, tree)
 }
 
@@ -30,7 +30,7 @@ fn assert_parses_without_error(path: &str) {
     if root.has_error() {
         // Find and report the error location
         let mut errors = Vec::new();
-        
+
         fn find_errors(node: tree_sitter::Node, errors: &mut Vec<String>, source: &str) {
             if node.is_error() || node.is_missing() {
                 let start = node.start_position();
@@ -39,8 +39,10 @@ fn assert_parses_without_error(path: &str) {
                 errors.push(format!(
                     "  {} at {}:{}-{}:{}: {:?}",
                     if node.is_error() { "ERROR" } else { "MISSING" },
-                    start.row + 1, start.column,
-                    end.row + 1, end.column,
+                    start.row + 1,
+                    start.column,
+                    end.row + 1,
+                    end.column,
                     text
                 ));
             }
@@ -48,9 +50,9 @@ fn assert_parses_without_error(path: &str) {
                 find_errors(child, errors, source);
             }
         }
-        
+
         find_errors(root, &mut errors, &source);
-        
+
         panic!(
             "Parse errors in {}:\n{}\n\nSource:\n{}",
             path,
@@ -128,6 +130,15 @@ fn test_directive_fixtures(#[case] path: &str) {
     assert_parses_without_error(fixture_path.to_str().unwrap());
 }
 
+// ==================== ATTRIBUTE / COMMENT FIXTURES ====================
+
+#[rstest]
+#[case::comment_in_tag("tests/fixtures/attributes/comment-in-tag.svelte")]
+fn test_attribute_fixtures(#[case] path: &str) {
+    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(path);
+    assert_parses_without_error(fixture_path.to_str().unwrap());
+}
+
 // ==================== AST VERIFICATION TESTS ====================
 
 /// Test that parses the fixture and verifies specific AST node types exist
@@ -161,22 +172,22 @@ fn assert_contains_node_type(path: &str, node_type: &str) {
 
 #[test]
 fn test_if_block_ast() {
-    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/blocks/if-block.svelte");
+    let fixture_path =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/blocks/if-block.svelte");
     assert_contains_node_type(fixture_path.to_str().unwrap(), "block");
 }
 
 #[test]
 fn test_each_block_ast() {
-    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/blocks/each-simple.svelte");
+    let fixture_path =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/blocks/each-simple.svelte");
     assert_contains_node_type(fixture_path.to_str().unwrap(), "block");
 }
 
 #[test]
 fn test_await_block_ast() {
-    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/blocks/await-full.svelte");
+    let fixture_path =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/blocks/await-full.svelte");
     assert_contains_node_type(fixture_path.to_str().unwrap(), "block");
 }
 
@@ -196,14 +207,21 @@ fn test_render_tag_ast() {
 
 #[test]
 fn test_html_tag_ast() {
-    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/tags/html-tag.svelte");
+    let fixture_path =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/tags/html-tag.svelte");
     assert_contains_node_type(fixture_path.to_str().unwrap(), "tag");
 }
 
 #[test]
 fn test_const_tag_ast() {
-    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/tags/const-tag.svelte");
+    let fixture_path =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/tags/const-tag.svelte");
     assert_contains_node_type(fixture_path.to_str().unwrap(), "tag");
+}
+
+#[test]
+fn test_comment_in_tag_ast() {
+    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/attributes/comment-in-tag.svelte");
+    assert_contains_node_type(fixture_path.to_str().unwrap(), "tag_comment");
 }

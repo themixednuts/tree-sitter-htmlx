@@ -54,17 +54,19 @@ mod tests {
     #[test]
     fn test_can_load_grammar() {
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(&LANGUAGE.into()).expect("Failed to load HTMLX grammar");
+        parser
+            .set_language(&LANGUAGE.into())
+            .expect("Failed to load HTMLX grammar");
     }
 
     #[test]
     fn test_parse_simple_html() {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&LANGUAGE.into()).unwrap();
-        
+
         let source = "<div>Hello</div>";
         let tree = parser.parse(source, None).unwrap();
-        
+
         assert!(!tree.root_node().has_error());
         assert_eq!(tree.root_node().kind(), "document");
     }
@@ -73,10 +75,10 @@ mod tests {
     fn test_parse_expression() {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&LANGUAGE.into()).unwrap();
-        
+
         let source = "<div>{name}</div>";
         let tree = parser.parse(source, None).unwrap();
-        
+
         assert!(!tree.root_node().has_error());
     }
 
@@ -84,10 +86,10 @@ mod tests {
     fn test_parse_expression_attribute() {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&LANGUAGE.into()).unwrap();
-        
+
         let source = r#"<input value={text} />"#;
         let tree = parser.parse(source, None).unwrap();
-        
+
         assert!(!tree.root_node().has_error());
     }
 
@@ -95,10 +97,10 @@ mod tests {
     fn test_parse_shorthand_attribute() {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&LANGUAGE.into()).unwrap();
-        
+
         let source = r#"<div {hidden} {id}></div>"#;
         let tree = parser.parse(source, None).unwrap();
-        
+
         assert!(!tree.root_node().has_error());
     }
 
@@ -106,10 +108,10 @@ mod tests {
     fn test_parse_spread_attribute() {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&LANGUAGE.into()).unwrap();
-        
+
         let source = r#"<Component {...props} />"#;
         let tree = parser.parse(source, None).unwrap();
-        
+
         assert!(!tree.root_node().has_error());
     }
 
@@ -117,10 +119,10 @@ mod tests {
     fn test_parse_directive_attribute() {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&LANGUAGE.into()).unwrap();
-        
+
         let source = r#"<input bind:value={name} on:input={handleInput} />"#;
         let tree = parser.parse(source, None).unwrap();
-        
+
         assert!(!tree.root_node().has_error());
     }
 
@@ -128,10 +130,10 @@ mod tests {
     fn test_parse_nested_expressions() {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&LANGUAGE.into()).unwrap();
-        
+
         let source = r#"<div>{items.map(item => item.name)}</div>"#;
         let tree = parser.parse(source, None).unwrap();
-        
+
         assert!(!tree.root_node().has_error());
     }
 }

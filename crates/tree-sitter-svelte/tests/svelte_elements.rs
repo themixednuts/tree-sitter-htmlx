@@ -164,10 +164,9 @@ fn test_svelte_head_empty() {
 
 #[test]
 fn test_svelte_head_with_title() {
-    // title is an escapable raw text element per HTML spec, so content is raw_text
     assert_eq!(
         parse("<svelte:head><title>Page Title</title></svelte:head>"),
-        "(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name))) (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name))) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }
 
@@ -181,11 +180,17 @@ fn test_svelte_head_with_meta() {
 
 #[test]
 fn test_svelte_head_dynamic_title() {
-    // title is an escapable raw text element per HTML spec, so content is raw_text
-    // Note: Svelte expressions within title become part of raw_text
     assert_eq!(
         parse("<svelte:head><title>{pageTitle}</title></svelte:head>"),
-        "(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name))) (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name))) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+    );
+}
+
+#[test]
+fn test_svelte_head_title_preserves_nested_elements_for_validation() {
+    assert_eq!(
+        parse("<svelte:head><title><span>bad</span></title></svelte:head>"),
+        "(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name))) (element (start_tag (tag_name)) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (end_tag (tag_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }
 
@@ -294,6 +299,6 @@ fn test_svelte_boundary_onerror() {
 fn test_svelte_boundary_failed_snippet() {
     assert_eq!(
         parse("{#snippet failed(error)}<p>Error: {error}</p>{/snippet}<svelte:boundary {failed}><Child /></svelte:boundary>"),
-        "(document (block (block_start kind: (block_kind) expression: (expression)) (element (start_tag (tag_name)) (text) (expression content: (js)) (end_tag (tag_name))) (block_end kind: (block_kind))) (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (shorthand_attribute))) (element (self_closing_tag (tag_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (block (block_start kind: (block_kind) name: (snippet_name) parameters: (snippet_parameters)) (element (start_tag (tag_name)) (text) (expression content: (js)) (end_tag (tag_name))) (block_end kind: (block_kind))) (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (shorthand_attribute content: (js)))) (element (self_closing_tag (tag_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }

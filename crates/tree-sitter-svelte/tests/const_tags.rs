@@ -55,7 +55,7 @@ fn test_const_multiple() {
 fn test_const_in_await() {
     assert_eq!(
         parse("{#await promise then data}{@const items = data.items}{#each items as item}{item}{/each}{/await}"),
-        "(document (block (block_start kind: (block_kind) expression: (expression) binding: (pattern)) (tag kind: (tag_kind) expression: (expression_value)) (block (block_start kind: (block_kind) expression: (expression) binding: (pattern)) (expression content: (js)) (block_end kind: (block_kind))) (block_end kind: (block_kind))))"
+        "(document (block (block_start kind: (block_kind) expression: (expression) shorthand: (block_kind) binding: (pattern)) shorthand_children: (await_branch_children (tag kind: (tag_kind) expression: (expression_value)) (block (block_start kind: (block_kind) expression: (expression) binding: (pattern)) (expression content: (js)) (block_end kind: (block_kind)))) (block_end kind: (block_kind))))"
     );
 }
 

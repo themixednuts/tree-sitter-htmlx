@@ -39,6 +39,22 @@ fn test_element_nested() {
     );
 }
 
+#[test]
+fn test_title_element_allows_expression_children() {
+    assert_eq!(
+        parse("<title>{pageTitle}</title>"),
+        "(document (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
+fn test_title_element_preserves_nested_elements_for_validation() {
+    assert_eq!(
+        parse("<title><span>bad</span></title>"),
+        "(document (element (start_tag (tag_name)) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (end_tag (tag_name))))"
+    );
+}
+
 // =============================================================================
 // Component elements (PascalCase)
 // =============================================================================
@@ -106,7 +122,7 @@ fn test_namespaced_self_closing() {
 }
 
 // =============================================================================
-// Script and style elements (raw text elements)
+// Script/style/textarea raw text elements
 // =============================================================================
 
 #[test]

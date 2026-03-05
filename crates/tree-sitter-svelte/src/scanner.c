@@ -7,13 +7,14 @@
 // Vendored HTMLX scanner (committed in this crate for portability).
 #include "htmlx/scanner.c"
 
-// Svelte external token indices (after HTMLX's 22 tokens: 0-21)
-// HTML tokens (0-8) + HTMLX tokens (9-21, includes UNTERMINATED_TAG_END at 21)
+// Svelte external token indices (after HTMLX's 24 tokens: 0-23)
+// HTML tokens (0-8) + HTMLX tokens (9-23, includes UNTERMINATED_TAG_END at 23)
 enum {
-    ITERATOR_EXPRESSION = 22,
+    ITERATOR_EXPRESSION = 24,
     BINDING_PATTERN,
     KEY_EXPRESSION,
     TAG_EXPRESSION,
+    SNIPPET_TYPE_PARAMS,
 };
 
 // Scan balanced expression, excluding trailing whitespace at depth 0.
@@ -56,6 +57,43 @@ static bool scan_balanced(TSLexer *lexer, int32_t stop_char, bool stop_comma) {
         }
 
         if (skip_string(lexer)) {
+            has_content = true;
+            needs_mark = true;
+            continue;
+        }
+
+        if (c == '/') {
+            advance(lexer);
+
+            if (lexer->lookahead == '/') {
+                advance(lexer);
+                while (lexer->lookahead && lexer->lookahead != '\n' && lexer->lookahead != '\r') {
+                    advance(lexer);
+                }
+                has_content = true;
+                needs_mark = true;
+                continue;
+            }
+
+            if (lexer->lookahead == '*') {
+                advance(lexer);
+                while (lexer->lookahead) {
+                    if (lexer->lookahead != '*') {
+                        advance(lexer);
+                        continue;
+                    }
+
+                    advance(lexer);
+                    if (lexer->lookahead == '/') {
+                        advance(lexer);
+                        break;
+                    }
+                }
+                has_content = true;
+                needs_mark = true;
+                continue;
+            }
+
             has_content = true;
             needs_mark = true;
             continue;
@@ -104,6 +142,10 @@ static bool scan_iterator(TSLexer *lexer) {
     bool found_terminator = false;
 
     while (is_space(lexer->lookahead)) skip(lexer);
+
+    // Avoid stealing multiline/comment-prefixed expression contexts
+    // outside block-start headers.
+    if (lexer->lookahead == '/') return false;
 
     while (lexer->lookahead) {
         int32_t c = lexer->lookahead;
@@ -270,7 +312,43 @@ done:
     return true;
 }
 
+static bool scan_snippet_type_params(TSLexer *lexer) {
+    if (lexer->lookahead != '<') return false;
+
+    int depth = 0;
+
+    while (lexer->lookahead) {
+        int32_t c = lexer->lookahead;
+
+        if (skip_string(lexer)) {
+            continue;
+        }
+
+        if (c == '<') {
+            depth++;
+            advance(lexer);
+            continue;
+        }
+
+        if (c == '>') {
+            depth--;
+            advance(lexer);
+            if (depth == 0) {
+                lexer->mark_end(lexer);
+                lexer->result_symbol = SNIPPET_TYPE_PARAMS;
+                return true;
+            }
+            continue;
+        }
+
+        advance(lexer);
+    }
+
+    return false;
+}
+
 static bool svelte_scan(State *state, TSLexer *lexer, const bool *valid) {
+    if (valid[SNIPPET_TYPE_PARAMS]) return scan_snippet_type_params(lexer);
     if (valid[ITERATOR_EXPRESSION]) return scan_iterator(lexer);
     if (valid[BINDING_PATTERN]) return scan_binding(lexer);
     if (valid[KEY_EXPRESSION]) return scan_key(lexer);

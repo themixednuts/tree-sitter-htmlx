@@ -31,3 +31,7 @@
 ] @punctuation.bracket
 
 "|" @punctuation.delimiter
+
+; Comments inside tag attribute lists
+(tag_comment kind: (line_comment) @comment)
+(tag_comment kind: (block_comment) @comment)

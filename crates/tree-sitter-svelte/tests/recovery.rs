@@ -88,3 +88,18 @@ fn test_if_block_with_nested_unclosed_elements_recovers_locally() {
         "Nested unclosed elements before block close should recover without root ERROR: {tree}"
     );
 }
+
+#[test]
+fn test_unterminated_tag_breaks_before_block_branches() {
+    let source = "{#if ok}\n\t<input\n{:else}\n\t<p>fallback</p>\n{/if}\n\n{#await promise}\n\t<input\n{:then value}\n\t<p>{value}</p>\n{:catch error}\n\t<p>{error}</p>\n{/await}";
+    let tree = parse(source);
+
+    assert!(
+        !tree.contains("(ERROR"),
+        "Unterminated tags before block branches should recover without root ERROR: {tree}"
+    );
+    assert!(
+        tree.matches("(block_branch").count() >= 3,
+        "Expected else/then/catch branches to survive recovery: {tree}"
+    );
+}

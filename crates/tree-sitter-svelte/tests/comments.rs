@@ -9,18 +9,12 @@ use utils::parse;
 
 #[test]
 fn test_html_comment_basic() {
-    assert_eq!(
-        parse("<!-- comment -->"),
-        "(document (comment))"
-    );
+    assert_eq!(parse("<!-- comment -->"), "(document (comment))");
 }
 
 #[test]
 fn test_html_comment_empty() {
-    assert_eq!(
-        parse("<!---->"),
-        "(document (comment))"
-    );
+    assert_eq!(parse("<!---->"), "(document (comment))");
 }
 
 #[test]
@@ -85,10 +79,7 @@ fn test_html_comment_with_svelte_block() {
 
 #[test]
 fn test_html_comment_with_expression() {
-    assert_eq!(
-        parse("<!-- {variable} -->"),
-        "(document (comment))"
-    );
+    assert_eq!(parse("<!-- {variable} -->"), "(document (comment))");
 }
 
 // =============================================================================
@@ -145,18 +136,12 @@ fn test_comment_in_each_block() {
 
 #[test]
 fn test_comment_with_newlines_only() {
-    assert_eq!(
-        parse("<!--\n\n\n-->"),
-        "(document (comment))"
-    );
+    assert_eq!(parse("<!--\n\n\n-->"), "(document (comment))");
 }
 
 #[test]
 fn test_comment_with_html_entities() {
-    assert_eq!(
-        parse("<!-- &amp; &lt; &gt; -->"),
-        "(document (comment))"
-    );
+    assert_eq!(parse("<!-- &amp; &lt; &gt; -->"), "(document (comment))");
 }
 
 #[test]
@@ -169,9 +154,24 @@ fn test_comment_adjacent_to_expression() {
 
 #[test]
 fn test_comment_in_attribute_context() {
-    // Comment cannot appear inside an element's attributes, so this is before/after
     assert_eq!(
-        parse("<!-- comment --><div id=\"test\"></div>"),
-        r#"(document (comment) (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (end_tag (tag_name))))"#
+        parse("<MyComponent\n// this comment\nclass=\"myclass\" />"),
+        r#"(document (element (self_closing_tag (tag_name) (tag_comment kind: (line_comment)) (attribute (attribute_name) (quoted_attribute_value (attribute_value))))))"#
+    );
+}
+
+#[test]
+fn test_line_comment_between_multiline_attributes() {
+    assert_eq!(
+        parse("<div\n\tdata-one=\"1\"\n\t// comment\n\tdata-two=\"2\"\n></div>"),
+        r#"(document (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (tag_comment kind: (line_comment)) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (end_tag (tag_name))))"#
+    );
+}
+
+#[test]
+fn test_inline_block_comments_in_tag() {
+    assert_eq!(
+        parse("<span /* inline */ /* another inline */ data-one=\"1\"></span>"),
+        r#"(document (element (start_tag (tag_name) (tag_comment kind: (block_comment)) (tag_comment kind: (block_comment)) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (end_tag (tag_name))))"#
     );
 }

@@ -50,7 +50,9 @@ fn test_props_typescript() {
 #[test]
 fn test_props_interface_typescript() {
     assert_eq!(
-        parse(r#"<script lang="ts">interface Props { name: string; count?: number; } let { name, count = 0 }: Props = $props();</script>"#),
+        parse(
+            r#"<script lang="ts">interface Props { name: string; count?: number; } let { name, count = 0 }: Props = $props();</script>"#
+        ),
         r#"(document (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (raw_text) (end_tag (tag_name))))"#
     );
 }
@@ -218,7 +220,9 @@ fn test_inspect_with_fn() {
 #[test]
 fn test_host_basic() {
     assert_eq!(
-        parse(r#"<svelte:options customElement="my-element" /><script>$effect(() => { $host().dispatchEvent(new CustomEvent('change')); });</script>"#),
+        parse(
+            r#"<svelte:options customElement="my-element" /><script>$effect(() => { $host().dispatchEvent(new CustomEvent('change')); });</script>"#
+        ),
         r#"(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (quoted_attribute_value (attribute_value))))) (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"#
     );
 }
@@ -230,7 +234,8 @@ fn test_host_basic() {
 #[test]
 fn test_runes_full_component() {
     assert_eq!(
-        parse(r#"<script lang="ts">
+        parse(
+            r#"<script lang="ts">
     let { a, b = $bindable() } = $props();
     let count = $state(0);
     let doubled = $derived(count * 2);
@@ -242,7 +247,8 @@ fn test_runes_full_component() {
 
 <button onclick={() => count++}>
     {count} * 2 = {doubled}
-</button>"#),
+</button>"#
+        ),
         r#"(document (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (raw_text) (end_tag (tag_name))) (text) (element (start_tag (tag_name) (attribute (attribute_name) (expression content: (ts)))) (text) (expression content: (ts)) (text) (expression content: (ts)) (text) (end_tag (tag_name))))"#
     );
 }
@@ -250,10 +256,12 @@ fn test_runes_full_component() {
 #[test]
 fn test_runes_with_generics() {
     assert_eq!(
-        parse(r#"<script lang="ts" generics="T">
+        parse(
+            r#"<script lang="ts" generics="T">
     let { items }: { items: T[] } = $props();
     let selected = $state<T | null>(null);
-</script>"#),
+</script>"#
+        ),
         r#"(document (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (raw_text) (end_tag (tag_name))))"#
     );
 }

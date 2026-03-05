@@ -9,10 +9,7 @@ use utils::parse;
 
 #[test]
 fn test_expression_simple_variable() {
-    assert_eq!(
-        parse("{name}"),
-        "(document (expression content: (js)))"
-    );
+    assert_eq!(parse("{name}"), "(document (expression content: (js)))");
 }
 
 #[test]
@@ -37,10 +34,7 @@ fn test_expression_multiple() {
 
 #[test]
 fn test_expression_number() {
-    assert_eq!(
-        parse("{42}"),
-        "(document (expression content: (js)))"
-    );
+    assert_eq!(parse("{42}"), "(document (expression content: (js)))");
 }
 
 #[test]
@@ -125,10 +119,7 @@ fn test_expression_object_property() {
 
 #[test]
 fn test_expression_array_access() {
-    assert_eq!(
-        parse("{items[0]}"),
-        "(document (expression content: (js)))"
-    );
+    assert_eq!(parse("{items[0]}"), "(document (expression content: (js)))");
 }
 
 #[test]
@@ -181,10 +172,7 @@ fn test_expression_nested_elements() {
 
 #[test]
 fn test_expression_with_braces_in_string() {
-    assert_eq!(
-        parse(r#"{'{}'}"#),
-        "(document (expression content: (js)))"
-    );
+    assert_eq!(parse(r#"{'{}'}"#), "(document (expression content: (js)))");
 }
 
 #[test]
@@ -249,18 +237,12 @@ fn test_expression_spread_object() {
 
 #[test]
 fn test_expression_empty_string() {
-    assert_eq!(
-        parse("{''}"),
-        "(document (expression content: (js)))"
-    );
+    assert_eq!(parse("{''}"), "(document (expression content: (js)))");
 }
 
 #[test]
 fn test_expression_with_whitespace() {
-    assert_eq!(
-        parse("{ value }"),
-        "(document (expression content: (js)))"
-    );
+    assert_eq!(parse("{ value }"), "(document (expression content: (js)))");
 }
 
 #[test]
@@ -297,10 +279,7 @@ fn test_reactive_block_in_script() {
 
 #[test]
 fn test_store_subscription() {
-    assert_eq!(
-        parse("{$count}"),
-        "(document (expression content: (js)))"
-    );
+    assert_eq!(parse("{$count}"), "(document (expression content: (js)))");
 }
 
 #[test]

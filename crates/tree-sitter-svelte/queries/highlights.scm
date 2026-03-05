@@ -19,4 +19,9 @@
 [
   (block_start binding: (pattern))
   (block_start index: (pattern))
+  (block_branch binding: (pattern))
 ] @variable
+
+; Comments inside tag attribute lists
+(tag_comment kind: (line_comment) @comment)
+(tag_comment kind: (block_comment) @comment)
