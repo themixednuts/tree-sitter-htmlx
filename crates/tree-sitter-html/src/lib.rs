@@ -162,6 +162,21 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_void_elements_do_not_capture_following_text() {
+        let mut parser = tree_sitter::Parser::new();
+        parser.set_language(&LANGUAGE.into()).unwrap();
+
+        let source = "<div><input>x</div>";
+        let tree = parser.parse(source, None).unwrap();
+
+        assert!(!tree.root_node().has_error());
+        assert_eq!(
+            tree.root_node().to_sexp(),
+            "(document (element (start_tag (tag_name)) (element (start_tag (tag_name))) (text) (end_tag (tag_name))))"
+        );
+    }
+
+    #[test]
     fn test_parse_p_implicit_close() {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&LANGUAGE.into()).unwrap();

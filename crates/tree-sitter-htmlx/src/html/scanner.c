@@ -19,8 +19,7 @@
  * - Self-closing tag delimiter
  *
  * Performance optimizations:
- * - Zero-copy tag name scanning with stack buffers
- * - ASCII-only character operations (no wchar overhead)
+ * - ASCII-only normalization for built-in tag matching
  * - Optimized delimiter matching with early exit
  * - Branch prediction hints
  */
@@ -45,9 +44,6 @@
 #define UNLIKELY(x) (x)
 #define ALWAYS_INLINE inline
 #endif
-
-// Maximum tag name length we handle on stack (covers all standard HTML tags)
-#define MAX_TAG_NAME_STACK 32
 
 // ============================================================================
 // Token types - must match grammar.js externals order
@@ -85,18 +81,41 @@ static ALWAYS_INLINE bool is_ascii_alnum(int32_t c) {
   return is_ascii_alpha(c) || (c >= '0' && c <= '9');
 }
 
+static ALWAYS_INLINE bool is_ascii_space(int32_t c) {
+  // HTML ASCII whitespace: space, tab, LF, FF, CR
+  return c == ' ' || c == '\t' || c == '\n' || c == '\f' || c == '\r';
+}
+
 static ALWAYS_INLINE bool is_tag_name_char(int32_t c) {
-  // Tag names: ASCII alphanumeric, hyphen, colon (for namespaces)
-  return is_ascii_alnum(c) || c == '-' || c == ':';
+  // Mirror the source parser: capture the whole tag token until a tag-name
+  // terminator, then validate the resulting name later.
+  return c != 0 && !is_ascii_space(c) && c != '/' && c != '>';
 }
 
 static ALWAYS_INLINE char to_ascii_upper(int32_t c) {
   return (c >= 'a' && c <= 'z') ? (char)(c - 32) : (char)c;
 }
 
-static ALWAYS_INLINE bool is_ascii_space(int32_t c) {
-  // HTML ASCII whitespace: space, tab, LF, FF, CR
-  return c == ' ' || c == '\t' || c == '\n' || c == '\f' || c == '\r';
+static ALWAYS_INLINE void push_utf8(String *string, int32_t c) {
+  if (c <= 0x7F) {
+    array_push(string, (char)c);
+  } else if (c <= 0x7FF) {
+    array_push(string, (char)(0xC0 | ((c >> 6) & 0x1F)));
+    array_push(string, (char)(0x80 | (c & 0x3F)));
+  } else if (c <= 0xFFFF) {
+    array_push(string, (char)(0xE0 | ((c >> 12) & 0x0F)));
+    array_push(string, (char)(0x80 | ((c >> 6) & 0x3F)));
+    array_push(string, (char)(0x80 | (c & 0x3F)));
+  } else {
+    array_push(string, (char)(0xF0 | ((c >> 18) & 0x07)));
+    array_push(string, (char)(0x80 | ((c >> 12) & 0x3F)));
+    array_push(string, (char)(0x80 | ((c >> 6) & 0x3F)));
+    array_push(string, (char)(0x80 | (c & 0x3F)));
+  }
+}
+
+static ALWAYS_INLINE void push_tag_name_char(String *string, int32_t c) {
+  push_utf8(string, c <= 0x7F ? to_ascii_upper(c) : c);
 }
 
 // ============================================================================
@@ -198,55 +217,17 @@ static void deserialize(Scanner *scanner, const char *buffer, unsigned length) {
 }
 
 // ============================================================================
-// Tag name scanning - optimized with stack buffer
+// Tag name scanning
 // ============================================================================
 
 /**
- * Scan tag name into stack buffer (zero-copy for standard tags)
- * Returns length of tag name, or 0 if no valid tag name
- */
-static unsigned scan_tag_name_into(TSLexer *lexer, char *buffer,
-                                   unsigned max_len) {
-  unsigned len = 0;
-
-  while (is_tag_name_char(lexer->lookahead) && len < max_len) {
-    buffer[len++] = to_ascii_upper(lexer->lookahead);
-    advance(lexer);
-  }
-
-  return len;
-}
-
-/**
  * Scan tag name - returns String (caller owns)
- * Only allocates heap for custom/long tag names
  */
 static String scan_tag_name(TSLexer *lexer) {
-  // Try stack buffer first
-  char stack_buffer[MAX_TAG_NAME_STACK];
-  unsigned len = scan_tag_name_into(lexer, stack_buffer, MAX_TAG_NAME_STACK);
-
-  // If we hit the limit and there's more, we need dynamic allocation
-  if (UNLIKELY(len == MAX_TAG_NAME_STACK &&
-               is_tag_name_char(lexer->lookahead))) {
-    String tag_name = array_new();
-    array_reserve(&tag_name, MAX_TAG_NAME_STACK * 2);
-    memcpy(tag_name.contents, stack_buffer, len);
-    tag_name.size = len;
-
-    while (is_tag_name_char(lexer->lookahead)) {
-      array_push(&tag_name, to_ascii_upper(lexer->lookahead));
-      advance(lexer);
-    }
-    return tag_name;
-  }
-
-  // Copy from stack to heap String
   String tag_name = array_new();
-  if (len > 0) {
-    array_reserve(&tag_name, len);
-    memcpy(tag_name.contents, stack_buffer, len);
-    tag_name.size = len;
+  while (is_tag_name_char(lexer->lookahead)) {
+    push_tag_name_char(&tag_name, lexer->lookahead);
+    advance(lexer);
   }
   return tag_name;
 }
@@ -560,6 +541,23 @@ static bool scan_text(TSLexer *lexer) {
   return false;
 }
 
+static bool scan_void_implicit_end_tag(Scanner *scanner, TSLexer *lexer,
+                                       const bool *valid_symbols) {
+  if (!valid_symbols[IMPLICIT_END_TAG] || scanner->tags.size == 0) {
+    return false;
+  }
+
+  Tag *parent = array_back(&scanner->tags);
+  if (!tag_is_void(parent)) {
+    return false;
+  }
+
+  lexer->mark_end(lexer);
+  pop_tag(scanner);
+  lexer->result_symbol = IMPLICIT_END_TAG;
+  return true;
+}
+
 // ============================================================================
 // Main scan function
 // ============================================================================
@@ -569,6 +567,10 @@ static bool scan(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
   if (valid_symbols[RAW_TEXT] && !valid_symbols[START_TAG_NAME] &&
       !valid_symbols[END_TAG_NAME]) {
     return scan_raw_text(scanner, lexer);
+  }
+
+  if (scan_void_implicit_end_tag(scanner, lexer, valid_symbols)) {
+    return true;
   }
 
   // Priority 2: Text content - capture before whitespace is skipped

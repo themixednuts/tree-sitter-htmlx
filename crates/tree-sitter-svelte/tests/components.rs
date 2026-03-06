@@ -14,6 +14,14 @@ fn test_component_self_closing() {
 }
 
 #[test]
+fn test_component_self_closing_with_unicode_name() {
+    assert_eq!(
+        parse("<Wunderschön />"),
+        "(document (element (self_closing_tag (tag_name))))"
+    );
+}
+
+#[test]
 fn test_component_with_children() {
     assert_eq!(
         parse("<Component><p>child</p></Component>"),
@@ -155,6 +163,22 @@ fn test_component_namespaced() {
     assert_eq!(
         parse("<Namespace.Component />"),
         "(document (element (self_closing_tag (tag_name object: (tag_member) property: (tag_member)))))"
+    );
+}
+
+#[test]
+fn test_component_namespaced_with_unicode_property() {
+    assert_eq!(
+        parse("<Namespace.Schön />"),
+        "(document (element (self_closing_tag (tag_name object: (tag_member) property: (tag_member)))))"
+    );
+}
+
+#[test]
+fn test_component_invalid_name_with_brackets_stays_single_tag_name() {
+    assert_eq!(
+        parse("<Components[1] />"),
+        "(document (element (self_closing_tag (tag_name))))"
     );
 }
 

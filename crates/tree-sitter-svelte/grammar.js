@@ -194,6 +194,19 @@ module.exports = grammar(HTMLX, {
           ),
           "}",
         ),
+        // Recovery: snippet with ( but missing ) — e.g. {#snippet foo(a, b}
+        prec(
+          -1,
+          seq(
+            token("{#"),
+            field("kind", alias("snippet", $.block_kind)),
+            field("name", $.snippet_name),
+            optional(field("type_parameters", $.snippet_type_parameters)),
+            "(",
+            optional(field("parameters", $.snippet_parameters)),
+            "}",
+          ),
+        ),
         seq(
           token("{#"),
           field("kind", alias("snippet", $.block_kind)),

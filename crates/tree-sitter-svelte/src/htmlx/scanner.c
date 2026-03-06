@@ -42,6 +42,7 @@ enum {
     BLOCK_TAG_COMMENT,    // /* comment */ in tag attribute list
     UNTERMINATED_TAG_END, // malformed start tag ended by newline boundary
     TEXTAREA_END_BOUNDARY,
+    UNTERMINATED_TAG_END_OPEN, // like UNTERMINATED_TAG_END but tag stays on stack
 };
 
 typedef struct {
@@ -54,6 +55,10 @@ static inline bool is_alpha(int32_t c) {
     return (unsigned)(c | 0x20) - 'a' < 26;
 }
 
+static inline bool is_non_ascii(int32_t c) {
+    return c > 0x7F;
+}
+
 static inline bool is_digit(int32_t c) {
     return (unsigned)(c - '0') < 10;
 }
@@ -62,20 +67,24 @@ static inline bool is_alnum(int32_t c) {
     return is_alpha(c) || is_digit(c);
 }
 
+static inline bool is_space(int32_t c) {
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+}
+
 static inline bool is_name_char(int32_t c) {
-    return is_alnum(c) || c == '-' || c == '_';
+    return c != 0 && !is_space(c) && c != '/' && c != '>' && c != ':' && c != '.';
+}
+
+static inline bool is_name_start(int32_t c) {
+    return is_alpha(c) || is_non_ascii(c);
 }
 
 static inline bool is_ident_start(int32_t c) {
-    return is_alpha(c) || c == '_' || c == '$';
+    return is_alpha(c) || c == '_' || c == '$' || is_non_ascii(c);
 }
 
 static inline bool is_ident_char(int32_t c) {
-    return is_alnum(c) || c == '_' || c == '$';
-}
-
-static inline bool is_space(int32_t c) {
-    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+    return is_alnum(c) || c == '_' || c == '$' || is_non_ascii(c);
 }
 
 static inline int32_t to_upper(int32_t c) {
@@ -84,6 +93,28 @@ static inline int32_t to_upper(int32_t c) {
 
 static inline int32_t to_lower(int32_t c) {
     return is_alpha(c) ? (c | 0x20) : c;
+}
+
+static inline void push_htmlx_utf8(String *string, int32_t c) {
+    if (c <= 0x7F) {
+        array_push(string, (char)c);
+    } else if (c <= 0x7FF) {
+        array_push(string, (char)(0xC0 | ((c >> 6) & 0x1F)));
+        array_push(string, (char)(0x80 | (c & 0x3F)));
+    } else if (c <= 0xFFFF) {
+        array_push(string, (char)(0xE0 | ((c >> 12) & 0x0F)));
+        array_push(string, (char)(0x80 | ((c >> 6) & 0x3F)));
+        array_push(string, (char)(0x80 | (c & 0x3F)));
+    } else {
+        array_push(string, (char)(0xF0 | ((c >> 18) & 0x07)));
+        array_push(string, (char)(0x80 | ((c >> 12) & 0x3F)));
+        array_push(string, (char)(0x80 | ((c >> 6) & 0x3F)));
+        array_push(string, (char)(0x80 | (c & 0x3F)));
+    }
+}
+
+static inline void push_name_char(String *string, int32_t c) {
+    push_htmlx_utf8(string, c <= 0x7F ? to_upper(c) : c);
 }
 
 /**
@@ -116,7 +147,7 @@ static bool scan_htmlx_text(TSLexer *lexer) {
     return false;
 }
 
-static bool scan_svelte_textarea(State *state, TSLexer *lexer, const bool *valid) {
+static bool scan_textarea_text(State *state, TSLexer *lexer, const bool *valid) {
     if (state->html->tags.size == 0) {
         return false;
     }
@@ -183,13 +214,30 @@ static bool in_textarea(State *state) {
     return array_back(&state->html->tags)->type == TEXTAREA;
 }
 
+static bool scan_void_end(State *state, TSLexer *lexer, const bool *valid) {
+    if (!valid[IMPLICIT_END_TAG] || state->html->tags.size == 0) {
+        return false;
+    }
+
+    Tag *parent = array_back(&state->html->tags);
+    if (!tag_is_void(parent)) {
+        return false;
+    }
+
+    lexer->mark_end(lexer);
+    Tag popped = array_pop(&state->html->tags);
+    tag_free(&popped);
+    lexer->result_symbol = IMPLICIT_END_TAG;
+    return true;
+}
+
 static bool scan_start_tag(State *state, TSLexer *lexer, const bool *valid) {
-    if (!is_alpha(lexer->lookahead)) return false;
+    if (!is_name_start(lexer->lookahead)) return false;
 
     String name = array_new();
     bool preserve_mark_end = false;
     while (is_name_char(lexer->lookahead)) {
-        array_push(&name, (char)to_upper(lexer->lookahead));
+        push_name_char(&name, lexer->lookahead);
         advance(lexer);
     }
 
@@ -208,7 +256,7 @@ static bool scan_start_tag(State *state, TSLexer *lexer, const bool *valid) {
     if (lexer->lookahead == '.') {
         lexer->mark_end(lexer);
         advance(lexer);
-        if (is_alpha(lexer->lookahead) && valid[MEMBER_TAG_OBJECT]) {
+        if (is_ident_start(lexer->lookahead) && valid[MEMBER_TAG_OBJECT]) {
             lexer->result_symbol = MEMBER_TAG_OBJECT;
             array_delete(&name);
             return true;
@@ -240,7 +288,7 @@ static bool scan_start_tag(State *state, TSLexer *lexer, const bool *valid) {
 }
 
 static bool scan_local_name(State *state, TSLexer *lexer) {
-    if (!is_alpha(lexer->lookahead)) return false;
+    if (!is_name_start(lexer->lookahead)) return false;
 
     while (is_name_char(lexer->lookahead)) advance(lexer);
 
@@ -251,12 +299,12 @@ static bool scan_local_name(State *state, TSLexer *lexer) {
 }
 
 static bool scan_end_tag(State *state, TSLexer *lexer, const bool *valid) {
-    if (!is_alpha(lexer->lookahead)) return false;
+    if (!is_name_start(lexer->lookahead)) return false;
 
     String name = array_new();
     bool preserve_mark_end = false;
     while (is_name_char(lexer->lookahead)) {
-        array_push(&name, (char)to_upper(lexer->lookahead));
+        push_name_char(&name, lexer->lookahead);
         advance(lexer);
     }
 
@@ -273,7 +321,7 @@ static bool scan_end_tag(State *state, TSLexer *lexer, const bool *valid) {
     if (lexer->lookahead == '.') {
         lexer->mark_end(lexer);
         advance(lexer);
-        if (is_alpha(lexer->lookahead) && valid[MEMBER_TAG_OBJECT]) {
+        if (is_ident_start(lexer->lookahead) && valid[MEMBER_TAG_OBJECT]) {
             lexer->result_symbol = MEMBER_TAG_OBJECT;
             array_delete(&name);
             return true;
@@ -290,13 +338,23 @@ static bool scan_end_tag(State *state, TSLexer *lexer, const bool *valid) {
         lexer->mark_end(lexer);
     }
 
-    if (valid[END_TAG_NAME]) {
+    if (valid[END_TAG_NAME] || valid[ERRONEOUS_END_TAG_NAME]) {
         Tag tag = tag_for_name(name);
         if (state->html->tags.size > 0 && tag_eq(array_back(&state->html->tags), &tag)) {
+            if (!valid[END_TAG_NAME]) {
+                tag_free(&tag);
+                array_delete(&name);
+                return false;
+            }
             Tag popped = array_pop(&state->html->tags);
             tag_free(&popped);
             lexer->result_symbol = END_TAG_NAME;
         } else {
+            if (!valid[ERRONEOUS_END_TAG_NAME]) {
+                tag_free(&tag);
+                array_delete(&name);
+                return false;
+            }
             lexer->result_symbol = ERRONEOUS_END_TAG_NAME;
         }
         tag_free(&tag);
@@ -606,7 +664,7 @@ static int check_directive_marker(TSLexer *lexer) {
 static bool scan_member_tag_property(TSLexer *lexer) {
     while (is_space(lexer->lookahead)) skip(lexer);
 
-    if (!is_alpha(lexer->lookahead)) return false;
+    if (!is_ident_start(lexer->lookahead)) return false;
 
     while (is_ident_char(lexer->lookahead)) {
         advance(lexer);
@@ -646,7 +704,7 @@ static bool scan_attribute_value(TSLexer *lexer) {
     return false;
 }
 
-static bool scan_unterminated_tag_end(State *state, TSLexer *lexer) {
+static bool scan_unterminated_tag_end(State *state, TSLexer *lexer, const bool *valid) {
     if (lexer->lookahead != '\n' && lexer->lookahead != '\r') return false;
 
     skip(lexer);
@@ -664,6 +722,7 @@ static bool scan_unterminated_tag_end(State *state, TSLexer *lexer) {
     int32_t next = lexer->lookahead;
 
     if (next == '{') {
+        if (!valid[UNTERMINATED_TAG_END]) return false;
         // Peek marker to distinguish malformed block/tag starts from valid
         // multiline shorthand/spread attributes.
         advance(lexer);
@@ -689,6 +748,30 @@ static bool scan_unterminated_tag_end(State *state, TSLexer *lexer) {
     if (next == '>' || next == '/' || next == '|' || next == '"' || next == '\'' || is_ident_start(next)) {
         return false;
     }
+
+    // Check for matching close tag: </matching_tag_name
+    // If the close tag matches the current open tag, emit UNTERMINATED_TAG_END_OPEN
+    // (keeps tag on stack) so the grammar can match: start_tag + children + end_tag
+    if (next == '<' && state->html->tags.size > 0 && valid[UNTERMINATED_TAG_END_OPEN]) {
+        advance(lexer);
+        if (lexer->lookahead == '/') {
+            advance(lexer);
+            String name = array_new();
+            while (is_name_char(lexer->lookahead)) {
+                push_name_char(&name, lexer->lookahead);
+                advance(lexer);
+            }
+            Tag tag = tag_for_name(name);
+            bool matches = tag_eq(array_back(&state->html->tags), &tag);
+            tag_free(&tag);
+            if (matches) {
+                lexer->result_symbol = UNTERMINATED_TAG_END_OPEN;
+                return true;
+            }
+        }
+    }
+
+    if (!valid[UNTERMINATED_TAG_END]) return false;
 
     if (state->html->tags.size > 0) {
         Tag popped = array_pop(&state->html->tags);
@@ -818,12 +901,16 @@ static bool scan_pipe_attribute_name(TSLexer *lexer) {
 
 static bool scan(State *state, TSLexer *lexer, const bool *valid) {
     if ((valid[TEXT] || valid[TEXTAREA_END_BOUNDARY]) && in_textarea(state)) {
-        if (scan_svelte_textarea(state, lexer, valid)) {
+        if (scan_textarea_text(state, lexer, valid)) {
             return true;
         }
         if (lexer->lookahead == '{') {
             return false;
         }
+    }
+
+    if (scan_void_end(state, lexer, valid)) {
+        return true;
     }
 
     // Text content - handle before whitespace is skipped
@@ -846,7 +933,8 @@ static bool scan(State *state, TSLexer *lexer, const bool *valid) {
         return true;
     }
 
-    if (valid[UNTERMINATED_TAG_END] && scan_unterminated_tag_end(state, lexer)) {
+    if ((valid[UNTERMINATED_TAG_END] || valid[UNTERMINATED_TAG_END_OPEN]) &&
+        scan_unterminated_tag_end(state, lexer, valid)) {
         return true;
     }
 
@@ -900,12 +988,12 @@ static bool scan(State *state, TSLexer *lexer, const bool *valid) {
         return true;
     }
 
-    if (is_alpha(c)) {
+    if (is_name_start(c)) {
         if (valid[TAG_NAMESPACE] || valid[START_TAG_NAME] ||
             valid[RAW_TEXT_START_TAG_NAME] || valid[MEMBER_TAG_OBJECT]) {
             if (scan_start_tag(state, lexer, valid)) return true;
         }
-        if (valid[TAG_NAMESPACE] || valid[END_TAG_NAME] || valid[MEMBER_TAG_OBJECT]) {
+        if (valid[TAG_NAMESPACE] || valid[END_TAG_NAME] || valid[ERRONEOUS_END_TAG_NAME] || valid[MEMBER_TAG_OBJECT]) {
             if (scan_end_tag(state, lexer, valid)) return true;
         }
     }

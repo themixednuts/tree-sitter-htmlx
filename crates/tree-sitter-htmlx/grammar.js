@@ -38,13 +38,20 @@ module.exports = grammar(HTML, {
       $._block_tag_comment, // /* comment */ in tag attribute list
       $._unterminated_tag_end, // newline-delimited malformed start tag terminator
       $._textarea_end_boundary, // zero-width boundary before </textarea> in template mode
+      $._unterminated_tag_end_open, // like _unterminated_tag_end but tag stays on stack (matching close tag follows)
     ]),
 
   rules: {
-    _node: ($, original) => choice(original, prec(-1, $.expression)),
+    _node: ($, original) => choice(original, $.erroneous_end_tag, prec(-1, $.expression)),
 
     element: ($) =>
       choice(
+        // Unterminated start tags with matching close tag (scanner keeps tag on stack).
+        seq(
+          alias($._unterminated_start_tag_with_close, $.start_tag),
+          repeat($._node),
+          $.end_tag,
+        ),
         // Unterminated start tags recover as standalone elements.
         seq(alias($._unterminated_start_tag, $.start_tag)),
         prec(
@@ -107,6 +114,14 @@ module.exports = grammar(HTML, {
         alias($._start_tag_name, $.tag_name),
         repeat($._tag_attribute_item),
         $._unterminated_tag_end,
+      ),
+
+    _unterminated_start_tag_with_close: ($) =>
+      seq(
+        "<",
+        alias($._start_tag_name, $.tag_name),
+        repeat($._tag_attribute_item),
+        $._unterminated_tag_end_open,
       ),
 
     _broken_member_unterminated_start_tag: ($) =>

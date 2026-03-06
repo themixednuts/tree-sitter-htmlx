@@ -40,6 +40,14 @@ fn test_element_nested() {
 }
 
 #[test]
+fn test_erroneous_end_tag_is_typed() {
+    assert_eq!(
+        parse("</div>"),
+        "(document (erroneous_end_tag (erroneous_end_tag_name)))"
+    );
+}
+
+#[test]
 fn test_title_element_allows_expression_children() {
     assert_eq!(
         parse("<title>{pageTitle}</title>"),
@@ -71,6 +79,14 @@ fn test_textarea_expression_exposes_htmlx_expression() {
     );
 }
 
+#[test]
+fn test_void_element_closes_before_following_expression() {
+    assert_eq!(
+        parse("<label><input>{value}</label>"),
+        "(document (element (start_tag (tag_name)) (element (start_tag (tag_name))) (expression content: (js)) (end_tag (tag_name))))"
+    );
+}
+
 // =============================================================================
 // Component elements (PascalCase)
 // =============================================================================
@@ -79,6 +95,14 @@ fn test_textarea_expression_exposes_htmlx_expression() {
 fn test_component_element() {
     assert_eq!(
         parse("<MyComponent />"),
+        "(document (element (self_closing_tag (tag_name))))"
+    );
+}
+
+#[test]
+fn test_component_element_with_unicode_name() {
+    assert_eq!(
+        parse("<Wunderschön />"),
         "(document (element (self_closing_tag (tag_name))))"
     );
 }
@@ -96,6 +120,14 @@ fn test_component_dotted() {
     // Dotted components are parsed with object and property fields containing tag_member nodes
     assert_eq!(
         parse("<UI.Button />"),
+        "(document (element (self_closing_tag (tag_name object: (tag_member) property: (tag_member)))))"
+    );
+}
+
+#[test]
+fn test_component_dotted_with_unicode_property() {
+    assert_eq!(
+        parse("<UI.Schön />"),
         "(document (element (self_closing_tag (tag_name object: (tag_member) property: (tag_member)))))"
     );
 }
@@ -130,10 +162,47 @@ fn test_namespaced_element() {
 }
 
 #[test]
+fn test_custom_element_with_unicode_suffix() {
+    assert_eq!(
+        parse("<math-α></math-α>"),
+        "(document (element (start_tag (tag_name)) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
+fn test_invalid_element_name_with_brackets_stays_single_tag_name() {
+    assert_eq!(
+        parse("<yes[no]></yes[no]>"),
+        "(document (element (start_tag (tag_name)) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
 fn test_namespaced_self_closing() {
     assert_eq!(
         parse("<svelte:self />"),
         "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+    );
+}
+
+// =============================================================================
+// Unterminated start tags with matching close tags
+// =============================================================================
+
+#[test]
+fn test_unterminated_tag_with_comment_then_close() {
+    // <div //comment\n</div> should produce a proper element, not standalone + erroneous end tag
+    assert_eq!(
+        parse("<div //comment\n</div>"),
+        "(document (element (start_tag (tag_name) (tag_comment kind: (line_comment))) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
+fn test_unterminated_tag_with_attr_and_comment_then_close() {
+    assert_eq!(
+        parse("<div class=\"x\" //comment\n</div>"),
+        "(document (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (tag_comment kind: (line_comment))) (end_tag (tag_name))))"
     );
 }
 

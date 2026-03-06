@@ -7,10 +7,10 @@
 // Vendored HTMLX scanner (committed in this crate for portability).
 #include "htmlx/scanner.c"
 
-// Svelte external token indices (after HTMLX's 25 tokens: 0-24)
-// HTML tokens (0-8) + HTMLX tokens (9-24, includes TEXTAREA_END_BOUNDARY at 24)
+// Svelte external token indices (after HTMLX's 26 tokens: 0-25)
+// HTML tokens (0-8) + HTMLX tokens (9-25, includes UNTERMINATED_TAG_END_OPEN at 25)
 enum {
-    ITERATOR_EXPRESSION = 25,
+    ITERATOR_EXPRESSION = 26,
     BINDING_PATTERN,
     KEY_EXPRESSION,
     TAG_EXPRESSION,

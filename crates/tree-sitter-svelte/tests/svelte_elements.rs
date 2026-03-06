@@ -288,6 +288,22 @@ fn test_svelte_boundary_basic() {
 }
 
 #[test]
+fn test_erroneous_end_tag_is_typed() {
+    assert_eq!(
+        parse("</div>"),
+        "(document (erroneous_end_tag (erroneous_end_tag_name)))"
+    );
+}
+
+#[test]
+fn test_void_element_closes_before_following_expression() {
+    assert_eq!(
+        parse("<label><input>{value}</label>"),
+        "(document (element (start_tag (tag_name)) (element (start_tag (tag_name))) (expression content: (js)) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
 fn test_svelte_boundary_onerror() {
     assert_eq!(
         parse("<svelte:boundary onerror={handleError}><Child /></svelte:boundary>"),

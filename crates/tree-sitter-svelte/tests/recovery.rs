@@ -119,3 +119,18 @@ fn test_snippet_block_missing_right_brace_recovers_typed_block_start() {
         "(document (block (block_start kind: (block_kind) name: (snippet_name) parameters: (snippet_parameters) (MISSING \"}\")) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (block_end kind: (block_kind))))"
     );
 }
+
+#[test]
+fn test_snippet_block_missing_right_paren_preserves_parameters() {
+    // {#snippet foo(a, b} — missing ) before }
+    // Parameters should be preserved (not wrapped in ERROR)
+    let tree = parse("{#snippet foo(a, b}<p>x</p>{/snippet}");
+    assert!(
+        tree.contains("parameters: (snippet_parameters)"),
+        "Parameters should be preserved in recovery: {tree}"
+    );
+    assert!(
+        !tree.contains("(ERROR"),
+        "Should not produce ERROR node: {tree}"
+    );
+}
