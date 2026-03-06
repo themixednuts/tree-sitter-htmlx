@@ -7,15 +7,61 @@
 // Vendored HTMLX scanner (committed in this crate for portability).
 #include "htmlx/scanner.c"
 
-// Svelte external token indices (after HTMLX's 24 tokens: 0-23)
-// HTML tokens (0-8) + HTMLX tokens (9-23, includes UNTERMINATED_TAG_END at 23)
+// Svelte external token indices (after HTMLX's 25 tokens: 0-24)
+// HTML tokens (0-8) + HTMLX tokens (9-24, includes TEXTAREA_END_BOUNDARY at 24)
 enum {
-    ITERATOR_EXPRESSION = 24,
+    ITERATOR_EXPRESSION = 25,
     BINDING_PATTERN,
     KEY_EXPRESSION,
     TAG_EXPRESSION,
     SNIPPET_TYPE_PARAMS,
 };
+
+static bool is_svelte_tag_name_char(int32_t c) {
+    return is_ident_char(c) || c == '-' || c == ':' || c == '.';
+}
+
+static bool scan_lt_as_tag_boundary(TSLexer *lexer) {
+    advance(lexer);
+
+    if (lexer->lookahead == '/' || lexer->lookahead == '!') {
+        return true;
+    }
+
+    if (!is_alpha(lexer->lookahead)) {
+        return false;
+    }
+
+    while (is_svelte_tag_name_char(lexer->lookahead)) {
+        advance(lexer);
+    }
+
+    if (lexer->lookahead == '>') {
+        advance(lexer);
+        return lexer->lookahead != '(';
+    }
+
+    if (lexer->lookahead == '/') {
+        advance(lexer);
+        return lexer->lookahead == '>';
+    }
+
+    if (!is_space(lexer->lookahead)) {
+        return false;
+    }
+
+    while (is_space(lexer->lookahead)) {
+        advance(lexer);
+    }
+
+    return lexer->lookahead == '>'
+        || lexer->lookahead == '/'
+        || lexer->lookahead == '{'
+        || lexer->lookahead == '"'
+        || lexer->lookahead == '\''
+        || lexer->lookahead == '|'
+        || is_ident_start(lexer->lookahead);
+}
 
 // Scan balanced expression, excluding trailing whitespace at depth 0.
 // Marks end position before any trailing whitespace.
@@ -44,9 +90,7 @@ static bool scan_balanced(TSLexer *lexer, int32_t stop_char, bool stop_comma) {
                 needs_mark = false;
             }
 
-            advance(lexer);
-            int32_t next = lexer->lookahead;
-            if (next == '/' || next == '!') {
+            if (scan_lt_as_tag_boundary(lexer)) {
                 found_terminator = true;
                 break;
             }
@@ -173,6 +217,10 @@ static bool scan_iterator(TSLexer *lexer) {
             while (is_space(lexer->lookahead)) advance(lexer);
 
             c = lexer->lookahead;
+            if (c == '<' && scan_lt_as_tag_boundary(lexer)) {
+                lexer->result_symbol = ITERATOR_EXPRESSION;
+                return has_content;
+            }
             if (c == 'a') {
                 advance(lexer);
                 if (match_keyword(lexer, "s", 1)) {
@@ -262,9 +310,7 @@ static bool scan_tag_expression(TSLexer *lexer) {
                 needs_mark = false;
             }
 
-            advance(lexer);
-            int32_t next = lexer->lookahead;
-            if (next == '/' || next == '!') {
+            if (scan_lt_as_tag_boundary(lexer)) {
                 found_terminator = true;
                 break;
             }

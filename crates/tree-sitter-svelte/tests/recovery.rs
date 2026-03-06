@@ -103,3 +103,19 @@ fn test_unterminated_tag_breaks_before_block_branches() {
         "Expected else/then/catch branches to survive recovery: {tree}"
     );
 }
+
+#[test]
+fn test_if_block_missing_right_brace_recovers_typed_block_start() {
+    assert_eq!(
+        parse("{#if visible <p>ok</p>{/if}"),
+        "(document (block (block_start kind: (block_kind) expression: (expression) (MISSING \"}\")) (text) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (block_end kind: (block_kind))))"
+    );
+}
+
+#[test]
+fn test_snippet_block_missing_right_brace_recovers_typed_block_start() {
+    assert_eq!(
+        parse("{#snippet children(name)<p>{name}</p>{/snippet}"),
+        "(document (block (block_start kind: (block_kind) name: (snippet_name) parameters: (snippet_parameters) (MISSING \"}\")) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (block_end kind: (block_kind))))"
+    );
+}

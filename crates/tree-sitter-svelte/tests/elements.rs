@@ -42,6 +42,38 @@ fn test_element_with_expression() {
 }
 
 #[test]
+fn test_textarea_plain_text_stays_text_like() {
+    assert_eq!(
+        parse("<textarea>plain <b>text</b></textarea>"),
+        "(document (element (start_tag (tag_name)) (text) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
+fn test_textarea_expression_exposes_svelte_expression() {
+    assert_eq!(
+        parse("<textarea>{value}</textarea>"),
+        "(document (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
+fn test_textarea_html_tag_exposes_svelte_tag() {
+    assert_eq!(
+        parse("<textarea>{@html value}</textarea>"),
+        "(document (element (start_tag (tag_name)) (tag kind: (tag_kind) expression: (expression_value)) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
+fn test_textarea_if_block_exposes_svelte_block() {
+    assert_eq!(
+        parse("<textarea>{#if ok}{/if}</textarea>"),
+        "(document (element (start_tag (tag_name)) (block (block_start kind: (block_kind) expression: (expression)) (block_end kind: (block_kind))) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
 fn test_element_mixed_content() {
     assert_eq!(
         parse("<p>Hello {name}!</p>"),

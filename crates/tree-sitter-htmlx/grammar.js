@@ -37,6 +37,7 @@ module.exports = grammar(HTML, {
       $._line_tag_comment, // // comment in tag attribute list
       $._block_tag_comment, // /* comment */ in tag attribute list
       $._unterminated_tag_end, // newline-delimited malformed start tag terminator
+      $._textarea_end_boundary, // zero-width boundary before </textarea> in template mode
     ]),
 
   rules: {
@@ -53,6 +54,15 @@ module.exports = grammar(HTML, {
         seq(alias($._namespaced_unterminated_start_tag, $.start_tag)),
         seq(alias($._member_unterminated_start_tag, $.start_tag)),
         seq(alias($._raw_text_unterminated_start_tag, $.start_tag)),
+        prec(
+          1,
+          seq(
+            $.start_tag,
+            repeat($._node),
+            $._textarea_end_boundary,
+            $.end_tag,
+          ),
+        ),
         // Normal elements - content is parsed as nodes
         seq(
           $.start_tag,

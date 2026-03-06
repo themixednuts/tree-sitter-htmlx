@@ -37,6 +37,7 @@ enum {
     LINE_TAG_COMMENT,     // // comment in tag attribute list
     BLOCK_TAG_COMMENT,    // /* comment */ in tag attribute list
     UNTERMINATED_TAG_END, // malformed start tag ended by newline boundary
+    TEXTAREA_END_BOUNDARY,
 };
 
 typedef struct {
@@ -111,6 +112,73 @@ static bool scan_htmlx_text(TSLexer *lexer) {
     return false;
 }
 
+static bool scan_textarea_text(State *state, TSLexer *lexer, const bool *valid) {
+    if (state->html->tags.size == 0) {
+        return false;
+    }
+
+    Tag *tag = array_back(&state->html->tags);
+    if (tag->type != TEXTAREA) {
+        return false;
+    }
+
+    lexer->mark_end(lexer);
+
+    unsigned match_index = 0;
+    const char *delimiter = "</TEXTAREA";
+    const unsigned delimiter_len = 10;
+    bool has_content = false;
+
+    while (lexer->lookahead != 0) {
+        if (lexer->lookahead == '{') {
+            if (match_index > 0) {
+                lexer->mark_end(lexer);
+                has_content = true;
+            }
+            break;
+        }
+
+        char upper = to_upper(lexer->lookahead);
+        if (upper == delimiter[match_index]) {
+            match_index++;
+            if (match_index == delimiter_len) {
+                if (!has_content && valid[TEXTAREA_END_BOUNDARY]) {
+                    lexer->result_symbol = TEXTAREA_END_BOUNDARY;
+                    return true;
+                }
+                break;
+            }
+            advance(lexer);
+            continue;
+        }
+
+        match_index = 0;
+        advance(lexer);
+        has_content = true;
+        lexer->mark_end(lexer);
+    }
+
+    if (match_index > 0 && lexer->lookahead == 0) {
+        has_content = true;
+        lexer->mark_end(lexer);
+    }
+
+    if (!has_content) {
+        return false;
+    }
+
+    lexer->result_symbol = TEXT;
+    return true;
+}
+
+static bool in_textarea(State *state) {
+    if (state->html->tags.size == 0) {
+        return false;
+    }
+
+    return array_back(&state->html->tags)->type == TEXTAREA;
+}
+
 static bool scan_start_tag(State *state, TSLexer *lexer, const bool *valid) {
     if (!is_alpha(lexer->lookahead)) return false;
 
@@ -154,7 +222,6 @@ static bool scan_start_tag(State *state, TSLexer *lexer, const bool *valid) {
         switch (tag.type) {
             case SCRIPT:
             case STYLE:
-            case TEXTAREA:
                 lexer->result_symbol = RAW_TEXT_START_TAG_NAME;
                 break;
             default:
@@ -746,6 +813,15 @@ static bool scan_pipe_attribute_name(TSLexer *lexer) {
 }
 
 static bool scan(State *state, TSLexer *lexer, const bool *valid) {
+    if ((valid[TEXT] || valid[TEXTAREA_END_BOUNDARY]) && in_textarea(state)) {
+        if (scan_textarea_text(state, lexer, valid)) {
+            return true;
+        }
+        if (lexer->lookahead == '{') {
+            return false;
+        }
+    }
+
     // Text content - handle before whitespace is skipped
     // HTMLX text stops at '{' in addition to '<' and '&'
     if (valid[TEXT]) {

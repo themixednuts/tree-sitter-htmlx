@@ -55,6 +55,22 @@ fn test_title_element_preserves_nested_elements_for_validation() {
     );
 }
 
+#[test]
+fn test_textarea_plain_text_stays_text_like() {
+    assert_eq!(
+        parse("<textarea>plain <b>text</b></textarea>"),
+        "(document (element (start_tag (tag_name)) (text) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
+fn test_textarea_expression_exposes_htmlx_expression() {
+    assert_eq!(
+        parse("<textarea>{value}</textarea>"),
+        "(document (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))))"
+    );
+}
+
 // =============================================================================
 // Component elements (PascalCase)
 // =============================================================================
