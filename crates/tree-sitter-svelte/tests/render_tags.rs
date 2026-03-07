@@ -7,7 +7,7 @@ use utils::parse;
 fn test_render_no_args() {
     assert_eq!(
         parse("{@render greeting()}"),
-        "(document (tag kind: (tag_kind) expression: (expression_value)))"
+        "(document (render_tag expression: (expression_value)))"
     );
 }
 
@@ -15,7 +15,7 @@ fn test_render_no_args() {
 fn test_render_with_arg() {
     assert_eq!(
         parse("{@render button(text)}"),
-        "(document (tag kind: (tag_kind) expression: (expression_value)))"
+        "(document (render_tag expression: (expression_value)))"
     );
 }
 
@@ -23,7 +23,7 @@ fn test_render_with_arg() {
 fn test_render_with_string_arg() {
     assert_eq!(
         parse(r#"{@render button("Click me")}"#),
-        "(document (tag kind: (tag_kind) expression: (expression_value)))"
+        "(document (render_tag expression: (expression_value)))"
     );
 }
 
@@ -31,7 +31,7 @@ fn test_render_with_string_arg() {
 fn test_render_multiple_args() {
     assert_eq!(
         parse("{@render item(name, value, index)}"),
-        "(document (tag kind: (tag_kind) expression: (expression_value)))"
+        "(document (render_tag expression: (expression_value)))"
     );
 }
 
@@ -39,7 +39,7 @@ fn test_render_multiple_args() {
 fn test_render_expression_arg() {
     assert_eq!(
         parse("{@render row(items[i], i)}"),
-        "(document (tag kind: (tag_kind) expression: (expression_value)))"
+        "(document (render_tag expression: (expression_value)))"
     );
 }
 
@@ -47,7 +47,7 @@ fn test_render_expression_arg() {
 fn test_render_in_each() {
     assert_eq!(
         parse("{#each items as item}{@render row(item)}{/each}"),
-        "(document (block (block_start kind: (block_kind) expression: (expression) binding: (pattern)) (tag kind: (tag_kind) expression: (expression_value)) (block_end kind: (block_kind))))"
+        "(document (each_block expression: (expression) binding: (pattern) (render_tag expression: (expression_value)) (block_end)))"
     );
 }
 
@@ -55,7 +55,7 @@ fn test_render_in_each() {
 fn test_render_in_if() {
     assert_eq!(
         parse("{#if show}{@render content()}{/if}"),
-        "(document (block (block_start kind: (block_kind) expression: (expression)) (tag kind: (tag_kind) expression: (expression_value)) (block_end kind: (block_kind))))"
+        "(document (if_block expression: (expression) (render_tag expression: (expression_value)) (block_end)))"
     );
 }
 
@@ -63,7 +63,7 @@ fn test_render_in_if() {
 fn test_render_with_object_arg() {
     assert_eq!(
         parse("{@render card({ title, body })}"),
-        "(document (tag kind: (tag_kind) expression: (expression_value)))"
+        "(document (render_tag expression: (expression_value)))"
     );
 }
 
@@ -71,6 +71,6 @@ fn test_render_with_object_arg() {
 fn test_render_with_spread() {
     assert_eq!(
         parse("{@render component(...props)}"),
-        "(document (tag kind: (tag_kind) expression: (expression_value)))"
+        "(document (render_tag expression: (expression_value)))"
     );
 }

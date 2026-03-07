@@ -61,7 +61,7 @@ fn test_textarea_expression_exposes_svelte_expression() {
 fn test_textarea_html_tag_exposes_svelte_tag() {
     assert_eq!(
         parse("<textarea>{@html value}</textarea>"),
-        "(document (element (start_tag (tag_name)) (tag kind: (tag_kind) expression: (expression_value)) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (html_tag expression: (expression_value)) (end_tag (tag_name))))"
     );
 }
 
@@ -69,7 +69,15 @@ fn test_textarea_html_tag_exposes_svelte_tag() {
 fn test_textarea_if_block_exposes_svelte_block() {
     assert_eq!(
         parse("<textarea>{#if ok}{/if}</textarea>"),
-        "(document (element (start_tag (tag_name)) (block (block_start kind: (block_kind) expression: (expression)) (block_end kind: (block_kind))) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (if_block expression: (expression) (block_end)) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
+fn test_textarea_ignores_malformed_close_until_real_end_tag() {
+    assert_eq!(
+        parse("<textarea>\n\t<p>not actu </textar ally an element. {foo}</p>\n</textare\n\n\n> </textaread >asdf</textarea\n\n\n</textarea\n\n>\n"),
+        "(document (element (start_tag (tag_name)) (text) (expression content: (js)) (text) (end_tag (tag_name))) (text))"
     );
 }
 

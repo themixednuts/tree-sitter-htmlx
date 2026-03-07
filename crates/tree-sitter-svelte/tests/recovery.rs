@@ -30,7 +30,7 @@ fn test_unclosed_await_block_has_local_recovery_shape() {
         tree.contains("(ERROR"),
         "Expected recovery ERROR node in malformed parse: {tree}"
     );
-    assert!(tree.contains("(block_branch"));
+    assert!(tree.contains("(await_branch"));
 }
 
 #[test]
@@ -39,10 +39,10 @@ fn test_loose_unclosed_open_tag_does_not_swallow_following_blocks() {
     let tree = parse(source);
 
     assert!(
-        !tree.contains("(ERROR (block_start"),
+        !tree.contains("(ERROR (if_block"),
         "Malformed open tags should not collapse later blocks into one error: {tree}"
     );
-    assert!(tree.matches("(block (block_start").count() >= 2);
+    assert!(tree.matches("(if_block").count() >= 2);
 }
 
 #[test]
@@ -98,8 +98,12 @@ fn test_unterminated_tag_breaks_before_block_branches() {
         !tree.contains("(ERROR"),
         "Unterminated tags before block branches should recover without root ERROR: {tree}"
     );
+    // Check for else_clause, else_if_clause, or await_branch nodes
+    let branch_count = tree.matches("(else_clause").count()
+        + tree.matches("(else_if_clause").count()
+        + tree.matches("(await_branch").count();
     assert!(
-        tree.matches("(block_branch").count() >= 3,
+        branch_count >= 3,
         "Expected else/then/catch branches to survive recovery: {tree}"
     );
 }
@@ -108,7 +112,7 @@ fn test_unterminated_tag_breaks_before_block_branches() {
 fn test_if_block_missing_right_brace_recovers_typed_block_start() {
     assert_eq!(
         parse("{#if visible <p>ok</p>{/if}"),
-        "(document (block (block_start kind: (block_kind) expression: (expression) (MISSING \"}\")) (text) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (block_end kind: (block_kind))))"
+        "(document (if_block expression: (expression) (MISSING \"}\") (text) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (block_end)))"
     );
 }
 
@@ -116,7 +120,7 @@ fn test_if_block_missing_right_brace_recovers_typed_block_start() {
 fn test_snippet_block_missing_right_brace_recovers_typed_block_start() {
     assert_eq!(
         parse("{#snippet children(name)<p>{name}</p>{/snippet}"),
-        "(document (block (block_start kind: (block_kind) name: (snippet_name) parameters: (snippet_parameters) (MISSING \"}\")) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (block_end kind: (block_kind))))"
+        "(document (snippet_block name: (snippet_name) parameters: (snippet_parameters parameter: (pattern)) (MISSING \"}\") (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (block_end)))"
     );
 }
 
@@ -126,11 +130,26 @@ fn test_snippet_block_missing_right_paren_preserves_parameters() {
     // Parameters should be preserved (not wrapped in ERROR)
     let tree = parse("{#snippet foo(a, b}<p>x</p>{/snippet}");
     assert!(
-        tree.contains("parameters: (snippet_parameters)"),
+        tree.contains("parameters: (snippet_parameters parameter: (pattern) parameter: (pattern))"),
         "Parameters should be preserved in recovery: {tree}"
     );
     assert!(
         !tree.contains("(ERROR"),
         "Should not produce ERROR node: {tree}"
+    );
+}
+
+#[test]
+fn test_snippet_block_missing_right_paren_before_block_end() {
+    // {#snippet children(hi{/snippet} — missing ) and } is inside {/snippet}
+    // The scanner should treat {/ as a block boundary, allowing parameter recovery.
+    let tree = parse("{#snippet children(hi{/snippet}");
+    assert!(
+        tree.contains("(snippet_name"),
+        "Should preserve snippet_name: {tree}"
+    );
+    assert!(
+        tree.contains("(snippet_parameters"),
+        "Should preserve snippet_parameters: {tree}"
     );
 }

@@ -3,7 +3,7 @@
 mod utils;
 use utils::parse;
 
-/// Parse and return the expression node's byte range from a block_start
+/// Parse and return the expression node's byte range from an await_block
 fn get_block_expression_range(source: &str) -> Option<(usize, usize, String)> {
     let mut parser = tree_sitter::Parser::new();
     parser
@@ -13,10 +13,9 @@ fn get_block_expression_range(source: &str) -> Option<(usize, usize, String)> {
     let tree = parser.parse(source, None).expect("Failed to parse");
     let root = tree.root_node();
 
-    // Find block -> block_start -> expression field
+    // Find await_block -> expression field
     let block = root.child(0)?;
-    let block_start = block.child(0)?;
-    let expr = block_start.child_by_field_name("expression")?;
+    let expr = block.child_by_field_name("expression")?;
 
     let start = expr.start_byte();
     let end = expr.end_byte();
@@ -29,7 +28,7 @@ fn get_block_expression_range(source: &str) -> Option<(usize, usize, String)> {
 fn test_await_pending_only() {
     assert_eq!(
         parse("{#await promise}Loading...{/await}"),
-        "(document (block (block_start kind: (block_kind) expression: (expression)) pending: (await_pending (text)) (block_end kind: (block_kind))))"
+        "(document (await_block expression: (expression) pending: (await_pending (text)) (block_end)))"
     );
 }
 
@@ -37,7 +36,7 @@ fn test_await_pending_only() {
 fn test_await_then_only() {
     assert_eq!(
         parse("{#await promise}{:then value}{value}{/await}"),
-        "(document (block (block_start kind: (block_kind) expression: (expression)) (await_branch branch: (block_branch kind: (block_kind) binding: (pattern)) children: (await_branch_children (expression content: (js)))) (block_end kind: (block_kind))))"
+        "(document (await_block expression: (expression) (await_branch kind: (branch_kind) binding: (pattern) children: (await_branch_children (expression content: (js)))) (block_end)))"
     );
 }
 
@@ -45,7 +44,7 @@ fn test_await_then_only() {
 fn test_await_pending_then() {
     assert_eq!(
         parse("{#await promise}Loading{:then value}{value}{/await}"),
-        "(document (block (block_start kind: (block_kind) expression: (expression)) pending: (await_pending (text)) (await_branch branch: (block_branch kind: (block_kind) binding: (pattern)) children: (await_branch_children (expression content: (js)))) (block_end kind: (block_kind))))"
+        "(document (await_block expression: (expression) pending: (await_pending (text)) (await_branch kind: (branch_kind) binding: (pattern) children: (await_branch_children (expression content: (js)))) (block_end)))"
     );
 }
 
@@ -53,7 +52,7 @@ fn test_await_pending_then() {
 fn test_await_pending_then_catch() {
     assert_eq!(
         parse("{#await promise}Loading{:then value}{value}{:catch error}{error}{/await}"),
-        "(document (block (block_start kind: (block_kind) expression: (expression)) pending: (await_pending (text)) (await_branch branch: (block_branch kind: (block_kind) binding: (pattern)) children: (await_branch_children (expression content: (js)))) (await_branch branch: (block_branch kind: (block_kind) binding: (pattern)) children: (await_branch_children (expression content: (js)))) (block_end kind: (block_kind))))"
+        "(document (await_block expression: (expression) pending: (await_pending (text)) (await_branch kind: (branch_kind) binding: (pattern) children: (await_branch_children (expression content: (js)))) (await_branch kind: (branch_kind) binding: (pattern) children: (await_branch_children (expression content: (js)))) (block_end)))"
     );
 }
 
@@ -61,7 +60,7 @@ fn test_await_pending_then_catch() {
 fn test_await_then_shorthand() {
     assert_eq!(
         parse("{#await promise then value}{value}{/await}"),
-        "(document (block (block_start kind: (block_kind) expression: (expression) shorthand: (block_kind) binding: (pattern)) shorthand_children: (await_branch_children (expression content: (js))) (block_end kind: (block_kind))))"
+        "(document (await_block expression: (expression) shorthand: (shorthand_kind) binding: (pattern) shorthand_children: (await_branch_children (expression content: (js))) (block_end)))"
     );
 }
 
@@ -71,7 +70,7 @@ fn test_await_then_shorthand_no_binding() {
     // Expression should be "promise" only, not "promise then"
     assert_eq!(
         parse("{#await somePromise then}{/await}"),
-        "(document (block (block_start kind: (block_kind) expression: (expression) shorthand: (block_kind)) (block_end kind: (block_kind))))"
+        "(document (await_block expression: (expression) shorthand: (shorthand_kind) (block_end)))"
     );
 }
 
@@ -93,7 +92,7 @@ fn test_await_then_shorthand_no_binding_span() {
 fn test_await_then_shorthand_with_catch() {
     assert_eq!(
         parse("{#await promise then value}{value}{:catch error}{error}{/await}"),
-        "(document (block (block_start kind: (block_kind) expression: (expression) shorthand: (block_kind) binding: (pattern)) shorthand_children: (await_branch_children (expression content: (js))) (await_branch branch: (block_branch kind: (block_kind) binding: (pattern)) children: (await_branch_children (expression content: (js)))) (block_end kind: (block_kind))))"
+        "(document (await_block expression: (expression) shorthand: (shorthand_kind) binding: (pattern) shorthand_children: (await_branch_children (expression content: (js))) (await_branch kind: (branch_kind) binding: (pattern) children: (await_branch_children (expression content: (js)))) (block_end)))"
     );
 }
 
@@ -101,7 +100,7 @@ fn test_await_then_shorthand_with_catch() {
 fn test_await_catch_shorthand() {
     assert_eq!(
         parse("{#await promise catch error}{error}{/await}"),
-        "(document (block (block_start kind: (block_kind) expression: (expression) shorthand: (block_kind) binding: (pattern)) shorthand_children: (await_branch_children (expression content: (js))) (block_end kind: (block_kind))))"
+        "(document (await_block expression: (expression) shorthand: (shorthand_kind) binding: (pattern) shorthand_children: (await_branch_children (expression content: (js))) (block_end)))"
     );
 }
 
@@ -109,7 +108,7 @@ fn test_await_catch_shorthand() {
 fn test_await_with_elements() {
     assert_eq!(
         parse("{#await promise}<p>Loading</p>{:then data}<p>{data}</p>{:catch err}<p>{err}</p>{/await}"),
-        "(document (block (block_start kind: (block_kind) expression: (expression)) pending: (await_pending (element (start_tag (tag_name)) (text) (end_tag (tag_name)))) (await_branch branch: (block_branch kind: (block_kind) binding: (pattern)) children: (await_branch_children (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))))) (await_branch branch: (block_branch kind: (block_kind) binding: (pattern)) children: (await_branch_children (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))))) (block_end kind: (block_kind))))"
+        "(document (await_block expression: (expression) pending: (await_pending (element (start_tag (tag_name)) (text) (end_tag (tag_name)))) (await_branch kind: (branch_kind) binding: (pattern) children: (await_branch_children (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))))) (await_branch kind: (branch_kind) binding: (pattern) children: (await_branch_children (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))))) (block_end)))"
     );
 }
 
@@ -117,7 +116,7 @@ fn test_await_with_elements() {
 fn test_await_with_destructure() {
     assert_eq!(
         parse("{#await promise then { data, error }}{data}{/await}"),
-        "(document (block (block_start kind: (block_kind) expression: (expression) shorthand: (block_kind) binding: (pattern)) shorthand_children: (await_branch_children (expression content: (js))) (block_end kind: (block_kind))))"
+        "(document (await_block expression: (expression) shorthand: (shorthand_kind) binding: (pattern) shorthand_children: (await_branch_children (expression content: (js))) (block_end)))"
     );
 }
 
@@ -125,7 +124,7 @@ fn test_await_with_destructure() {
 fn test_await_catch_destructure() {
     assert_eq!(
         parse("{#await promise catch { message }}{message}{/await}"),
-        "(document (block (block_start kind: (block_kind) expression: (expression) shorthand: (block_kind) binding: (pattern)) shorthand_children: (await_branch_children (expression content: (js))) (block_end kind: (block_kind))))"
+        "(document (await_block expression: (expression) shorthand: (shorthand_kind) binding: (pattern) shorthand_children: (await_branch_children (expression content: (js))) (block_end)))"
     );
 }
 
@@ -133,7 +132,7 @@ fn test_await_catch_destructure() {
 fn test_await_with_const() {
     assert_eq!(
         parse("{#await promise then data}{@const items = data.items}{#each items as item}{item}{/each}{/await}"),
-        "(document (block (block_start kind: (block_kind) expression: (expression) shorthand: (block_kind) binding: (pattern)) shorthand_children: (await_branch_children (tag kind: (tag_kind) expression: (expression_value)) (block (block_start kind: (block_kind) expression: (expression) binding: (pattern)) (expression content: (js)) (block_end kind: (block_kind)))) (block_end kind: (block_kind))))"
+        "(document (await_block expression: (expression) shorthand: (shorthand_kind) binding: (pattern) shorthand_children: (await_branch_children (const_tag expression: (expression_value)) (each_block expression: (expression) binding: (pattern) (expression content: (js)) (block_end))) (block_end)))"
     );
 }
 
@@ -141,7 +140,7 @@ fn test_await_with_const() {
 fn test_await_with_store() {
     assert_eq!(
         parse("{#await $store}{:then data}{data}{/await}"),
-        "(document (block (block_start kind: (block_kind) expression: (expression)) (await_branch branch: (block_branch kind: (block_kind) binding: (pattern)) children: (await_branch_children (expression content: (js)))) (block_end kind: (block_kind))))"
+        "(document (await_block expression: (expression) (await_branch kind: (branch_kind) binding: (pattern) children: (await_branch_children (expression content: (js)))) (block_end)))"
     );
 }
 
@@ -149,6 +148,6 @@ fn test_await_with_store() {
 fn test_await_with_slot() {
     assert_eq!(
         parse("{#await promise then value}<slot a={value}>Hello</slot>{/await}"),
-        "(document (block (block_start kind: (block_kind) expression: (expression) shorthand: (block_kind) binding: (pattern)) shorthand_children: (await_branch_children (element (start_tag (tag_name) (attribute (attribute_name) (expression content: (js)))) (text) (end_tag (tag_name)))) (block_end kind: (block_kind))))"
+        "(document (await_block expression: (expression) shorthand: (shorthand_kind) binding: (pattern) shorthand_children: (await_branch_children (element (start_tag (tag_name) (attribute (attribute_name) (expression content: (js)))) (text) (end_tag (tag_name)))) (block_end)))"
     );
 }

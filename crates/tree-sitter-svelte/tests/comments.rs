@@ -118,7 +118,7 @@ fn test_comment_before_style() {
 fn test_comment_in_if_block() {
     assert_eq!(
         parse("{#if condition}<!-- visible when true --><p>yes</p>{/if}"),
-        "(document (block (block_start kind: (block_kind) expression: (expression)) (comment) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (block_end kind: (block_kind))))"
+        "(document (if_block expression: (expression) (comment) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (block_end)))"
     );
 }
 
@@ -126,7 +126,7 @@ fn test_comment_in_if_block() {
 fn test_comment_in_each_block() {
     assert_eq!(
         parse("{#each items as item}<!-- item comment --><li>{item}</li>{/each}"),
-        "(document (block (block_start kind: (block_kind) expression: (expression) binding: (pattern)) (comment) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (block_end kind: (block_kind))))"
+        "(document (each_block expression: (expression) binding: (pattern) (comment) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (block_end)))"
     );
 }
 

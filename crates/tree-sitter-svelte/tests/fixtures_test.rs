@@ -166,57 +166,53 @@ fn assert_contains_node_type(path: &str, node_type: &str) {
     );
 }
 
-// Note: The grammar uses generic 'block' and 'tag' nodes with 'kind' field
-// to identify if, each, await, snippet etc. These tests verify the
-// generic node types exist.
-
 #[test]
 fn test_if_block_ast() {
     let fixture_path =
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/blocks/if-block.svelte");
-    assert_contains_node_type(fixture_path.to_str().unwrap(), "block");
+    assert_contains_node_type(fixture_path.to_str().unwrap(), "if_block");
 }
 
 #[test]
 fn test_each_block_ast() {
     let fixture_path =
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/blocks/each-simple.svelte");
-    assert_contains_node_type(fixture_path.to_str().unwrap(), "block");
+    assert_contains_node_type(fixture_path.to_str().unwrap(), "each_block");
 }
 
 #[test]
 fn test_await_block_ast() {
     let fixture_path =
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/blocks/await-full.svelte");
-    assert_contains_node_type(fixture_path.to_str().unwrap(), "block");
+    assert_contains_node_type(fixture_path.to_str().unwrap(), "await_block");
 }
 
 #[test]
 fn test_snippet_block_ast() {
     let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures/runes/snippet-render.svelte");
-    assert_contains_node_type(fixture_path.to_str().unwrap(), "block");
+    assert_contains_node_type(fixture_path.to_str().unwrap(), "snippet_block");
 }
 
 #[test]
 fn test_render_tag_ast() {
     let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures/runes/snippet-render.svelte");
-    assert_contains_node_type(fixture_path.to_str().unwrap(), "tag");
+    assert_contains_node_type(fixture_path.to_str().unwrap(), "render_tag");
 }
 
 #[test]
 fn test_html_tag_ast() {
     let fixture_path =
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/tags/html-tag.svelte");
-    assert_contains_node_type(fixture_path.to_str().unwrap(), "tag");
+    assert_contains_node_type(fixture_path.to_str().unwrap(), "html_tag");
 }
 
 #[test]
 fn test_const_tag_ast() {
     let fixture_path =
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/tags/const-tag.svelte");
-    assert_contains_node_type(fixture_path.to_str().unwrap(), "tag");
+    assert_contains_node_type(fixture_path.to_str().unwrap(), "const_tag");
 }
 
 #[test]

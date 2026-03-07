@@ -30,7 +30,7 @@ fn get_expression_range(source: &str) -> (usize, usize, String) {
 fn test_html_variable() {
     assert_eq!(
         parse("{@html content}"),
-        "(document (tag kind: (tag_kind) expression: (expression_value)))"
+        "(document (html_tag expression: (expression_value)))"
     );
 }
 
@@ -38,7 +38,7 @@ fn test_html_variable() {
 fn test_html_string_literal() {
     assert_eq!(
         parse(r#"{@html "<b>bold</b>"}"#),
-        "(document (tag kind: (tag_kind) expression: (expression_value)))"
+        "(document (html_tag expression: (expression_value)))"
     );
 }
 
@@ -46,7 +46,7 @@ fn test_html_string_literal() {
 fn test_html_template_literal() {
     assert_eq!(
         parse("{@html `<p>${text}</p>`}"),
-        "(document (tag kind: (tag_kind) expression: (expression_value)))"
+        "(document (html_tag expression: (expression_value)))"
     );
 }
 
@@ -54,7 +54,7 @@ fn test_html_template_literal() {
 fn test_html_template_literal_nested() {
     assert_eq!(
         parse("{@html `${`nested ${x}`}`}"),
-        "(document (tag kind: (tag_kind) expression: (expression_value)))"
+        "(document (html_tag expression: (expression_value)))"
     );
 }
 
@@ -62,7 +62,7 @@ fn test_html_template_literal_nested() {
 fn test_html_template_literal_with_object() {
     assert_eq!(
         parse(r#"{@html `${ { class: "}" } }`}"#),
-        "(document (tag kind: (tag_kind) expression: (expression_value)))"
+        "(document (html_tag expression: (expression_value)))"
     );
 }
 
@@ -70,7 +70,7 @@ fn test_html_template_literal_with_object() {
 fn test_html_function_call() {
     assert_eq!(
         parse("{@html sanitize(userInput)}"),
-        "(document (tag kind: (tag_kind) expression: (expression_value)))"
+        "(document (html_tag expression: (expression_value)))"
     );
 }
 
@@ -78,7 +78,7 @@ fn test_html_function_call() {
 fn test_html_marked() {
     assert_eq!(
         parse("{@html marked(markdown)}"),
-        "(document (tag kind: (tag_kind) expression: (expression_value)))"
+        "(document (html_tag expression: (expression_value)))"
     );
 }
 
@@ -86,7 +86,7 @@ fn test_html_marked() {
 fn test_html_complex_expression() {
     assert_eq!(
         parse("{@html post.content || '<p>No content</p>'}"),
-        "(document (tag kind: (tag_kind) expression: (expression_value)))"
+        "(document (html_tag expression: (expression_value)))"
     );
 }
 
@@ -94,7 +94,7 @@ fn test_html_complex_expression() {
 fn test_html_json_script() {
     assert_eq!(
         parse(r#"{@html `<script type="application/ld+json">${JSON.stringify(schema)}</script>`}"#),
-        "(document (tag kind: (tag_kind) expression: (expression_value)))"
+        "(document (html_tag expression: (expression_value)))"
     );
 }
 
@@ -104,9 +104,6 @@ fn test_html_json_script() {
 
 #[test]
 fn test_html_expression_span_no_trailing_space() {
-    // Input: {@html myfile + someOtherFile }
-    // Expected: expression should be "myfile + someOtherFile" (positions 7-29)
-    // NOT "myfile + someOtherFile " (positions 7-30)
     let source = "{@html myfile + someOtherFile }";
     let (start, end, text) = get_expression_range(source);
 
@@ -123,7 +120,6 @@ fn test_html_expression_span_no_trailing_space() {
 
 #[test]
 fn test_html_expression_span_no_space() {
-    // No trailing space - should work the same
     let source = "{@html myfile + someOtherFile}";
     let (start, end, text) = get_expression_range(source);
 
@@ -134,7 +130,6 @@ fn test_html_expression_span_no_space() {
 
 #[test]
 fn test_html_expression_span_multiple_trailing_spaces() {
-    // Multiple trailing spaces
     let source = "{@html content   }";
     let (start, end, text) = get_expression_range(source);
 
