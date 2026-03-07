@@ -80,6 +80,14 @@ fn test_textarea_expression_exposes_htmlx_expression() {
 }
 
 #[test]
+fn test_textarea_ignores_malformed_close_until_real_end_tag() {
+    assert_eq!(
+        parse("<textarea>x</textarea\n\n\n</textarea\n\n>"),
+        "(document (element (start_tag (tag_name)) (text) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
 fn test_void_element_closes_before_following_expression() {
     assert_eq!(
         parse("<label><input>{value}</label>"),

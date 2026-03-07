@@ -177,11 +177,25 @@ static bool scan_textarea_text(State *state, TSLexer *lexer, const bool *valid) 
         if (upper == delimiter[match_index]) {
             match_index++;
             if (match_index == delimiter_len) {
-                if (!has_content && valid[TEXTAREA_END_BOUNDARY]) {
-                    lexer->result_symbol = TEXTAREA_END_BOUNDARY;
-                    return true;
+                advance(lexer);
+
+                while (is_space(lexer->lookahead)) {
+                    advance(lexer);
                 }
-                break;
+
+                if (lexer->lookahead == '>') {
+                    if (!has_content && valid[TEXTAREA_END_BOUNDARY]) {
+                        lexer->result_symbol = TEXTAREA_END_BOUNDARY;
+                        return true;
+                    }
+
+                    break;
+                }
+
+                has_content = true;
+                lexer->mark_end(lexer);
+                match_index = 0;
+                continue;
             }
             advance(lexer);
             continue;
@@ -343,7 +357,6 @@ static bool scan_end_tag(State *state, TSLexer *lexer, const bool *valid) {
         if (state->html->tags.size > 0 && tag_eq(array_back(&state->html->tags), &tag)) {
             if (!valid[END_TAG_NAME]) {
                 tag_free(&tag);
-                array_delete(&name);
                 return false;
             }
             Tag popped = array_pop(&state->html->tags);
@@ -352,7 +365,6 @@ static bool scan_end_tag(State *state, TSLexer *lexer, const bool *valid) {
         } else {
             if (!valid[ERRONEOUS_END_TAG_NAME]) {
                 tag_free(&tag);
-                array_delete(&name);
                 return false;
             }
             lexer->result_symbol = ERRONEOUS_END_TAG_NAME;
@@ -613,7 +625,7 @@ static bool scan_expression(State *state, TSLexer *lexer) {
     while (is_space(lexer->lookahead)) skip(lexer);
 
     int32_t c = lexer->lookahead;
-    if (c == '#' || c == ':' || c == '@' || c == '/') return false;
+    if (c == '#' || c == ':' || c == '@') return false;
 
     // scan_balanced_expr handles mark_end (excludes trailing whitespace)
     if (!scan_balanced_expr(lexer)) return false;
