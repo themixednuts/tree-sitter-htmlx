@@ -6,9 +6,10 @@ use utils::parse;
 #[test]
 fn test_unclosed_if_block_has_local_recovery_shape() {
     let tree = parse("{#if ready}<a></a><p></p>");
+    // Grammar now handles unclosed blocks as typed nodes (no ERROR)
     assert!(
-        tree.contains("(ERROR"),
-        "Expected recovery ERROR node in malformed parse: {tree}"
+        tree.contains("(if_block"),
+        "Expected if_block node in unclosed block parse: {tree}"
     );
     assert!(tree.matches("(element").count() >= 2);
 }
@@ -16,9 +17,10 @@ fn test_unclosed_if_block_has_local_recovery_shape() {
 #[test]
 fn test_unclosed_each_block_has_local_recovery_shape() {
     let tree = parse("{#each items as item}<li>{item}</li><li>tail</li>");
+    // Grammar now handles unclosed blocks as typed nodes (no ERROR)
     assert!(
-        tree.contains("(ERROR"),
-        "Expected recovery ERROR node in malformed parse: {tree}"
+        tree.contains("(each_block"),
+        "Expected each_block node in unclosed block parse: {tree}"
     );
     assert!(tree.matches("(element").count() >= 2);
 }
