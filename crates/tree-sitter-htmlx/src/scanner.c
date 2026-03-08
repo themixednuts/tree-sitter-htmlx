@@ -45,6 +45,7 @@ typedef struct {
     Scanner *html;
     bool awaiting_local_name;
     bool is_typescript;
+    bool open_tag_is_namespaced;
 } State;
 
 static inline bool is_alpha(int32_t c) {
@@ -256,6 +257,7 @@ static bool scan_start_tag(State *state, TSLexer *lexer, const bool *valid) {
         lexer->mark_end(lexer);
         lexer->result_symbol = TAG_NAMESPACE;
         state->awaiting_local_name = true;
+        state->open_tag_is_namespaced = true;
         array_delete(&name);
         return true;
     }
@@ -280,6 +282,7 @@ static bool scan_start_tag(State *state, TSLexer *lexer, const bool *valid) {
         }
         Tag tag = tag_for_name(name);
         array_push(&state->html->tags, tag);
+        state->open_tag_is_namespaced = false;
 
         switch (tag.type) {
             case SCRIPT:
@@ -383,7 +386,11 @@ static bool scan_slash_prefixed(State *state, TSLexer *lexer, const bool *valid)
         advance(lexer);
         lexer->mark_end(lexer);
 
-        if (state->html->tags.size > 0) {
+        if (state->open_tag_is_namespaced) {
+            // Namespaced tags (e.g. <svelte:window/>) were never pushed
+            // onto the tag stack, so don't pop.
+            state->open_tag_is_namespaced = false;
+        } else if (state->html->tags.size > 0) {
             Tag popped = array_pop(&state->html->tags);
             tag_free(&popped);
         }
@@ -1035,7 +1042,9 @@ void tree_sitter_htmlx_external_scanner_destroy(void *payload) {
 
 unsigned tree_sitter_htmlx_external_scanner_serialize(void *payload, char *buffer) {
     State *state = payload;
-    buffer[0] = (char)((state->awaiting_local_name ? 1 : 0) | (state->is_typescript ? 2 : 0));
+    buffer[0] = (char)((state->awaiting_local_name ? 1 : 0) |
+                       (state->is_typescript ? 2 : 0) |
+                       (state->open_tag_is_namespaced ? 4 : 0));
     return 1 + html_serialize(state->html, buffer + 1);
 }
 
@@ -1044,10 +1053,12 @@ void tree_sitter_htmlx_external_scanner_deserialize(void *payload, const char *b
     if (length > 0) {
         state->awaiting_local_name = buffer[0] & 1;
         state->is_typescript = buffer[0] & 2;
+        state->open_tag_is_namespaced = buffer[0] & 4;
         html_deserialize(state->html, buffer + 1, length - 1);
     } else {
         state->awaiting_local_name = false;
         state->is_typescript = false;
+        state->open_tag_is_namespaced = false;
         html_deserialize(state->html, NULL, 0);
     }
 }

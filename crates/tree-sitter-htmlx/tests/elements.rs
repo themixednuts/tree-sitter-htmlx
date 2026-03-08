@@ -193,6 +193,15 @@ fn test_namespaced_self_closing() {
     );
 }
 
+#[test]
+fn test_namespaced_self_closing_inside_element() {
+    // Namespaced self-closing tags must not pop the parent from the tag stack
+    assert_eq!(
+        parse("<div><svelte:window/></div>"),
+        "(document (element (start_tag (tag_name)) (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))) (end_tag (tag_name))))"
+    );
+}
+
 // =============================================================================
 // Unterminated start tags with matching close tags
 // =============================================================================
