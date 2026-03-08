@@ -23,10 +23,15 @@ module.exports = grammar(HTMLX, {
       $._snippet_parameter,
       $._snippet_type_params,
       $._block_end_open, // {/ only when followed by identifier (not comment)
+      $._snippet_name, // snippet identifier or zero-width when absent
       // Note: _ts_lang_attr, _expression_js, _expression_ts are inherited from HTMLX
     ]),
 
-  conflicts: ($, original) => original || [],
+  conflicts: ($, original) => (original || []).concat([
+    [$._node, $._node_in_unclosed_block],
+    [$.await_pending],
+    [$.await_branch_children],
+  ]),
 
   rules: {
     _node: ($) =>
@@ -51,6 +56,28 @@ module.exports = grammar(HTMLX, {
 
     element: ($, original) => original,
 
+    // Node choice excluding erroneous_end_tag — used in unclosed block recovery
+    // to prevent the recovery body from consuming end tags that close parent elements.
+    _node_in_unclosed_block: ($) =>
+      choice(
+        prec(2, $.if_block),
+        prec(2, $.each_block),
+        prec(2, $.await_block),
+        prec(2, $.key_block),
+        prec(2, $.snippet_block),
+        prec(2, $.html_tag),
+        prec(2, $.debug_tag),
+        prec(2, $.const_tag),
+        prec(2, $.render_tag),
+        prec(2, $.attach_tag),
+        $.doctype,
+        $.entity,
+        $.text,
+        $.element,
+        // erroneous_end_tag intentionally excluded
+        prec(-1, $.expression),
+      ),
+
     // =========================================================================
     // Block end helper (shared by all typed blocks)
     // =========================================================================
@@ -58,6 +85,14 @@ module.exports = grammar(HTMLX, {
     _block_end: ($) => seq($._block_end_open, $._block_end_keyword, "}"),
 
     _block_end_keyword: ($) => /[a-zA-Z_][a-zA-Z0-9_]*/,
+
+    // Typed block ends — each block type uses its own keyword for proper matching.
+    // This prevents {/if} from closing a key_block, etc.
+    _if_block_end: ($) => seq($._block_end_open, "if", "}"),
+    _each_block_end: ($) => seq($._block_end_open, "each", "}"),
+    _await_block_end: ($) => seq($._block_end_open, "await", "}"),
+    _key_block_end: ($) => seq($._block_end_open, "key", "}"),
+    _snippet_block_end: ($) => seq($._block_end_open, "snippet", "}"),
 
     // =========================================================================
     // Recovery helper
@@ -76,7 +111,7 @@ module.exports = grammar(HTMLX, {
           repeat($._node),
           repeat($.else_if_clause),
           optional($.else_clause),
-          alias($._block_end, $.block_end),
+          alias($._if_block_end, $.block_end),
         ),
         // Recovery: allow one trailing unclosed element start tag before block end
         prec(
@@ -86,9 +121,11 @@ module.exports = grammar(HTMLX, {
             repeat($._node),
             $.start_tag,
             optional($._block_recovery_ws),
-            alias($._block_end, $.block_end),
+            alias($._if_block_end, $.block_end),
           ),
         ),
+        // Recovery: unclosed block (no block_end) — strongly disfavored at runtime
+        prec.dynamic(-10, prec(-2, seq($._if_block_start, repeat($._node_in_unclosed_block)))),
       ),
 
     _if_block_start: ($) =>
@@ -129,7 +166,7 @@ module.exports = grammar(HTMLX, {
           $._each_block_start,
           repeat($._node),
           optional($.else_clause),
-          alias($._block_end, $.block_end),
+          alias($._each_block_end, $.block_end),
         ),
         // Recovery: allow one trailing unclosed element start tag before block end
         prec(
@@ -139,9 +176,11 @@ module.exports = grammar(HTMLX, {
             repeat($._node),
             $.start_tag,
             optional($._block_recovery_ws),
-            alias($._block_end, $.block_end),
+            alias($._each_block_end, $.block_end),
           ),
         ),
+        // Recovery: unclosed block (no block_end)
+        prec.dynamic(-10, prec(-2, seq($._each_block_start, repeat($._node_in_unclosed_block)))),
       ),
 
     _each_block_start: ($) =>
@@ -187,15 +226,19 @@ module.exports = grammar(HTMLX, {
           $._await_block_start_plain,
           optional(field("pending", $.await_pending)),
           repeat($.await_branch),
-          alias($._block_end, $.block_end),
+          alias($._await_block_end, $.block_end),
         ),
         // Shorthand: {#await expr then v}...{:catch e}...{/await}
         seq(
           $._await_block_start_shorthand,
           optional(field("shorthand_children", $.await_branch_children)),
           repeat($.await_branch),
-          alias($._block_end, $.block_end),
+          alias($._await_block_end, $.block_end),
         ),
+        // Recovery: unclosed plain await
+        prec.dynamic(-10, prec(-2, seq($._await_block_start_plain, optional(field("pending", $.await_pending))))),
+        // Recovery: unclosed shorthand await
+        prec.dynamic(-10, prec(-2, seq($._await_block_start_shorthand, optional(field("shorthand_children", $.await_branch_children))))),
       ),
 
     _await_block_start_plain: ($) =>
@@ -218,9 +261,9 @@ module.exports = grammar(HTMLX, {
         "}",
       ),
 
-    await_pending: ($) => prec.left(repeat1($._node)),
+    await_pending: ($) => repeat1($._node),
 
-    await_branch_children: ($) => prec.left(repeat1($._node)),
+    await_branch_children: ($) => repeat1($._node),
 
     await_branch: ($) =>
       prec.right(
@@ -247,7 +290,7 @@ module.exports = grammar(HTMLX, {
         seq(
           $._key_block_start,
           repeat($._node),
-          alias($._block_end, $.block_end),
+          alias($._key_block_end, $.block_end),
         ),
         // Recovery: allow one trailing unclosed element start tag before block end
         prec(
@@ -257,9 +300,11 @@ module.exports = grammar(HTMLX, {
             repeat($._node),
             $.start_tag,
             optional($._block_recovery_ws),
-            alias($._block_end, $.block_end),
+            alias($._key_block_end, $.block_end),
           ),
         ),
+        // Recovery: unclosed block (no block_end)
+        prec.dynamic(-10, prec(-2, seq($._key_block_start, repeat($._node_in_unclosed_block)))),
       ),
 
     _key_block_start: ($) =>
@@ -277,10 +322,14 @@ module.exports = grammar(HTMLX, {
     // =========================================================================
 
     snippet_block: ($) =>
-      seq(
-        $._snippet_block_start,
-        repeat($._node),
-        alias($._block_end, $.block_end),
+      choice(
+        seq(
+          $._snippet_block_start,
+          repeat($._node),
+          alias($._snippet_block_end, $.block_end),
+        ),
+        // Recovery: unclosed block (no block_end)
+        prec.dynamic(-10, prec(-2, seq($._snippet_block_start, repeat($._node_in_unclosed_block)))),
       ),
 
     _snippet_block_start: ($) =>
@@ -288,7 +337,9 @@ module.exports = grammar(HTMLX, {
         seq(
           token("{#"),
           "snippet",
-          field("name", $.snippet_name),
+          optional(
+            field("name", alias($._snippet_name, $.snippet_name)),
+          ),
           optional(field("type_parameters", $.snippet_type_parameters)),
           optional(
             seq("(", optional(field("parameters", $.snippet_parameters)), ")"),
@@ -301,21 +352,14 @@ module.exports = grammar(HTMLX, {
           seq(
             token("{#"),
             "snippet",
-            field("name", $.snippet_name),
+            field("name", alias($._snippet_name, $.snippet_name)),
             optional(field("type_parameters", $.snippet_type_parameters)),
             "(",
             optional(field("parameters", $.snippet_parameters)),
             "}",
           ),
         ),
-        seq(
-          token("{#"),
-          "snippet",
-          "}",
-        ),
       ),
-
-    snippet_name: ($) => /[A-Za-z_$][A-Za-z0-9_$]*/,
     snippet_type_parameters: ($) => $._snippet_type_params,
     snippet_parameters: ($) =>
       seq(

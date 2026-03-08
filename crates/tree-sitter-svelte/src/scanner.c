@@ -17,6 +17,7 @@ enum {
     SNIPPET_PARAMETER,
     SNIPPET_TYPE_PARAMS,
     BLOCK_END_OPEN,
+    SNIPPET_NAME,
 };
 
 static bool is_svelte_tag_name_char(int32_t c) {
@@ -211,6 +212,14 @@ static bool scan_iterator(TSLexer *lexer) {
 
     while (is_space(lexer->lookahead)) skip(lexer);
 
+    // Empty expression: produce zero-width token at the terminator position.
+    // This lets the compiler know WHERE the expression would be, even when absent.
+    if (lexer->lookahead == '}') {
+        lexer->mark_end(lexer);
+        lexer->result_symbol = ITERATOR_EXPRESSION;
+        return true;
+    }
+
     while (lexer->lookahead) {
         int32_t c = lexer->lookahead;
 
@@ -314,7 +323,14 @@ static bool scan_tag_expression(TSLexer *lexer) {
         has_space = true;
     }
 
-    if (!has_space || lexer->lookahead == '}') return false;
+    if (!has_space) return false;
+
+    // Empty expression: produce zero-width token at the terminator position.
+    if (lexer->lookahead == '}') {
+        lexer->mark_end(lexer);
+        lexer->result_symbol = TAG_EXPRESSION;
+        return true;
+    }
 
     if (!scan_balanced(lexer, '}', false)) return false;
 
@@ -357,6 +373,30 @@ static bool scan_snippet_type_params(TSLexer *lexer) {
     return false;
 }
 
+// Snippet name: identifier or zero-width token when name is absent.
+static bool scan_snippet_name(TSLexer *lexer) {
+    while (is_space(lexer->lookahead)) skip(lexer);
+
+    // Empty name: produce zero-width token at the terminator position.
+    if (lexer->lookahead == '}' || lexer->lookahead == '(' || lexer->lookahead == '<') {
+        lexer->mark_end(lexer);
+        lexer->result_symbol = SNIPPET_NAME;
+        return true;
+    }
+
+    // Must start with identifier start char or $
+    if (!is_ident_start(lexer->lookahead) && lexer->lookahead != '$') return false;
+
+    advance(lexer);
+    while (is_ident_char(lexer->lookahead) || lexer->lookahead == '$') {
+        advance(lexer);
+    }
+
+    lexer->mark_end(lexer);
+    lexer->result_symbol = SNIPPET_NAME;
+    return true;
+}
+
 // Match {/ only when followed by identifier start (block end like {/if}).
 // Returns false for {/* or {// (JS comments inside expressions).
 static bool scan_block_end_open(TSLexer *lexer) {
@@ -386,6 +426,9 @@ static bool svelte_scan(State *state, TSLexer *lexer, const bool *valid) {
     if (valid[BLOCK_END_OPEN] && lexer->lookahead == '{') return scan_block_end_open(lexer);
 
     // Svelte block expression tokens — each valid in exclusive grammar contexts.
+    // SNIPPET_NAME must be checked before SNIPPET_TYPE_PARAMS and SNIPPET_PARAMETER
+    // because all three can be valid simultaneously (all are optional in the grammar).
+    if (valid[SNIPPET_NAME]) return scan_snippet_name(lexer);
     if (valid[SNIPPET_TYPE_PARAMS]) return scan_snippet_type_params(lexer);
     if (valid[SNIPPET_PARAMETER]) return scan_snippet_parameter(lexer);
     if (valid[ITERATOR_EXPRESSION]) return scan_iterator(lexer);
