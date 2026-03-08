@@ -713,6 +713,18 @@ static bool scan_attribute_value(TSLexer *lexer) {
 }
 
 static bool scan_unterminated_tag_end(State *state, TSLexer *lexer, const bool *valid) {
+    // At EOF, the tag is definitely unterminated — emit immediately.
+    if (lexer->eof(lexer)) {
+        lexer->mark_end(lexer);
+        if (!valid[UNTERMINATED_TAG_END]) return false;
+        if (state->html->tags.size > 0) {
+            Tag popped = array_pop(&state->html->tags);
+            tag_free(&popped);
+        }
+        lexer->result_symbol = UNTERMINATED_TAG_END;
+        return true;
+    }
+
     if (lexer->lookahead != '\n' && lexer->lookahead != '\r') return false;
 
     skip(lexer);
