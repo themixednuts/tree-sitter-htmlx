@@ -51,7 +51,22 @@ module.exports = grammar(HTMLX, {
         $.text,
         $.element,
         $.erroneous_end_tag,
+        $.malformed_block,
         prec(-1, $.expression),
+      ),
+
+    // { #if ...} or { @html ...} — space between { and sigil.
+    // Produces a typed node so the compiler can detect the pattern without string matching.
+    malformed_block: ($) =>
+      seq(
+        "{",
+        /\s+/,
+        field(
+          "kind",
+          alias(token(seq(/[#:@]/, /[a-z]+/)), $.block_sigil),
+        ),
+        /[^}]*/,
+        "}",
       ),
 
     element: ($, original) => original,
