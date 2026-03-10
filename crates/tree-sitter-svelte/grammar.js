@@ -31,6 +31,8 @@ module.exports = grammar(HTMLX, {
     [$._node, $._node_in_unclosed_block],
     [$.await_pending],
     [$.await_branch_children],
+    [$.await_block],
+    [$._await_recovery_continuation, $.await_block],
   ]),
 
   rules: {
@@ -52,8 +54,32 @@ module.exports = grammar(HTMLX, {
         $.element,
         $.erroneous_end_tag,
         $.malformed_block,
+        prec(-2, $.orphan_branch),
         prec(-1, $.expression),
       ),
+
+    _node_without_orphan_branch: ($) =>
+      choice(
+        prec(2, $.if_block),
+        prec(2, $.each_block),
+        prec(2, $.await_block),
+        prec(2, $.key_block),
+        prec(2, $.snippet_block),
+        prec(2, $.html_tag),
+        prec(2, $.debug_tag),
+        prec(2, $.const_tag),
+        prec(2, $.render_tag),
+        prec(2, $.attach_tag),
+        $.doctype,
+        $.entity,
+        $.text,
+        $.element,
+        $.erroneous_end_tag,
+        $.malformed_block,
+        prec(-1, $.expression),
+      ),
+
+    _await_recovery_continuation: ($) => choice($.await_branch, $.orphan_branch),
 
     // { #if ...} or { @html ...} — space between { and sigil.
     // Produces a typed node so the compiler can detect the pattern without string matching.
@@ -67,6 +93,34 @@ module.exports = grammar(HTMLX, {
         ),
         /[^}]*/,
         "}",
+      ),
+
+    // A branch continuation outside the block grammar is still preserved as a typed
+    // CST node so the compiler can diagnose placement without raw ERROR text scans.
+    orphan_branch: ($) =>
+      prec.left(
+        -2,
+        choice(
+          seq(
+            token("{:"),
+            field("kind", alias(token(seq("else", /\s+/, "if")), $.branch_kind)),
+            optional(
+              field("expression", alias($._tag_expression, $.expression_value)),
+            ),
+            "}",
+          ),
+          seq(
+            token("{:"),
+            field("kind", alias("else", $.branch_kind)),
+            "}",
+          ),
+          seq(
+            token("{:"),
+            field("kind", alias(choice("then", "catch"), $.branch_kind)),
+            optional(field("binding", alias($._binding_pattern, $.pattern))),
+            "}",
+          ),
+        ),
       ),
 
     element: ($, original) => original,
@@ -121,16 +175,19 @@ module.exports = grammar(HTMLX, {
 
     if_block: ($) =>
       choice(
-        seq(
-          $._if_block_start,
-          repeat($._node),
-          repeat($.else_if_clause),
-          optional($.else_clause),
-          alias($._if_block_end, $.block_end),
+        prec.dynamic(
+          1,
+          seq(
+            $._if_block_start,
+            repeat($._node),
+            repeat($.else_if_clause),
+            optional($.else_clause),
+            alias($._if_block_end, $.block_end),
+          ),
         ),
         // Recovery: allow one trailing unclosed element start tag before block end
-        prec(
-          -1,
+        prec.dynamic(
+          1,
           seq(
             $._if_block_start,
             repeat($._node),
@@ -162,13 +219,13 @@ module.exports = grammar(HTMLX, {
             field("expression", alias($._tag_expression, $.expression_value)),
           ),
           "}",
-          repeat($._node),
+          repeat($._node_without_orphan_branch),
         ),
       ),
 
     else_clause: ($) =>
       prec.right(
-        seq(token("{:"), "else", "}", repeat($._node)),
+        seq(token("{:"), "else", "}", repeat($._node_without_orphan_branch)),
       ),
 
     // =========================================================================
@@ -251,9 +308,29 @@ module.exports = grammar(HTMLX, {
           alias($._await_block_end, $.block_end),
         ),
         // Recovery: unclosed plain await
-        prec.dynamic(-10, prec(-2, seq($._await_block_start_plain, optional(field("pending", $.await_pending))))),
+        prec.dynamic(
+          -10,
+          prec(
+            -2,
+            seq(
+              $._await_block_start_plain,
+              optional(field("pending", $.await_pending)),
+              repeat($._await_recovery_continuation),
+            ),
+          ),
+        ),
         // Recovery: unclosed shorthand await
-        prec.dynamic(-10, prec(-2, seq($._await_block_start_shorthand, optional(field("shorthand_children", $.await_branch_children))))),
+        prec.dynamic(
+          -10,
+          prec(
+            -2,
+            seq(
+              $._await_block_start_shorthand,
+              optional(field("shorthand_children", $.await_branch_children)),
+              repeat($._await_recovery_continuation),
+            ),
+          ),
+        ),
       ),
 
     _await_block_start_plain: ($) =>
@@ -276,9 +353,9 @@ module.exports = grammar(HTMLX, {
         "}",
       ),
 
-    await_pending: ($) => repeat1($._node),
+    await_pending: ($) => repeat1($._node_without_orphan_branch),
 
-    await_branch_children: ($) => repeat1($._node),
+    await_branch_children: ($) => repeat1($._node_without_orphan_branch),
 
     await_branch: ($) =>
       prec.right(
@@ -447,10 +524,34 @@ module.exports = grammar(HTMLX, {
 
     // Note: shorthand_attribute is inherited from HTMLX as a structured rule (not regex)
     // to allow proper precedence resolution with unquoted_attribute_value.
-    // We don't override it here - the expression content already excludes block/tag markers
-    // via the external scanner.
+    // We don't override it here - invalid Svelte-specific tag/block placement is
+    // represented by allowing existing typed nodes in quoted attribute content.
 
     // Attributes - extend HTMLX to include attach_tag for {@attach ...}
     attribute: ($, original) => choice(original, prec(2, $.attach_tag)),
+
+    _quoted_attribute_content_single: ($) =>
+      choice(
+        $.html_tag,
+        $.if_block,
+        $.each_block,
+        $.await_block,
+        $.key_block,
+        $.snippet_block,
+        alias($.attribute_expression, $.expression),
+        alias(/[^'{]+/, $.attribute_value),
+      ),
+
+    _quoted_attribute_content_double: ($) =>
+      choice(
+        $.html_tag,
+        $.if_block,
+        $.each_block,
+        $.await_block,
+        $.key_block,
+        $.snippet_block,
+        alias($.attribute_expression, $.expression),
+        alias(/[^"{]+/, $.attribute_value),
+      ),
   },
 });

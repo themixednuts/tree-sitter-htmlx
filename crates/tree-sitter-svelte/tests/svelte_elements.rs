@@ -47,6 +47,24 @@ fn test_svelte_component_with_props() {
 }
 
 #[test]
+fn test_svelte_component_with_css_custom_properties() {
+    assert_eq!(
+        parse(r#"<svelte:component this={comp} --rail-color="rgb(0, 0, 0)" />"#),
+        r#"(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (expression content: (js))) (attribute (attribute_name) (quoted_attribute_value (attribute_value))))))"#
+    );
+}
+
+#[test]
+fn test_svelte_component_with_multiline_css_custom_properties() {
+    assert_eq!(
+        parse(
+            "<svelte:component\n\tthis={comp}\n\tid=\"component1\"\n\t--rail-color=\"rgb(0, 0, 0)\"\n\t--track-color=\"rgb(255, 0, 0)\"\n/>"
+        ),
+        r#"(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (expression content: (js))) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (attribute (attribute_name) (quoted_attribute_value (attribute_value))))))"#
+    );
+}
+
+#[test]
 fn test_svelte_component_with_children() {
     assert_eq!(
         parse("<svelte:component this={Layout}><p>content</p></svelte:component>"),

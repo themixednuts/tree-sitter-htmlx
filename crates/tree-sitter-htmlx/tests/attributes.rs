@@ -16,6 +16,22 @@ fn test_attribute_standard() {
 }
 
 #[test]
+fn test_attribute_css_custom_property_name() {
+    assert_eq!(
+        parse(r#"<div --rail-color="rgb(0, 0, 0)"></div>"#),
+        r#"(document (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (end_tag (tag_name))))"#
+    );
+}
+
+#[test]
+fn test_multiline_attribute_css_custom_property_name() {
+    assert_eq!(
+        parse("<div\n\tid=\"x\"\n\t--rail-color=\"rgb(0, 0, 0)\"\n/>"),
+        r#"(document (element (self_closing_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (attribute (attribute_name) (quoted_attribute_value (attribute_value))))))"#
+    );
+}
+
+#[test]
 fn test_attribute_expression_value() {
     assert_eq!(
         parse("<input value={text} />"),
@@ -152,6 +168,14 @@ fn test_directive_with_modifiers() {
 fn test_directive_class() {
     assert_eq!(
         parse("<div class:active={isActive}></div>"),
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
+fn test_directive_class_with_colon_in_name() {
+    assert_eq!(
+        parse("<div class:foo:bar={enabled}></div>"),
         "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (end_tag (tag_name))))"
     );
 }

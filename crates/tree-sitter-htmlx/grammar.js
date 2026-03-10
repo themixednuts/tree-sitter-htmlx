@@ -361,7 +361,7 @@ module.exports = grammar(HTML, {
     // delimiters and then splits modifiers with `|`.
     // Keep identifier permissive so names like `--color` and `$store.action`
     // are parsed in CST and validated later in semantic phases.
-    attribute_identifier: ($) => /[^<>{}"':\\\/=\s|]+/,
+    attribute_identifier: ($) => /[^<>{}"'\\\/=\s|]+/,
     attribute_modifiers: ($) => repeat1(seq("|", $.attribute_modifier)),
     attribute_modifier: ($) => /[a-zA-Z_$][a-zA-Z0-9_$]*/,
 

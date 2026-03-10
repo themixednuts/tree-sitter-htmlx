@@ -90,6 +90,10 @@ static ALWAYS_INLINE char to_ascii_upper(int32_t c) {
   return (c >= 'a' && c <= 'z') ? (char)(c - 32) : (char)c;
 }
 
+static ALWAYS_INLINE bool is_ascii_upper(int32_t c) {
+  return c >= 'A' && c <= 'Z';
+}
+
 static ALWAYS_INLINE void push_utf8(String *string, int32_t c) {
   if (c <= 0x7F) {
     array_push(string, (char)c);
@@ -109,7 +113,36 @@ static ALWAYS_INLINE void push_utf8(String *string, int32_t c) {
 }
 
 static ALWAYS_INLINE void push_tag_name_char(String *string, int32_t c) {
-  push_utf8(string, c <= 0x7F ? to_ascii_upper(c) : c);
+  push_utf8(string, c);
+}
+
+static ALWAYS_INLINE bool string_has_ascii_upper(const String *string) {
+  for (uint32_t i = 0; i < string->size; i++) {
+    unsigned char c = (unsigned char)string->contents[i];
+    if (is_ascii_upper(c)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+static ALWAYS_INLINE void normalize_tag_name(String *string) {
+  for (uint32_t i = 0; i < string->size; i++) {
+    unsigned char c = (unsigned char)string->contents[i];
+    string->contents[i] = to_ascii_upper(c);
+  }
+}
+
+static ALWAYS_INLINE Tag tag_for_htmlx_name(String tag_name) {
+  if (string_has_ascii_upper(&tag_name)) {
+    Tag tag = tag_new();
+    tag.type = CUSTOM;
+    tag.custom_tag_name = tag_name;
+    return tag;
+  }
+
+  normalize_tag_name(&tag_name);
+  return tag_for_name(tag_name);
 }
 
 // ============================================================================
@@ -381,7 +414,7 @@ static bool scan_implicit_end_tag(Scanner *scanner, TSLexer *lexer) {
     return false;
   }
 
-  Tag next_tag = tag_for_name(tag_name);
+  Tag next_tag = tag_for_htmlx_name(tag_name);
 
   if (is_closing_tag) {
     // Check if tag correctly closes the topmost element
@@ -393,7 +426,7 @@ static bool scan_implicit_end_tag(Scanner *scanner, TSLexer *lexer) {
 
     // Search stack for matching tag - emit implicit end tags
     for (unsigned i = scanner->tags.size; i > 0; i--) {
-      if (scanner->tags.contents[i - 1].type == next_tag.type) {
+      if (tag_eq(&scanner->tags.contents[i - 1], &next_tag)) {
         pop_tag(scanner);
         lexer->result_symbol = IMPLICIT_END_TAG;
         tag_free(&next_tag);
@@ -434,7 +467,7 @@ static bool scan_start_tag_name(Scanner *scanner, TSLexer *lexer) {
     return false;
   }
 
-  Tag tag = tag_for_name(tag_name);
+  Tag tag = tag_for_htmlx_name(tag_name);
   array_push(&scanner->tags, tag);
 
   // Determine token type: raw text elements vs normal elements
@@ -465,7 +498,7 @@ static bool scan_end_tag_name(Scanner *scanner, TSLexer *lexer) {
     return false;
   }
 
-  Tag tag = tag_for_name(tag_name);
+  Tag tag = tag_for_htmlx_name(tag_name);
 
   // Check if this closes the current element
   if (scanner->tags.size > 0 && tag_eq(array_back(&scanner->tags), &tag)) {

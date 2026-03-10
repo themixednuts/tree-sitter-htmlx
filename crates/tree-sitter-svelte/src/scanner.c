@@ -378,7 +378,7 @@ static bool scan_snippet_name(TSLexer *lexer) {
     while (is_space(lexer->lookahead)) skip(lexer);
 
     // Empty name: produce zero-width token at the terminator position.
-    if (lexer->lookahead == '}' || lexer->lookahead == '(' || lexer->lookahead == '<') {
+    if (lexer->lookahead == '}' || lexer->lookahead == '(') {
         lexer->mark_end(lexer);
         lexer->result_symbol = SNIPPET_NAME;
         return true;
@@ -393,6 +393,14 @@ static bool scan_snippet_name(TSLexer *lexer) {
     }
 
     lexer->mark_end(lexer);
+    while (is_space(lexer->lookahead)) skip(lexer);
+    if (
+        lexer->lookahead != '}'
+        && lexer->lookahead != '('
+        && lexer->lookahead != '<'
+    ) {
+        return false;
+    }
     lexer->result_symbol = SNIPPET_NAME;
     return true;
 }

@@ -111,7 +111,30 @@ static inline void push_htmlx_utf8(String *string, int32_t c) {
 }
 
 static inline void push_name_char(String *string, int32_t c) {
-    push_htmlx_utf8(string, c <= 0x7F ? to_upper(c) : c);
+    push_htmlx_utf8(string, c);
+}
+
+static inline bool htmlx_is_ascii_upper(int32_t c) {
+    return c >= 'A' && c <= 'Z';
+}
+
+static inline void htmlx_normalize_tag_name(String *name) {
+    for (uint32_t i = 0; i < name->size; i++) {
+        unsigned char c = (unsigned char)name->contents[i];
+        name->contents[i] = (char)to_upper(c);
+    }
+}
+
+static inline Tag htmlx_tag_for_svelte_name(String name, bool saw_ascii_upper) {
+    if (saw_ascii_upper) {
+        Tag tag = tag_new();
+        tag.type = CUSTOM;
+        tag.custom_tag_name = name;
+        return tag;
+    }
+
+    htmlx_normalize_tag_name(&name);
+    return tag_for_name(name);
 }
 
 /**
@@ -126,8 +149,9 @@ static bool scan_htmlx_text(TSLexer *lexer) {
     while (lexer->lookahead != 0) {
         int32_t c = lexer->lookahead;
 
-        // Stop at tag start, character reference, or expression start
-        if (c == '<' || c == '&' || c == '{') {
+        // Stop at tag start or expression start. Bare '&' stays part of text so
+        // loose text like "this & that" doesn't fall into bogus entity/snippet recovery.
+        if (c == '<' || c == '{') {
             break;
         }
 
@@ -247,7 +271,11 @@ static bool scan_start_tag(State *state, TSLexer *lexer, const bool *valid) {
 
     String name = array_new();
     bool preserve_mark_end = false;
+    bool saw_ascii_upper = false;
     while (is_name_char(lexer->lookahead)) {
+        if (htmlx_is_ascii_upper(lexer->lookahead)) {
+            saw_ascii_upper = true;
+        }
         push_name_char(&name, lexer->lookahead);
         advance(lexer);
     }
@@ -280,7 +308,7 @@ static bool scan_start_tag(State *state, TSLexer *lexer, const bool *valid) {
         if (!preserve_mark_end) {
             lexer->mark_end(lexer);
         }
-        Tag tag = tag_for_name(name);
+        Tag tag = htmlx_tag_for_svelte_name(name, saw_ascii_upper);
         array_push(&state->html->tags, tag);
         state->open_tag_is_namespaced = false;
 
@@ -316,7 +344,11 @@ static bool scan_end_tag(State *state, TSLexer *lexer, const bool *valid) {
 
     String name = array_new();
     bool preserve_mark_end = false;
+    bool saw_ascii_upper = false;
     while (is_name_char(lexer->lookahead)) {
+        if (htmlx_is_ascii_upper(lexer->lookahead)) {
+            saw_ascii_upper = true;
+        }
         push_name_char(&name, lexer->lookahead);
         advance(lexer);
     }
@@ -352,7 +384,7 @@ static bool scan_end_tag(State *state, TSLexer *lexer, const bool *valid) {
     }
 
     if (valid[END_TAG_NAME] || valid[ERRONEOUS_END_TAG_NAME]) {
-        Tag tag = tag_for_name(name);
+        Tag tag = htmlx_tag_for_svelte_name(name, saw_ascii_upper);
         if (state->html->tags.size > 0 && tag_eq(array_back(&state->html->tags), &tag)) {
             if (!valid[END_TAG_NAME]) {
                 tag_free(&tag);
@@ -751,7 +783,7 @@ static bool scan_unterminated_tag_end(State *state, TSLexer *lexer, const bool *
     if (next == '{') {
         if (!valid[UNTERMINATED_TAG_END]) return false;
         // Peek marker to distinguish malformed block/tag starts from valid
-        // multiline shorthand/spread attributes.
+        // multiline shorthand/spread attributes and Svelte attach tags.
         advance(lexer);
         int32_t marker = lexer->lookahead;
         while (marker == ' ' || marker == '\t') {
@@ -759,7 +791,11 @@ static bool scan_unterminated_tag_end(State *state, TSLexer *lexer, const bool *
             marker = lexer->lookahead;
         }
 
-        if (marker == '#' || marker == ':' || marker == '@' || marker == '/') {
+        if (marker == '@') {
+            return false;
+        }
+
+        if (marker == '#' || marker == ':' || marker == '/') {
             if (state->html->tags.size > 0) {
                 Tag popped = array_pop(&state->html->tags);
                 tag_free(&popped);
@@ -772,7 +808,8 @@ static bool scan_unterminated_tag_end(State *state, TSLexer *lexer, const bool *
     }
 
     // Continue parsing valid multiline tag attributes/comments/closers.
-    if (next == '>' || next == '/' || next == '|' || next == '"' || next == '\'' || is_ident_start(next)) {
+    // CSS custom properties are valid attribute names and start with `-`.
+    if (next == '>' || next == '/' || next == '|' || next == '"' || next == '\'' || next == '-' || is_ident_start(next)) {
         return false;
     }
 
@@ -784,11 +821,15 @@ static bool scan_unterminated_tag_end(State *state, TSLexer *lexer, const bool *
         if (lexer->lookahead == '/') {
             advance(lexer);
             String name = array_new();
+            bool saw_ascii_upper = false;
             while (is_name_char(lexer->lookahead)) {
+                if (htmlx_is_ascii_upper(lexer->lookahead)) {
+                    saw_ascii_upper = true;
+                }
                 push_name_char(&name, lexer->lookahead);
                 advance(lexer);
             }
-            Tag tag = tag_for_name(name);
+            Tag tag = htmlx_tag_for_svelte_name(name, saw_ascii_upper);
             bool matches = tag_eq(array_back(&state->html->tags), &tag);
             tag_free(&tag);
             if (matches) {

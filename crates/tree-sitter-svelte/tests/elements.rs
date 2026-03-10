@@ -106,6 +106,14 @@ fn test_element_deeply_nested() {
 }
 
 #[test]
+fn test_text_with_bare_ampersand_after_child_element() {
+    assert_eq!(
+        parse("<p>Hello {name}, what's up?<span /> this & that</p>"),
+        "(document (element (start_tag (tag_name)) (text) (expression content: (js)) (text) (element (self_closing_tag (tag_name))) (text) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
 fn test_element_quoted_attribute() {
     assert_eq!(
         parse(r#"<div class="container"></div>"#),
@@ -135,6 +143,18 @@ fn test_element_expression_attribute() {
         parse("<div class={styles}></div>"),
         "(document (element (start_tag (tag_name) (attribute (attribute_name) (expression content: (js)))) (end_tag (tag_name))))"
     );
+}
+
+#[test]
+fn test_element_html_tag_in_quoted_attribute_exposes_html_tag_node() {
+    let tree = parse(r#"<div style="{@html text}"></div>"#);
+    assert!(tree.contains("(quoted_attribute_value (html_tag"));
+}
+
+#[test]
+fn test_element_block_in_quoted_attribute_exposes_if_block_node() {
+    let tree = parse(r#"<div style="{#if condition}a{/if}"></div>"#);
+    assert!(tree.contains("(quoted_attribute_value (if_block"));
 }
 
 #[test]
@@ -258,6 +278,14 @@ fn test_element_class_directive() {
 }
 
 #[test]
+fn test_element_class_directive_with_colon_in_name() {
+    assert_eq!(
+        parse("<div class:foo:bar={enabled}></div>"),
+        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
 fn test_element_class_directive_shorthand() {
     assert_eq!(
         parse("<div class:active></div>"),
@@ -358,5 +386,29 @@ fn test_element_interpolated_attribute() {
     assert_eq!(
         parse(r#"<div class="item-{type}"></div>"#),
         r#"(document (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value) (expression content: (js))))) (end_tag (tag_name))))"#
+    );
+}
+
+#[test]
+fn test_text_with_apostrophe_before_child_element() {
+    assert_eq!(
+        parse("<p>Hello {name}, what's up?<span /> this & that</p>"),
+        "(document (element (start_tag (tag_name)) (text) (expression content: (js)) (text) (element (self_closing_tag (tag_name))) (text) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
+fn test_keygen_is_treated_as_void_element() {
+    assert_eq!(
+        parse("<keygen><p>after</p>"),
+        "(document (element (start_tag (tag_name))) (element (start_tag (tag_name)) (text) (end_tag (tag_name))))"
+    );
+}
+
+#[test]
+fn test_param_is_treated_as_void_element() {
+    assert_eq!(
+        parse("<param><source>"),
+        "(document (element (start_tag (tag_name))) (element (start_tag (tag_name))))"
     );
 }

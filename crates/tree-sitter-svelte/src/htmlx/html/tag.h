@@ -44,8 +44,10 @@ typedef enum {
   HR,
   IMG,
   INPUT,
+  KEYGEN,
   LINK,
   META,
+  PARAM,
   SOURCE,
   TRACK,
   WBR,
@@ -268,6 +270,7 @@ static const TagMapEntry TAG_TABLE[] = {
     {"INS", 3, INS},
     // K
     {"KBD", 3, KBD},
+    {"KEYGEN", 6, KEYGEN},
     // L
     {"LABEL", 5, LABEL},
     {"LEGEND", 6, LEGEND},
@@ -292,6 +295,7 @@ static const TagMapEntry TAG_TABLE[] = {
     {"OUTPUT", 6, OUTPUT},
     // P
     {"P", 1, P},
+    {"PARAM", 5, PARAM},
     {"PICTURE", 7, PICTURE},
     {"PRE", 3, PRE},
     {"PROGRESS", 8, PROGRESS},
@@ -368,22 +372,22 @@ static const CharBucket CHAR_INDEX[26] = {
     {38, 49},   // H: H1..HTML (11)
     {49, 54},   // I: I..INS (5)
     {54, 54},   // J: (none)
-    {54, 55},   // K: KBD (1)
-    {55, 59},   // L: LABEL..LINK (4)
-    {59, 66},   // M: MAIN..METER (7)
-    {66, 68},   // N: NAV, NOSCRIPT (2)
-    {68, 73},   // O: OBJECT..OUTPUT (5)
-    {73, 77},   // P: P..PROGRESS (4)
-    {77, 78},   // Q: Q (1)
-    {78, 83},   // R: RB..RUBY (5)
-    {83, 99},   // S: S..SVG (16)
-    {99, 111},  // T: TABLE..TRACK (12)
-    {111, 113}, // U: U, UL (2)
-    {113, 115}, // V: VAR, VIDEO (2)
-    {115, 116}, // W: WBR (1)
-    {116, 116}, // X: (none)
-    {116, 116}, // Y: (none)
-    {116, 116}, // Z: (none)
+    {54, 56},   // K: KBD, KEYGEN (2)
+    {56, 60},   // L: LABEL..LINK (4)
+    {60, 67},   // M: MAIN..METER (7)
+    {67, 69},   // N: NAV, NOSCRIPT (2)
+    {69, 74},   // O: OBJECT..OUTPUT (5)
+    {74, 79},   // P: P..PROGRESS (5)
+    {79, 80},   // Q: Q (1)
+    {80, 85},   // R: RB..RUBY (5)
+    {85, 101},  // S: S..SVG (16)
+    {101, 113}, // T: TABLE..TRACK (12)
+    {113, 115}, // U: U, UL (2)
+    {115, 117}, // V: VAR, VIDEO (2)
+    {117, 118}, // W: WBR (1)
+    {118, 118}, // X: (none)
+    {118, 118}, // Y: (none)
+    {118, 118}, // Z: (none)
 };
 
 /**
