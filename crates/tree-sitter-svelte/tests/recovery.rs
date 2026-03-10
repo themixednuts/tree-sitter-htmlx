@@ -183,6 +183,71 @@ fn test_unclosed_await_block_has_local_recovery_shape() {
 }
 
 #[test]
+fn test_eof_truncated_if_block_start_stays_typed() {
+    let tree = parse("{#if ready");
+    assert!(
+        tree.contains("(if_block"),
+        "Expected typed if_block node at EOF: {tree}"
+    );
+    assert!(
+        !tree.contains("(ERROR"),
+        "EOF-truncated if block should not collapse to ERROR: {tree}"
+    );
+}
+
+#[test]
+fn test_eof_truncated_each_block_start_stays_typed() {
+    let tree = parse("{#each items as item");
+    assert!(
+        tree.contains("(each_block"),
+        "Expected typed each_block node at EOF: {tree}"
+    );
+    assert!(
+        !tree.contains("(ERROR"),
+        "EOF-truncated each block should not collapse to ERROR: {tree}"
+    );
+}
+
+#[test]
+fn test_eof_truncated_await_block_start_stays_typed() {
+    let tree = parse("{#await promise");
+    assert!(
+        tree.contains("(await_block"),
+        "Expected typed await_block node at EOF: {tree}"
+    );
+    assert!(
+        !tree.contains("(ERROR"),
+        "EOF-truncated await block should not collapse to ERROR: {tree}"
+    );
+}
+
+#[test]
+fn test_eof_truncated_key_block_start_stays_typed() {
+    let tree = parse("{#key value");
+    assert!(
+        tree.contains("(key_block"),
+        "Expected typed key_block node at EOF: {tree}"
+    );
+    assert!(
+        !tree.contains("(ERROR"),
+        "EOF-truncated key block should not collapse to ERROR: {tree}"
+    );
+}
+
+#[test]
+fn test_eof_truncated_snippet_block_start_stays_typed() {
+    let tree = parse("{#snippet children(name)");
+    assert!(
+        tree.contains("(snippet_block"),
+        "Expected typed snippet_block node at EOF: {tree}"
+    );
+    assert!(
+        !tree.contains("(ERROR"),
+        "EOF-truncated snippet block should not collapse to ERROR: {tree}"
+    );
+}
+
+#[test]
 fn test_loose_unclosed_open_tag_does_not_swallow_following_blocks() {
     let source = "<div>\n\t<Comp foo={bar}\n</div>\n\n<div>\n\t<span foo={bar}\n</div>\n\n{#if foo}\n\t<Comp foo={bar}\n{/if}\n\n{#if foo}\n\t<Comp foo={bar}\n\t{#if bar}\n\t\t{bar}\n\t{/if}\n{/if}\n\n<div foo={bar}";
     let tree = parse(source);

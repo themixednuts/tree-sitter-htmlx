@@ -18,6 +18,7 @@ enum {
     SNIPPET_TYPE_PARAMS,
     BLOCK_END_OPEN,
     SNIPPET_NAME,
+    BLOCK_START_EOF,
 };
 
 static bool is_svelte_tag_name_char(int32_t c) {
@@ -70,7 +71,7 @@ static bool scan_lt_as_tag_boundary(TSLexer *lexer) {
 // tag boundary detection, and Svelte block marker detection.
 // Used for iterator expressions, binding patterns, key expressions, tag expressions,
 // and snippet parameters.
-static bool scan_balanced(TSLexer *lexer, int32_t stop_char, bool stop_comma) {
+static bool scan_balanced(TSLexer *lexer, int32_t stop_char, bool stop_comma, bool allow_eof) {
     int depth = 0;
     bool has_content = false;
     bool needs_mark = false;
@@ -193,6 +194,10 @@ done:
         lexer->mark_end(lexer);
     }
 
+    if (allow_eof && has_content && lexer->lookahead == 0) {
+        return true;
+    }
+
     return has_content && found_terminator;
 }
 
@@ -262,6 +267,9 @@ static bool scan_iterator(TSLexer *lexer) {
             } else if (c == 'c' && match_keyword(lexer, "catch", 5)) {
                 lexer->result_symbol = ITERATOR_EXPRESSION;
                 return has_content;
+            } else if (c == 0) {
+                lexer->result_symbol = ITERATOR_EXPRESSION;
+                return has_content;
             }
             has_content = true;
             continue;
@@ -282,7 +290,7 @@ static bool scan_iterator(TSLexer *lexer) {
     }
 
     // Only return true if we found a valid terminator
-    if (has_content && found_terminator) {
+    if (has_content && (found_terminator || lexer->lookahead == 0)) {
         lexer->mark_end(lexer);
         lexer->result_symbol = ITERATOR_EXPRESSION;
         return true;
@@ -292,7 +300,7 @@ static bool scan_iterator(TSLexer *lexer) {
 
 static bool scan_binding(TSLexer *lexer) {
     while (is_space(lexer->lookahead)) advance(lexer);
-    if (!scan_balanced(lexer, '(', true)) return false;
+    if (!scan_balanced(lexer, '(', true, true)) return false;
 
     lexer->result_symbol = BINDING_PATTERN;
     return true;
@@ -300,7 +308,7 @@ static bool scan_binding(TSLexer *lexer) {
 
 static bool scan_key(TSLexer *lexer) {
     while (is_space(lexer->lookahead)) advance(lexer);
-    if (!scan_balanced(lexer, ')', false)) return false;
+    if (!scan_balanced(lexer, ')', false, true)) return false;
 
     lexer->result_symbol = KEY_EXPRESSION;
     return true;
@@ -308,9 +316,17 @@ static bool scan_key(TSLexer *lexer) {
 
 static bool scan_snippet_parameter(TSLexer *lexer) {
     while (is_space(lexer->lookahead)) advance(lexer);
-    if (!scan_balanced(lexer, ')', true)) return false;
+    if (!scan_balanced(lexer, ')', true, true)) return false;
 
     lexer->result_symbol = SNIPPET_PARAMETER;
+    return true;
+}
+
+static bool scan_block_start_eof(TSLexer *lexer) {
+    if (lexer->lookahead != 0) return false;
+
+    lexer->mark_end(lexer);
+    lexer->result_symbol = BLOCK_START_EOF;
     return true;
 }
 
@@ -332,7 +348,7 @@ static bool scan_tag_expression(TSLexer *lexer) {
         return true;
     }
 
-    if (!scan_balanced(lexer, '}', false)) return false;
+    if (!scan_balanced(lexer, '}', false, false)) return false;
 
     lexer->result_symbol = TAG_EXPRESSION;
     return true;
@@ -432,6 +448,7 @@ static bool svelte_scan(State *state, TSLexer *lexer, const bool *valid) {
     // Only attempt when lookahead is '{' — otherwise fall through to HTMLX scanner
     // so it can produce TEXT and other tokens that don't start with '{'.
     if (valid[BLOCK_END_OPEN] && lexer->lookahead == '{') return scan_block_end_open(lexer);
+    if (valid[BLOCK_START_EOF]) return scan_block_start_eof(lexer);
 
     // Svelte block expression tokens — each valid in exclusive grammar contexts.
     // SNIPPET_NAME must be checked before SNIPPET_TYPE_PARAMS and SNIPPET_PARAMETER

@@ -24,6 +24,7 @@ module.exports = grammar(HTMLX, {
       $._snippet_type_params,
       $._block_end_open, // {/ only when followed by identifier (not comment)
       $._snippet_name, // snippet identifier or zero-width when absent
+      $._block_start_eof, // zero-width EOF marker for unterminated {#... block starts
       // Note: _ts_lang_attr, _expression_js, _expression_ts are inherited from HTMLX
     ]),
 
@@ -198,6 +199,8 @@ module.exports = grammar(HTMLX, {
         ),
         // Recovery: unclosed block (no block_end) — strongly disfavored at runtime
         prec.dynamic(-10, prec(-2, seq($._if_block_start, repeat($._node_in_unclosed_block)))),
+        // Recovery: block start reaches EOF before closing }
+        prec.dynamic(-11, prec(-3, $._if_block_start_unclosed)),
       ),
 
     _if_block_start: ($) =>
@@ -208,6 +211,14 @@ module.exports = grammar(HTMLX, {
           field("expression", alias($._iterator_expression, $.expression)),
         ),
         "}",
+      ),
+
+    _if_block_start_unclosed: ($) =>
+      seq(
+        token("{#"),
+        "if",
+        field("expression", alias($._iterator_expression, $.expression)),
+        $._block_start_eof,
       ),
 
     else_if_clause: ($) =>
@@ -253,6 +264,8 @@ module.exports = grammar(HTMLX, {
         ),
         // Recovery: unclosed block (no block_end)
         prec.dynamic(-10, prec(-2, seq($._each_block_start, repeat($._node_in_unclosed_block)))),
+        // Recovery: block start reaches EOF before closing }
+        prec.dynamic(-11, prec(-3, $._each_block_start_unclosed)),
       ),
 
     _each_block_start: ($) =>
@@ -284,6 +297,33 @@ module.exports = grammar(HTMLX, {
           ),
         ),
         "}",
+      ),
+
+    _each_block_start_unclosed: ($) =>
+      seq(
+        token("{#"),
+        "each",
+        field("expression", alias($._iterator_expression, $.expression)),
+        optional(
+          seq(
+            "as",
+            field("binding", alias($._binding_pattern, $.pattern)),
+            optional(
+              seq(
+                ",",
+                field("index", alias($._binding_pattern, $.pattern)),
+              ),
+            ),
+            optional(
+              seq(
+                "(",
+                field("key", alias($._key_expression, $.expression)),
+                ")",
+              ),
+            ),
+          ),
+        ),
+        $._block_start_eof,
       ),
 
     // =========================================================================
@@ -319,6 +359,8 @@ module.exports = grammar(HTMLX, {
             ),
           ),
         ),
+        // Recovery: plain await start reaches EOF before closing }
+        prec.dynamic(-11, prec(-3, $._await_block_start_plain_unclosed)),
         // Recovery: unclosed shorthand await
         prec.dynamic(
           -10,
@@ -341,6 +383,14 @@ module.exports = grammar(HTMLX, {
           field("expression", alias($._iterator_expression, $.expression)),
         ),
         "}",
+      ),
+
+    _await_block_start_plain_unclosed: ($) =>
+      seq(
+        token("{#"),
+        "await",
+        field("expression", alias($._iterator_expression, $.expression)),
+        $._block_start_eof,
       ),
 
     _await_block_start_shorthand: ($) =>
@@ -397,6 +447,8 @@ module.exports = grammar(HTMLX, {
         ),
         // Recovery: unclosed block (no block_end)
         prec.dynamic(-10, prec(-2, seq($._key_block_start, repeat($._node_in_unclosed_block)))),
+        // Recovery: block start reaches EOF before closing }
+        prec.dynamic(-11, prec(-3, $._key_block_start_unclosed)),
       ),
 
     _key_block_start: ($) =>
@@ -407,6 +459,14 @@ module.exports = grammar(HTMLX, {
           field("expression", alias($._iterator_expression, $.expression)),
         ),
         "}",
+      ),
+
+    _key_block_start_unclosed: ($) =>
+      seq(
+        token("{#"),
+        "key",
+        field("expression", alias($._iterator_expression, $.expression)),
+        $._block_start_eof,
       ),
 
     // =========================================================================
@@ -422,6 +482,8 @@ module.exports = grammar(HTMLX, {
         ),
         // Recovery: unclosed block (no block_end)
         prec.dynamic(-10, prec(-2, seq($._snippet_block_start, repeat($._node_in_unclosed_block)))),
+        // Recovery: block start reaches EOF before closing }
+        prec.dynamic(-11, prec(-3, $._snippet_block_start_unclosed)),
       ),
 
     _snippet_block_start: ($) =>
@@ -429,14 +491,28 @@ module.exports = grammar(HTMLX, {
         seq(
           token("{#"),
           "snippet",
-          optional(
-            field("name", alias($._snippet_name, $.snippet_name)),
+          field("name", alias($._snippet_name, $.snippet_name)),
+          choice(
+            prec(
+              2,
+              seq(
+                field("type_parameters", $.snippet_type_parameters),
+                "(",
+                optional(field("parameters", $.snippet_parameters)),
+                ")",
+                "}",
+              ),
+            ),
+            prec(
+              1,
+              seq(
+                "(",
+                optional(field("parameters", $.snippet_parameters)),
+                ")",
+                "}",
+              ),
+            ),
           ),
-          optional(field("type_parameters", $.snippet_type_parameters)),
-          optional(
-            seq("(", optional(field("parameters", $.snippet_parameters)), ")"),
-          ),
-          "}",
         ),
         // Recovery: snippet with ( but missing ) — e.g. {#snippet foo(a, b}
         prec(
@@ -449,6 +525,34 @@ module.exports = grammar(HTMLX, {
             "(",
             optional(field("parameters", $.snippet_parameters)),
             "}",
+          ),
+        ),
+      ),
+
+    _snippet_block_start_unclosed: ($) =>
+      seq(
+        token("{#"),
+        "snippet",
+        field("name", alias($._snippet_name, $.snippet_name)),
+        choice(
+          prec(
+            2,
+            seq(
+              field("type_parameters", $.snippet_type_parameters),
+              "(",
+              optional(field("parameters", $.snippet_parameters)),
+              ")",
+              $._block_start_eof,
+            ),
+          ),
+          prec(
+            1,
+            seq(
+              "(",
+              optional(field("parameters", $.snippet_parameters)),
+              ")",
+              $._block_start_eof,
+            ),
           ),
         ),
       ),
