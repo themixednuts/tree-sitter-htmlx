@@ -147,7 +147,10 @@ fn test_top_level_continuation_exposes_orphan_branch() {
 #[test]
 fn test_valid_if_else_does_not_expose_orphan_branch() {
     let tree = parse("{#if ok}<p/>{:else}<p/>{/if}");
-    assert!(!tree.contains("(orphan_branch"), "Valid branches should stay inside block nodes: {tree}");
+    assert!(
+        !tree.contains("(orphan_branch"),
+        "Valid branches should stay inside block nodes: {tree}"
+    );
 }
 
 #[test]
