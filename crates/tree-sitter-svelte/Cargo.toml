@@ -1,5 +1,5 @@
 [package]
-name = "tree-sitter-svelte"
+name = "tree-sitter-htmlx-svelte"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
