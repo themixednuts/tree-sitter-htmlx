@@ -8,6 +8,7 @@ repository = "https://github.com/themixednuts/tree-sitter-htmlx"
 build = "build.rs"
 include = [
   "src/**",
+  "examples/**",
   "queries/**",
   "grammar.js",
   "tree-sitter.json",
