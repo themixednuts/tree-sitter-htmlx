@@ -102,7 +102,7 @@ fn test_if_complex_expression() {
 #[test]
 fn test_else_if_block_kind_text() {
     // Verify that {:else if} clause can be found and has correct expression
-    use tree_sitter_svelte::LANGUAGE;
+    use tree_sitter_htmlx_svelte::LANGUAGE;
 
     let mut parser = tree_sitter::Parser::new();
     parser.set_language(&LANGUAGE.into()).unwrap();

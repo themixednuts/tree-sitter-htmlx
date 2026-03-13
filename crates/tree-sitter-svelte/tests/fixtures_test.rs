@@ -7,7 +7,7 @@
 use rstest::rstest;
 use std::fs;
 use std::path::PathBuf;
-use tree_sitter_svelte::LANGUAGE;
+use tree_sitter_htmlx_svelte::LANGUAGE;
 
 fn parse_fixture(path: &str) -> (String, tree_sitter::Tree) {
     let source = fs::read_to_string(path)

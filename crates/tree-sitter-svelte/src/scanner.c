@@ -19,16 +19,81 @@ enum {
     BLOCK_END_OPEN,
     SNIPPET_NAME,
     BLOCK_START_EOF,
+    BLOCK_EOF,
 };
+
+typedef struct {
+    uint64_t svelte_scan_calls;
+    uint64_t htmlx_fallback_calls;
+    uint64_t scan_lt_as_tag_boundary_calls;
+    uint64_t scan_lt_as_tag_boundary_successes;
+    uint64_t scan_lt_as_tag_boundary_bytes;
+    uint64_t scan_balanced_calls;
+    uint64_t scan_balanced_successes;
+    uint64_t scan_balanced_bytes;
+    uint64_t scan_iterator_calls;
+    uint64_t scan_iterator_successes;
+    uint64_t scan_iterator_bytes;
+    uint64_t scan_binding_calls;
+    uint64_t scan_binding_successes;
+    uint64_t scan_key_calls;
+    uint64_t scan_key_successes;
+    uint64_t scan_tag_expression_calls;
+    uint64_t scan_tag_expression_successes;
+    uint64_t scan_tag_expression_bytes;
+    uint64_t scan_snippet_parameter_calls;
+    uint64_t scan_snippet_parameter_successes;
+    uint64_t scan_snippet_type_params_calls;
+    uint64_t scan_snippet_type_params_successes;
+    uint64_t scan_snippet_type_params_bytes;
+    uint64_t scan_snippet_name_calls;
+    uint64_t scan_snippet_name_successes;
+    uint64_t scan_snippet_name_bytes;
+    uint64_t scan_block_end_open_calls;
+    uint64_t scan_block_end_open_successes;
+    uint64_t scan_block_end_open_bytes;
+} SvelteScannerProfileStats;
+
+static SvelteScannerProfileStats s_profile_stats;
+
+#ifdef TREE_SITTER_SVELTE_PROFILE
+#define PROFILE_COUNT(field) (++s_profile_stats.field)
+#define PROFILE_ADVANCE(field, lexer) do { ++s_profile_stats.field; advance(lexer); } while (0)
+#define PROFILE_SKIP(field, lexer) do { ++s_profile_stats.field; skip(lexer); } while (0)
+#else
+#define PROFILE_COUNT(field) ((void)0)
+#define PROFILE_ADVANCE(field, lexer) advance(lexer)
+#define PROFILE_SKIP(field, lexer) skip(lexer)
+#endif
+
+bool tree_sitter_svelte_profile_enabled(void) {
+#ifdef TREE_SITTER_SVELTE_PROFILE
+    return true;
+#else
+    return false;
+#endif
+}
+
+void tree_sitter_svelte_profile_reset(void) {
+    memset(&s_profile_stats, 0, sizeof(s_profile_stats));
+}
+
+void tree_sitter_svelte_profile_snapshot(SvelteScannerProfileStats *out) {
+    if (out != NULL) {
+        *out = s_profile_stats;
+    }
+}
 
 static bool is_svelte_tag_name_char(int32_t c) {
     return is_ident_char(c) || c == '-' || c == ':' || c == '.';
 }
 
 static bool scan_lt_as_tag_boundary(TSLexer *lexer) {
-    advance(lexer);
+    PROFILE_COUNT(scan_lt_as_tag_boundary_calls);
+    PROFILE_ADVANCE(scan_lt_as_tag_boundary_bytes, lexer);
 
     if (lexer->lookahead == '/' || lexer->lookahead == '!') {
+        PROFILE_COUNT(scan_lt_as_tag_boundary_successes);
         return true;
     }
 
@@ -37,17 +102,25 @@ static bool scan_lt_as_tag_boundary(TSLexer *lexer) {
     }
 
     while (is_svelte_tag_name_char(lexer->lookahead)) {
-        advance(lexer);
+        PROFILE_ADVANCE(scan_lt_as_tag_boundary_bytes, lexer);
     }
 
     if (lexer->lookahead == '>') {
-        advance(lexer);
-        return lexer->lookahead != '(';
+        PROFILE_ADVANCE(scan_lt_as_tag_boundary_bytes, lexer);
+        if (lexer->lookahead != '(') {
+            PROFILE_COUNT(scan_lt_as_tag_boundary_successes);
+            return true;
+        }
+        return false;
     }
 
     if (lexer->lookahead == '/') {
-        advance(lexer);
-        return lexer->lookahead == '>';
+        PROFILE_ADVANCE(scan_lt_as_tag_boundary_bytes, lexer);
+        if (lexer->lookahead == '>') {
+            PROFILE_COUNT(scan_lt_as_tag_boundary_successes);
+            return true;
+        }
+        return false;
     }
 
     if (!is_space(lexer->lookahead)) {
@@ -55,16 +128,20 @@ static bool scan_lt_as_tag_boundary(TSLexer *lexer) {
     }
 
     while (is_space(lexer->lookahead)) {
-        advance(lexer);
+        PROFILE_ADVANCE(scan_lt_as_tag_boundary_bytes, lexer);
     }
 
-    return lexer->lookahead == '>'
+    bool is_boundary = lexer->lookahead == '>'
         || lexer->lookahead == '/'
         || lexer->lookahead == '{'
         || lexer->lookahead == '"'
         || lexer->lookahead == '\''
         || lexer->lookahead == '|'
         || is_ident_start(lexer->lookahead);
+    if (is_boundary) {
+        PROFILE_COUNT(scan_lt_as_tag_boundary_successes);
+    }
+    return is_boundary;
 }
 
 // Scan balanced expression with trailing whitespace exclusion, comment handling,
@@ -72,6 +149,7 @@ static bool scan_lt_as_tag_boundary(TSLexer *lexer) {
 // Used for iterator expressions, binding patterns, key expressions, tag expressions,
 // and snippet parameters.
 static bool scan_balanced(TSLexer *lexer, int32_t stop_char, bool stop_comma, bool allow_eof) {
+    PROFILE_COUNT(scan_balanced_calls);
     int depth = 0;
     bool has_content = false;
     bool needs_mark = false;
@@ -118,24 +196,24 @@ static bool scan_balanced(TSLexer *lexer, int32_t stop_char, bool stop_comma, bo
             if (lexer->lookahead == '/') {
                 advance(lexer);
                 while (lexer->lookahead && lexer->lookahead != '\n' && lexer->lookahead != '\r') {
-                    advance(lexer);
-                }
+                PROFILE_ADVANCE(scan_balanced_bytes, lexer);
+            }
                 has_content = true;
                 needs_mark = true;
                 continue;
             }
 
             if (lexer->lookahead == '*') {
-                advance(lexer);
+                PROFILE_ADVANCE(scan_balanced_bytes, lexer);
                 while (lexer->lookahead) {
                     if (lexer->lookahead != '*') {
-                        advance(lexer);
+                        PROFILE_ADVANCE(scan_balanced_bytes, lexer);
                         continue;
                     }
 
-                    advance(lexer);
+                    PROFILE_ADVANCE(scan_balanced_bytes, lexer);
                     if (lexer->lookahead == '/') {
-                        advance(lexer);
+                        PROFILE_ADVANCE(scan_balanced_bytes, lexer);
                         break;
                     }
                 }
@@ -155,7 +233,7 @@ static bool scan_balanced(TSLexer *lexer, int32_t stop_char, bool stop_comma, bo
                 lexer->mark_end(lexer);
                 needs_mark = false;
             }
-            do { advance(lexer); } while (is_space(lexer->lookahead));
+            do { PROFILE_ADVANCE(scan_balanced_bytes, lexer); } while (is_space(lexer->lookahead));
             continue;
         }
 
@@ -166,7 +244,7 @@ static bool scan_balanced(TSLexer *lexer, int32_t stop_char, bool stop_comma, bo
                 lexer->mark_end(lexer);
                 needs_mark = false;
             }
-            advance(lexer);
+            PROFILE_ADVANCE(scan_balanced_bytes, lexer);
             int32_t next = lexer->lookahead;
             if (next == '#' || next == ':' || next == '/' || next == '@') {
                 found_terminator = true;
@@ -184,7 +262,7 @@ static bool scan_balanced(TSLexer *lexer, int32_t stop_char, bool stop_comma, bo
             case ')': case ']': case '}': if (--depth < 0) goto done; break;
         }
 
-        advance(lexer);
+        PROFILE_ADVANCE(scan_balanced_bytes, lexer);
         has_content = true;
         needs_mark = true;
     }
@@ -195,33 +273,40 @@ done:
     }
 
     if (allow_eof && has_content && lexer->lookahead == 0) {
+        PROFILE_COUNT(scan_balanced_successes);
         return true;
     }
 
-    return has_content && found_terminator;
+    bool success = has_content && found_terminator;
+    if (success) {
+        PROFILE_COUNT(scan_balanced_successes);
+    }
+    return success;
 }
 
 static inline bool match_keyword(TSLexer *lexer, const char *kw, int len) {
     for (int i = 0; i < len; i++) {
         if (lexer->lookahead != kw[i]) return false;
-        advance(lexer);
+        PROFILE_ADVANCE(scan_iterator_bytes, lexer);
     }
     // Keyword must be followed by space, '{', or '}' (end of block)
     return is_space(lexer->lookahead) || lexer->lookahead == '{' || lexer->lookahead == '}';
 }
 
 static bool scan_iterator(TSLexer *lexer) {
+    PROFILE_COUNT(scan_iterator_calls);
     int depth = 0;
     bool has_content = false;
     bool found_terminator = false;
 
-    while (is_space(lexer->lookahead)) skip(lexer);
+    while (is_space(lexer->lookahead)) PROFILE_SKIP(scan_iterator_bytes, lexer);
 
     // Empty expression: produce zero-width token at the terminator position.
     // This lets the compiler know WHERE the expression would be, even when absent.
     if (lexer->lookahead == '}') {
         lexer->mark_end(lexer);
         lexer->result_symbol = ITERATOR_EXPRESSION;
+        PROFILE_COUNT(scan_iterator_successes);
         return true;
     }
 
@@ -235,7 +320,7 @@ static bool scan_iterator(TSLexer *lexer) {
 
         // At depth 0, classify '<' as either tag boundary or expression operator.
         if (depth == 0 && c == '<') {
-            advance(lexer);
+            PROFILE_ADVANCE(scan_iterator_bytes, lexer);
             int32_t next = lexer->lookahead;
             if (next == '/' || next == '!') {
                 found_terminator = true;
@@ -248,27 +333,32 @@ static bool scan_iterator(TSLexer *lexer) {
 
         if (depth == 0 && is_space(c)) {
             lexer->mark_end(lexer);
-            while (is_space(lexer->lookahead)) advance(lexer);
+            while (is_space(lexer->lookahead)) PROFILE_ADVANCE(scan_iterator_bytes, lexer);
 
             c = lexer->lookahead;
             if (c == '<' && scan_lt_as_tag_boundary(lexer)) {
                 lexer->result_symbol = ITERATOR_EXPRESSION;
+                PROFILE_COUNT(scan_iterator_successes);
                 return has_content;
             }
             if (c == 'a') {
-                advance(lexer);
+                PROFILE_ADVANCE(scan_iterator_bytes, lexer);
                 if (match_keyword(lexer, "s", 1)) {
                     lexer->result_symbol = ITERATOR_EXPRESSION;
+                    PROFILE_COUNT(scan_iterator_successes);
                     return has_content;
                 }
             } else if (c == 't' && match_keyword(lexer, "then", 4)) {
                 lexer->result_symbol = ITERATOR_EXPRESSION;
+                PROFILE_COUNT(scan_iterator_successes);
                 return has_content;
             } else if (c == 'c' && match_keyword(lexer, "catch", 5)) {
                 lexer->result_symbol = ITERATOR_EXPRESSION;
+                PROFILE_COUNT(scan_iterator_successes);
                 return has_content;
             } else if (c == 0) {
                 lexer->result_symbol = ITERATOR_EXPRESSION;
+                PROFILE_COUNT(scan_iterator_successes);
                 return has_content;
             }
             has_content = true;
@@ -285,7 +375,7 @@ static bool scan_iterator(TSLexer *lexer) {
             case ')': case ']': case '}': depth--; break;
         }
 
-        advance(lexer);
+        PROFILE_ADVANCE(scan_iterator_bytes, lexer);
         has_content = true;
     }
 
@@ -293,32 +383,39 @@ static bool scan_iterator(TSLexer *lexer) {
     if (has_content && (found_terminator || lexer->lookahead == 0)) {
         lexer->mark_end(lexer);
         lexer->result_symbol = ITERATOR_EXPRESSION;
+        PROFILE_COUNT(scan_iterator_successes);
         return true;
     }
     return false;
 }
 
 static bool scan_binding(TSLexer *lexer) {
-    while (is_space(lexer->lookahead)) advance(lexer);
+    PROFILE_COUNT(scan_binding_calls);
+    while (is_space(lexer->lookahead)) PROFILE_ADVANCE(scan_balanced_bytes, lexer);
     if (!scan_balanced(lexer, '(', true, true)) return false;
 
     lexer->result_symbol = BINDING_PATTERN;
+    PROFILE_COUNT(scan_binding_successes);
     return true;
 }
 
 static bool scan_key(TSLexer *lexer) {
-    while (is_space(lexer->lookahead)) advance(lexer);
+    PROFILE_COUNT(scan_key_calls);
+    while (is_space(lexer->lookahead)) PROFILE_ADVANCE(scan_balanced_bytes, lexer);
     if (!scan_balanced(lexer, ')', false, true)) return false;
 
     lexer->result_symbol = KEY_EXPRESSION;
+    PROFILE_COUNT(scan_key_successes);
     return true;
 }
 
 static bool scan_snippet_parameter(TSLexer *lexer) {
-    while (is_space(lexer->lookahead)) advance(lexer);
+    PROFILE_COUNT(scan_snippet_parameter_calls);
+    while (is_space(lexer->lookahead)) PROFILE_ADVANCE(scan_balanced_bytes, lexer);
     if (!scan_balanced(lexer, ')', true, true)) return false;
 
     lexer->result_symbol = SNIPPET_PARAMETER;
+    PROFILE_COUNT(scan_snippet_parameter_successes);
     return true;
 }
 
@@ -330,12 +427,21 @@ static bool scan_block_start_eof(TSLexer *lexer) {
     return true;
 }
 
+static bool scan_block_eof(TSLexer *lexer) {
+    if (lexer->lookahead != 0) return false;
+
+    lexer->mark_end(lexer);
+    lexer->result_symbol = BLOCK_EOF;
+    return true;
+}
+
 // Tag expression: content after {@html, {@debug, etc.
 // Requires leading whitespace, then delegates to scan_balanced.
 static bool scan_tag_expression(TSLexer *lexer) {
+    PROFILE_COUNT(scan_tag_expression_calls);
     bool has_space = false;
     while (is_space(lexer->lookahead)) {
-        skip(lexer);
+        PROFILE_SKIP(scan_tag_expression_bytes, lexer);
         has_space = true;
     }
 
@@ -345,16 +451,19 @@ static bool scan_tag_expression(TSLexer *lexer) {
     if (lexer->lookahead == '}') {
         lexer->mark_end(lexer);
         lexer->result_symbol = TAG_EXPRESSION;
+        PROFILE_COUNT(scan_tag_expression_successes);
         return true;
     }
 
     if (!scan_balanced(lexer, '}', false, false)) return false;
 
     lexer->result_symbol = TAG_EXPRESSION;
+    PROFILE_COUNT(scan_tag_expression_successes);
     return true;
 }
 
 static bool scan_snippet_type_params(TSLexer *lexer) {
+    PROFILE_COUNT(scan_snippet_type_params_calls);
     if (lexer->lookahead != '<') return false;
 
     int depth = 0;
@@ -368,22 +477,23 @@ static bool scan_snippet_type_params(TSLexer *lexer) {
 
         if (c == '<') {
             depth++;
-            advance(lexer);
+            PROFILE_ADVANCE(scan_snippet_type_params_bytes, lexer);
             continue;
         }
 
         if (c == '>') {
             depth--;
-            advance(lexer);
+            PROFILE_ADVANCE(scan_snippet_type_params_bytes, lexer);
             if (depth == 0) {
                 lexer->mark_end(lexer);
                 lexer->result_symbol = SNIPPET_TYPE_PARAMS;
+                PROFILE_COUNT(scan_snippet_type_params_successes);
                 return true;
             }
             continue;
         }
 
-        advance(lexer);
+        PROFILE_ADVANCE(scan_snippet_type_params_bytes, lexer);
     }
 
     return false;
@@ -391,25 +501,27 @@ static bool scan_snippet_type_params(TSLexer *lexer) {
 
 // Snippet name: identifier or zero-width token when name is absent.
 static bool scan_snippet_name(TSLexer *lexer) {
-    while (is_space(lexer->lookahead)) skip(lexer);
+    PROFILE_COUNT(scan_snippet_name_calls);
+    while (is_space(lexer->lookahead)) PROFILE_SKIP(scan_snippet_name_bytes, lexer);
 
     // Empty name: produce zero-width token at the terminator position.
     if (lexer->lookahead == '}' || lexer->lookahead == '(') {
         lexer->mark_end(lexer);
         lexer->result_symbol = SNIPPET_NAME;
+        PROFILE_COUNT(scan_snippet_name_successes);
         return true;
     }
 
     // Must start with identifier start char or $
     if (!is_ident_start(lexer->lookahead) && lexer->lookahead != '$') return false;
 
-    advance(lexer);
+    PROFILE_ADVANCE(scan_snippet_name_bytes, lexer);
     while (is_ident_char(lexer->lookahead) || lexer->lookahead == '$') {
-        advance(lexer);
+        PROFILE_ADVANCE(scan_snippet_name_bytes, lexer);
     }
 
     lexer->mark_end(lexer);
-    while (is_space(lexer->lookahead)) skip(lexer);
+    while (is_space(lexer->lookahead)) PROFILE_SKIP(scan_snippet_name_bytes, lexer);
     if (
         lexer->lookahead != '}'
         && lexer->lookahead != '('
@@ -418,19 +530,22 @@ static bool scan_snippet_name(TSLexer *lexer) {
         return false;
     }
     lexer->result_symbol = SNIPPET_NAME;
+    PROFILE_COUNT(scan_snippet_name_successes);
     return true;
 }
 
 // Match {/ only when followed by identifier start (block end like {/if}).
 // Returns false for {/* or {// (JS comments inside expressions).
 static bool scan_block_end_open(TSLexer *lexer) {
+    PROFILE_COUNT(scan_block_end_open_calls);
     if (lexer->lookahead != '{') return false;
-    advance(lexer);
+    PROFILE_ADVANCE(scan_block_end_open_bytes, lexer);
     if (lexer->lookahead != '/') return false;
-    advance(lexer);
+    PROFILE_ADVANCE(scan_block_end_open_bytes, lexer);
     if (!is_ident_start(lexer->lookahead)) return false;
     lexer->mark_end(lexer);
     lexer->result_symbol = BLOCK_END_OPEN;
+    PROFILE_COUNT(scan_block_end_open_successes);
     return true;
 }
 
@@ -444,11 +559,13 @@ static bool scan_block_end_open(TSLexer *lexer) {
 // Other svelte tokens use the same early-return pattern because they're
 // expected in exclusive grammar contexts where no other token competes.
 static bool svelte_scan(State *state, TSLexer *lexer, const bool *valid) {
+    PROFILE_COUNT(svelte_scan_calls);
     // BLOCK_END_OPEN: disambiguates {/if} (block end) from {/* comment */} (expression).
     // Only attempt when lookahead is '{' — otherwise fall through to HTMLX scanner
     // so it can produce TEXT and other tokens that don't start with '{'.
     if (valid[BLOCK_END_OPEN] && lexer->lookahead == '{') return scan_block_end_open(lexer);
-    if (valid[BLOCK_START_EOF]) return scan_block_start_eof(lexer);
+    if (valid[BLOCK_START_EOF] && lexer->lookahead == 0) return scan_block_start_eof(lexer);
+    if (valid[BLOCK_EOF] && lexer->lookahead == 0) return scan_block_eof(lexer);
 
     // Svelte block expression tokens — each valid in exclusive grammar contexts.
     // SNIPPET_NAME must be checked before SNIPPET_TYPE_PARAMS and SNIPPET_PARAMETER
@@ -462,6 +579,7 @@ static bool svelte_scan(State *state, TSLexer *lexer, const bool *valid) {
     if (valid[TAG_EXPRESSION]) return scan_tag_expression(lexer);
 
     // Fall through to HTMLX scanner for all other tokens.
+    PROFILE_COUNT(htmlx_fallback_calls);
     return scan(state, lexer, valid);
 }
 

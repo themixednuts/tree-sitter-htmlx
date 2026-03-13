@@ -1,6 +1,6 @@
 //! Shared test utilities for tree-sitter-svelte tests
 
-use tree_sitter_svelte::LANGUAGE;
+use tree_sitter_htmlx_svelte::LANGUAGE;
 
 /// Parse a Svelte source string and return the S-expression representation
 pub fn parse(source: &str) -> String {

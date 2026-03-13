@@ -25,6 +25,7 @@ module.exports = grammar(HTMLX, {
       $._block_end_open, // {/ only when followed by identifier (not comment)
       $._snippet_name, // snippet identifier or zero-width when absent
       $._block_start_eof, // zero-width EOF marker for unterminated {#... block starts
+      $._block_eof, // zero-width EOF marker for blocks missing their {/end}
       // Note: _ts_lang_attr, _expression_js, _expression_ts are inherited from HTMLX
     ]),
 
@@ -198,7 +199,10 @@ module.exports = grammar(HTMLX, {
           ),
         ),
         // Recovery: unclosed block (no block_end) — strongly disfavored at runtime
-        prec.dynamic(-10, prec(-2, seq($._if_block_start, repeat($._node_in_unclosed_block)))),
+        prec.dynamic(
+          -10,
+          prec(-2, seq($._if_block_start, repeat($._node_in_unclosed_block), $._block_eof)),
+        ),
         // Recovery: block start reaches EOF before closing }
         prec.dynamic(-11, prec(-3, $._if_block_start_unclosed)),
       ),
@@ -263,7 +267,10 @@ module.exports = grammar(HTMLX, {
           ),
         ),
         // Recovery: unclosed block (no block_end)
-        prec.dynamic(-10, prec(-2, seq($._each_block_start, repeat($._node_in_unclosed_block)))),
+        prec.dynamic(
+          -10,
+          prec(-2, seq($._each_block_start, repeat($._node_in_unclosed_block), $._block_eof)),
+        ),
         // Recovery: block start reaches EOF before closing }
         prec.dynamic(-11, prec(-3, $._each_block_start_unclosed)),
       ),
@@ -356,6 +363,7 @@ module.exports = grammar(HTMLX, {
               $._await_block_start_plain,
               optional(field("pending", $.await_pending)),
               repeat($._await_recovery_continuation),
+              $._block_eof,
             ),
           ),
         ),
@@ -370,6 +378,7 @@ module.exports = grammar(HTMLX, {
               $._await_block_start_shorthand,
               optional(field("shorthand_children", $.await_branch_children)),
               repeat($._await_recovery_continuation),
+              $._block_eof,
             ),
           ),
         ),
@@ -446,7 +455,10 @@ module.exports = grammar(HTMLX, {
           ),
         ),
         // Recovery: unclosed block (no block_end)
-        prec.dynamic(-10, prec(-2, seq($._key_block_start, repeat($._node_in_unclosed_block)))),
+        prec.dynamic(
+          -10,
+          prec(-2, seq($._key_block_start, repeat($._node_in_unclosed_block), $._block_eof)),
+        ),
         // Recovery: block start reaches EOF before closing }
         prec.dynamic(-11, prec(-3, $._key_block_start_unclosed)),
       ),
@@ -481,7 +493,10 @@ module.exports = grammar(HTMLX, {
           alias($._snippet_block_end, $.block_end),
         ),
         // Recovery: unclosed block (no block_end)
-        prec.dynamic(-10, prec(-2, seq($._snippet_block_start, repeat($._node_in_unclosed_block)))),
+        prec.dynamic(
+          -10,
+          prec(-2, seq($._snippet_block_start, repeat($._node_in_unclosed_block), $._block_eof)),
+        ),
         // Recovery: block start reaches EOF before closing }
         prec.dynamic(-11, prec(-3, $._snippet_block_start_unclosed)),
       ),

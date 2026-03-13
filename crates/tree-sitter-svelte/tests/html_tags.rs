@@ -7,7 +7,7 @@ use utils::parse;
 fn get_expression_range(source: &str) -> (usize, usize, String) {
     let mut parser = tree_sitter::Parser::new();
     parser
-        .set_language(&tree_sitter_svelte::LANGUAGE.into())
+        .set_language(&tree_sitter_htmlx_svelte::LANGUAGE.into())
         .expect("Failed to load Svelte grammar");
 
     let tree = parser.parse(source, None).expect("Failed to parse");

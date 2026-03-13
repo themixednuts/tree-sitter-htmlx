@@ -5,7 +5,7 @@ use utils::parse;
 
 #[test]
 fn test_trimmed_file_does_not_let_unclosed_if_recovery_swallow_siblings() {
-    use tree_sitter_svelte::LANGUAGE;
+    use tree_sitter_htmlx_svelte::LANGUAGE;
 
     let source = r#"<script>
 	import { SvelteMap } from 'svelte/reactivity';

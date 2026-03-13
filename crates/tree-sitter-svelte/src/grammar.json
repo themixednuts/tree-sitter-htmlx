@@ -2280,6 +2280,10 @@
                     "type": "SYMBOL",
                     "name": "_node_in_unclosed_block"
                   }
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_block_eof"
                 }
               ]
             }
@@ -2576,6 +2580,10 @@
                     "type": "SYMBOL",
                     "name": "_node_in_unclosed_block"
                   }
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_block_eof"
                 }
               ]
             }
@@ -2982,6 +2990,10 @@
                     "type": "SYMBOL",
                     "name": "_await_recovery_continuation"
                   }
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_block_eof"
                 }
               ]
             }
@@ -3034,6 +3046,10 @@
                     "type": "SYMBOL",
                     "name": "_await_recovery_continuation"
                   }
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_block_eof"
                 }
               ]
             }
@@ -3389,6 +3405,10 @@
                     "type": "SYMBOL",
                     "name": "_node_in_unclosed_block"
                   }
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_block_eof"
                 }
               ]
             }
@@ -3529,6 +3549,10 @@
                     "type": "SYMBOL",
                     "name": "_node_in_unclosed_block"
                   }
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_block_eof"
                 }
               ]
             }
@@ -4301,6 +4325,10 @@
     {
       "type": "SYMBOL",
       "name": "_block_start_eof"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_block_eof"
     }
   ],
   "inline": [],

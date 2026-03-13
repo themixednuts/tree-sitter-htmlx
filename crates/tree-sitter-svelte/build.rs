@@ -9,11 +9,18 @@ fn main() {
     println!("cargo:rerun-if-changed=src/htmlx/scanner.c");
     println!("cargo:rerun-if-changed=src/htmlx/html/scanner.c");
     println!("cargo:rerun-if-changed=src/htmlx/html/tag.h");
+    println!("cargo:rerun-if-env-changed=TREE_SITTER_SVELTE_PROFILE");
 
-    cc::Build::new()
+    let mut build = cc::Build::new();
+    build
         .include("src")
         .file("src/parser.c")
         .file("src/scanner.c")
-        .warnings(false)
-        .compile("tree_sitter_svelte");
+        .warnings(false);
+
+    if std::env::var_os("TREE_SITTER_SVELTE_PROFILE").is_some() {
+        build.define("TREE_SITTER_SVELTE_PROFILE", None);
+    }
+
+    build.compile("tree_sitter_svelte");
 }
