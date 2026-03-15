@@ -13,6 +13,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "block_close",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -160,6 +170,10 @@
           "named": true
         },
         {
+          "type": "block_close",
+          "named": true
+        },
+        {
           "type": "block_end",
           "named": true
         },
@@ -189,6 +203,10 @@
         "required": true,
         "types": [
           {
+            "type": "block_close",
+            "named": true
+          },
+          {
             "type": "branch_kind",
             "named": true
           },
@@ -198,10 +216,6 @@
           },
           {
             "type": "{:",
-            "named": false
-          },
-          {
-            "type": "}",
             "named": false
           }
         ]
@@ -389,7 +403,17 @@
   {
     "type": "block_end",
     "named": true,
-    "fields": {}
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "block_close",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "const_tag",
@@ -405,6 +429,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "block_close",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -421,6 +455,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "block_close",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -567,6 +611,10 @@
         },
         {
           "type": "await_block",
+          "named": true
+        },
+        {
+          "type": "block_close",
           "named": true
         },
         {
@@ -753,7 +801,7 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "attach_tag",
@@ -761,6 +809,10 @@
         },
         {
           "type": "await_block",
+          "named": true
+        },
+        {
+          "type": "block_close",
           "named": true
         },
         {
@@ -843,7 +895,7 @@
     },
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "attach_tag",
@@ -851,6 +903,10 @@
         },
         {
           "type": "await_block",
+          "named": true
+        },
+        {
+          "type": "block_close",
           "named": true
         },
         {
@@ -1000,6 +1056,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "block_close",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -1027,6 +1093,10 @@
         },
         {
           "type": "await_block",
+          "named": true
+        },
+        {
+          "type": "block_close",
           "named": true
         },
         {
@@ -1137,6 +1207,10 @@
         },
         {
           "type": "await_block",
+          "named": true
+        },
+        {
+          "type": "block_close",
           "named": true
         },
         {
@@ -1264,6 +1338,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "block_close",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -1343,6 +1427,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "block_close",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -1433,6 +1527,10 @@
         },
         {
           "type": "await_block",
+          "named": true
+        },
+        {
+          "type": "block_close",
           "named": true
         },
         {
@@ -1734,6 +1832,10 @@
   {
     "type": "await",
     "named": false
+  },
+  {
+    "type": "block_close",
+    "named": true
   },
   {
     "type": "block_comment",

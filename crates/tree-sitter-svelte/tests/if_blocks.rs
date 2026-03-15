@@ -7,7 +7,7 @@ use utils::parse;
 fn test_if_simple() {
     assert_eq!(
         parse("{#if foo}bar{/if}"),
-        "(document (if_block expression: (expression content: (js)) (text) (block_end)))"
+        "(document (if_block expression: (expression content: (js)) (block_close) (text) (block_end (block_close))))"
     );
 }
 
@@ -15,7 +15,7 @@ fn test_if_simple() {
 fn test_if_with_element() {
     assert_eq!(
         parse("{#if visible}<p>Hello</p>{/if}"),
-        "(document (if_block expression: (expression content: (js)) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (block_end)))"
+        "(document (if_block expression: (expression content: (js)) (block_close) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (block_end (block_close))))"
     );
 }
 
@@ -23,7 +23,7 @@ fn test_if_with_element() {
 fn test_if_inside_element_content() {
     assert_eq!(
         parse("<div>{#if visible}<span>ok</span>{/if}</div>"),
-        "(document (element (start_tag (tag_name)) (if_block expression: (expression content: (js)) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (block_end)) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (if_block expression: (expression content: (js)) (block_close) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (block_end (block_close))) (end_tag (tag_name))))"
     );
 }
 
@@ -31,7 +31,7 @@ fn test_if_inside_element_content() {
 fn test_if_with_expression() {
     assert_eq!(
         parse("{#if count > 0}<p>{count}</p>{/if}"),
-        "(document (if_block expression: (expression content: (js)) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (block_end)))"
+        "(document (if_block expression: (expression content: (js)) (block_close) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (block_end (block_close))))"
     );
 }
 
@@ -39,7 +39,7 @@ fn test_if_with_expression() {
 fn test_if_nested() {
     assert_eq!(
         parse("{#if a}{#if b}x{/if}{/if}"),
-        "(document (if_block expression: (expression content: (js)) (if_block expression: (expression content: (js)) (text) (block_end)) (block_end)))"
+        "(document (if_block expression: (expression content: (js)) (block_close) (if_block expression: (expression content: (js)) (block_close) (text) (block_end (block_close))) (block_end (block_close))))"
     );
 }
 
@@ -47,7 +47,7 @@ fn test_if_nested() {
 fn test_if_else() {
     assert_eq!(
         parse("{#if a}yes{:else}no{/if}"),
-        "(document (if_block expression: (expression content: (js)) (text) (else_clause (text)) (block_end)))"
+        "(document (if_block expression: (expression content: (js)) (block_close) (text) (else_clause (block_close) (text)) (block_end (block_close))))"
     );
 }
 
@@ -55,7 +55,7 @@ fn test_if_else() {
 fn test_if_else_with_elements() {
     assert_eq!(
         parse("{#if show}<div>Visible</div>{:else}<span>Hidden</span>{/if}"),
-        "(document (if_block expression: (expression content: (js)) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (else_clause (element (start_tag (tag_name)) (text) (end_tag (tag_name)))) (block_end)))"
+        "(document (if_block expression: (expression content: (js)) (block_close) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (else_clause (block_close) (element (start_tag (tag_name)) (text) (end_tag (tag_name)))) (block_end (block_close))))"
     );
 }
 
@@ -63,7 +63,7 @@ fn test_if_else_with_elements() {
 fn test_if_else_if() {
     assert_eq!(
         parse("{#if a}1{:else if b}2{:else}3{/if}"),
-        "(document (if_block expression: (expression content: (js)) (text) (else_if_clause expression: (expression_value content: (js)) (text)) (else_clause (text)) (block_end)))"
+        "(document (if_block expression: (expression content: (js)) (block_close) (text) (else_if_clause expression: (expression_value content: (js)) (block_close) (text)) (else_clause (block_close) (text)) (block_end (block_close))))"
     );
 }
 
@@ -71,7 +71,7 @@ fn test_if_else_if() {
 fn test_if_else_if_chain() {
     assert_eq!(
         parse("{#if a}1{:else if b}2{:else if c}3{:else}4{/if}"),
-        "(document (if_block expression: (expression content: (js)) (text) (else_if_clause expression: (expression_value content: (js)) (text)) (else_if_clause expression: (expression_value content: (js)) (text)) (else_clause (text)) (block_end)))"
+        "(document (if_block expression: (expression content: (js)) (block_close) (text) (else_if_clause expression: (expression_value content: (js)) (block_close) (text)) (else_if_clause expression: (expression_value content: (js)) (block_close) (text)) (else_clause (block_close) (text)) (block_end (block_close))))"
     );
 }
 
@@ -79,7 +79,7 @@ fn test_if_else_if_chain() {
 fn test_if_else_if_no_else() {
     assert_eq!(
         parse("{#if a}1{:else if b}2{/if}"),
-        "(document (if_block expression: (expression content: (js)) (text) (else_if_clause expression: (expression_value content: (js)) (text)) (block_end)))"
+        "(document (if_block expression: (expression content: (js)) (block_close) (text) (else_if_clause expression: (expression_value content: (js)) (block_close) (text)) (block_end (block_close))))"
     );
 }
 
@@ -87,7 +87,7 @@ fn test_if_else_if_no_else() {
 fn test_if_with_component() {
     assert_eq!(
         parse("{#if show}<Component />{/if}"),
-        "(document (if_block expression: (expression content: (js)) (element (self_closing_tag (tag_name))) (block_end)))"
+        "(document (if_block expression: (expression content: (js)) (block_close) (element (self_closing_tag (tag_name))) (block_end (block_close))))"
     );
 }
 
@@ -95,7 +95,7 @@ fn test_if_with_component() {
 fn test_if_complex_expression() {
     assert_eq!(
         parse("{#if user && user.isAdmin}admin{/if}"),
-        "(document (if_block expression: (expression content: (js)) (text) (block_end)))"
+        "(document (if_block expression: (expression content: (js)) (block_close) (text) (block_end (block_close))))"
     );
 }
 

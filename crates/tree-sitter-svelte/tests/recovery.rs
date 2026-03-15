@@ -139,7 +139,7 @@ fn test_trimmed_file_does_not_let_unclosed_if_recovery_swallow_siblings() {
 fn test_top_level_continuation_exposes_orphan_branch() {
     let tree = parse("{:then foo}");
     assert!(
-        tree.contains("(orphan_branch kind: (branch_kind) binding: (pattern content: (js)))"),
+        tree.contains("(orphan_branch kind: (branch_kind) binding: (pattern content: (js)) (block_close))"),
         "Expected typed orphan_branch node: {tree}"
     );
 }
@@ -329,7 +329,7 @@ fn test_unterminated_tag_breaks_before_block_branches() {
 fn test_if_block_missing_right_brace_recovers_typed_block_start() {
     assert_eq!(
         parse("{#if visible <p>ok</p>{/if}"),
-        "(document (if_block expression: (expression content: (js)) (MISSING \"}\") (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (block_end)))"
+        "(document (if_block expression: (expression content: (js)) (MISSING block_close) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (block_end (block_close))))"
     );
 }
 
@@ -337,7 +337,7 @@ fn test_if_block_missing_right_brace_recovers_typed_block_start() {
 fn test_snippet_block_missing_right_brace_recovers_typed_block_start() {
     assert_eq!(
         parse("{#snippet children(name)<p>{name}</p>{/snippet}"),
-        "(document (snippet_block name: (snippet_name) parameters: (snippet_parameters parameter: (pattern content: (js))) (MISSING \"}\") (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (block_end)))"
+        "(document (snippet_block name: (snippet_name) parameters: (snippet_parameters parameter: (pattern content: (js))) (MISSING block_close) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (block_end (block_close))))"
     );
 }
 

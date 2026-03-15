@@ -19,24 +19,9 @@
   "{@"
 ] @tag.delimiter
 
-; Closing } of block headers and branch headers
-(if_block "}" @tag.delimiter)
-(else_if_clause "}" @tag.delimiter)
-(else_clause "}" @tag.delimiter)
-(each_block "}" @tag.delimiter)
-(await_block "}" @tag.delimiter)
-(await_branch "}" @tag.delimiter)
-(orphan_branch "}" @tag.delimiter)
-(key_block "}" @tag.delimiter)
-(snippet_block "}" @tag.delimiter)
-(const_tag "}" @tag.delimiter)
-(render_tag "}" @tag.delimiter)
-(html_tag "}" @tag.delimiter)
-(debug_tag "}" @tag.delimiter)
-(attach_tag "}" @tag.delimiter)
+(block_close) @tag.delimiter
 
 (block_end) @tag.delimiter
-(block_end "}" @tag.delimiter)
 
 ; Shorthand kind (then/catch in await shorthand)
 (shorthand_kind) @keyword.control

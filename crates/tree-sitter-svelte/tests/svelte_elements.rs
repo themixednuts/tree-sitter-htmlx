@@ -333,6 +333,6 @@ fn test_svelte_boundary_onerror() {
 fn test_svelte_boundary_failed_snippet() {
     assert_eq!(
         parse("{#snippet failed(error)}<p>Error: {error}</p>{/snippet}<svelte:boundary {failed}><Child /></svelte:boundary>"),
-        "(document (snippet_block name: (snippet_name) parameters: (snippet_parameters parameter: (pattern content: (js))) (element (start_tag (tag_name)) (text) (expression content: (js)) (end_tag (tag_name))) (block_end)) (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (shorthand_attribute content: (js)))) (element (self_closing_tag (tag_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (snippet_block name: (snippet_name) parameters: (snippet_parameters parameter: (pattern content: (js))) (block_close) (element (start_tag (tag_name)) (text) (expression content: (js)) (end_tag (tag_name))) (block_end (block_close))) (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (shorthand_attribute content: (js)))) (element (self_closing_tag (tag_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }
