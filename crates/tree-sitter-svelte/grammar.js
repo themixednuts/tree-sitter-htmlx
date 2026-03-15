@@ -40,8 +40,10 @@ module.exports = grammar(HTMLX, {
   ]),
 
   rules: {
-    // Named close delimiter for block syntax — avoids collision with htmlx's
-    // blanket "}" @punctuation.bracket rule in highlight queries.
+    // Named block delimiters — two node types cover all Svelte block syntax:
+    //   block_open  = {#  {:  {@  {/
+    //   block_close = }
+    // Queries only need: (block_open) @x  (block_close) @x
     _block_close: ($) => alias("}", $.block_close),
 
     // Typed content helpers — produce nodes with content: js | ts
@@ -141,7 +143,7 @@ module.exports = grammar(HTMLX, {
         -2,
         choice(
           seq(
-            token("{:"),
+            alias(token("{:"), $.block_open),
             field("kind", alias(token(seq("else", /\s+/, "if")), $.branch_kind)),
             optional(
               field("expression", alias($._tag_expression, $.expression_value)),
@@ -149,12 +151,12 @@ module.exports = grammar(HTMLX, {
             $._block_close,
           ),
           seq(
-            token("{:"),
+            alias(token("{:"), $.block_open),
             field("kind", alias("else", $.branch_kind)),
             $._block_close,
           ),
           seq(
-            token("{:"),
+            alias(token("{:"), $.block_open),
             field("kind", alias(choice("then", "catch"), $.branch_kind)),
             optional(field("binding", alias($._binding_pattern, $.pattern))),
             $._block_close,
@@ -190,17 +192,17 @@ module.exports = grammar(HTMLX, {
     // Block end helper (shared by all typed blocks)
     // =========================================================================
 
-    _block_end: ($) => seq($._block_end_open, $._block_end_keyword, $._block_close),
+    _block_end: ($) => seq(alias($._block_end_open, $.block_open), $._block_end_keyword, $._block_close),
 
     _block_end_keyword: ($) => /[a-zA-Z_][a-zA-Z0-9_]*/,
 
     // Typed block ends — each block type uses its own keyword for proper matching.
     // This prevents {/if} from closing a key_block, etc.
-    _if_block_end: ($) => seq($._block_end_open, "if", $._block_close),
-    _each_block_end: ($) => seq($._block_end_open, "each", $._block_close),
-    _await_block_end: ($) => seq($._block_end_open, "await", $._block_close),
-    _key_block_end: ($) => seq($._block_end_open, "key", $._block_close),
-    _snippet_block_end: ($) => seq($._block_end_open, "snippet", $._block_close),
+    _if_block_end: ($) => seq(alias($._block_end_open, $.block_open), "if", $._block_close),
+    _each_block_end: ($) => seq(alias($._block_end_open, $.block_open), "each", $._block_close),
+    _await_block_end: ($) => seq(alias($._block_end_open, $.block_open), "await", $._block_close),
+    _key_block_end: ($) => seq(alias($._block_end_open, $.block_open), "key", $._block_close),
+    _snippet_block_end: ($) => seq(alias($._block_end_open, $.block_open), "snippet", $._block_close),
 
     // =========================================================================
     // Recovery helper
@@ -246,7 +248,7 @@ module.exports = grammar(HTMLX, {
 
     _if_block_start: ($) =>
       seq(
-        token("{#"),
+        alias(token("{#"), $.block_open),
         "if",
         optional(
           field("expression", alias($._iterator_expression, $.expression)),
@@ -256,7 +258,7 @@ module.exports = grammar(HTMLX, {
 
     _if_block_start_unclosed: ($) =>
       seq(
-        token("{#"),
+        alias(token("{#"), $.block_open),
         "if",
         field("expression", alias($._iterator_expression, $.expression)),
         $._block_start_eof,
@@ -265,8 +267,8 @@ module.exports = grammar(HTMLX, {
     else_if_clause: ($) =>
       prec.right(
         seq(
-          token("{:"),
-          token(seq("else", /\s+/, "if")),
+          alias(token("{:"), $.block_open),
+          alias(token(seq("else", /\s+/, "if")), $.branch_kind),
           optional(
             field("expression", alias($._tag_expression, $.expression_value)),
           ),
@@ -277,7 +279,7 @@ module.exports = grammar(HTMLX, {
 
     else_clause: ($) =>
       prec.right(
-        seq(token("{:"), "else", $._block_close, repeat($._node_without_orphan_branch)),
+        seq(alias(token("{:"), $.block_open), "else", $._block_close, repeat($._node_without_orphan_branch)),
       ),
 
     // =========================================================================
@@ -314,7 +316,7 @@ module.exports = grammar(HTMLX, {
 
     _each_block_start: ($) =>
       seq(
-        token("{#"),
+        alias(token("{#"), $.block_open),
         "each",
         optional(
           seq(
@@ -345,7 +347,7 @@ module.exports = grammar(HTMLX, {
 
     _each_block_start_unclosed: ($) =>
       seq(
-        token("{#"),
+        alias(token("{#"), $.block_open),
         "each",
         field("expression", alias($._iterator_expression, $.expression)),
         optional(
@@ -423,7 +425,7 @@ module.exports = grammar(HTMLX, {
 
     _await_block_start_plain: ($) =>
       seq(
-        token("{#"),
+        alias(token("{#"), $.block_open),
         "await",
         optional(
           field("expression", alias($._iterator_expression, $.expression)),
@@ -433,7 +435,7 @@ module.exports = grammar(HTMLX, {
 
     _await_block_start_plain_unclosed: ($) =>
       seq(
-        token("{#"),
+        alias(token("{#"), $.block_open),
         "await",
         field("expression", alias($._iterator_expression, $.expression)),
         $._block_start_eof,
@@ -441,7 +443,7 @@ module.exports = grammar(HTMLX, {
 
     _await_block_start_shorthand: ($) =>
       seq(
-        token("{#"),
+        alias(token("{#"), $.block_open),
         "await",
         field("expression", alias($._iterator_expression, $.expression)),
         field("shorthand", alias(choice("then", "catch"), $.shorthand_kind)),
@@ -463,7 +465,7 @@ module.exports = grammar(HTMLX, {
 
     _await_branch_header: ($) =>
       seq(
-        token("{:"),
+        alias(token("{:"), $.block_open),
         field("kind", alias(choice("then", "catch"), $.branch_kind)),
         optional(field("binding", alias($._binding_pattern, $.pattern))),
         $._block_close,
@@ -502,7 +504,7 @@ module.exports = grammar(HTMLX, {
 
     _key_block_start: ($) =>
       seq(
-        token("{#"),
+        alias(token("{#"), $.block_open),
         "key",
         optional(
           field("expression", alias($._iterator_expression, $.expression)),
@@ -512,7 +514,7 @@ module.exports = grammar(HTMLX, {
 
     _key_block_start_unclosed: ($) =>
       seq(
-        token("{#"),
+        alias(token("{#"), $.block_open),
         "key",
         field("expression", alias($._iterator_expression, $.expression)),
         $._block_start_eof,
@@ -541,7 +543,7 @@ module.exports = grammar(HTMLX, {
     _snippet_block_start: ($) =>
       choice(
         seq(
-          token("{#"),
+          alias(token("{#"), $.block_open),
           "snippet",
           field("name", alias($._snippet_name, $.snippet_name)),
           choice(
@@ -570,7 +572,7 @@ module.exports = grammar(HTMLX, {
         prec(
           -1,
           seq(
-            token("{#"),
+            alias(token("{#"), $.block_open),
             "snippet",
             field("name", alias($._snippet_name, $.snippet_name)),
             optional(field("type_parameters", $.snippet_type_parameters)),
@@ -583,7 +585,7 @@ module.exports = grammar(HTMLX, {
 
     _snippet_block_start_unclosed: ($) =>
       seq(
-        token("{#"),
+        alias(token("{#"), $.block_open),
         "snippet",
         field("name", alias($._snippet_name, $.snippet_name)),
         choice(
@@ -623,7 +625,7 @@ module.exports = grammar(HTMLX, {
     // {@html expr}
     html_tag: ($) =>
       seq(
-        token("{@"),
+        alias(token("{@"), $.block_open),
         "html",
         optional(
           field("expression", alias($._tag_expression, $.expression_value)),
@@ -634,7 +636,7 @@ module.exports = grammar(HTMLX, {
     // {@debug expr?}
     debug_tag: ($) =>
       seq(
-        token("{@"),
+        alias(token("{@"), $.block_open),
         "debug",
         optional(
           field("expression", alias($._tag_expression, $.expression_value)),
@@ -645,7 +647,7 @@ module.exports = grammar(HTMLX, {
     // {@const expr}
     const_tag: ($) =>
       seq(
-        token("{@"),
+        alias(token("{@"), $.block_open),
         "const",
         optional(
           field("expression", alias($._tag_expression, $.expression_value)),
@@ -656,7 +658,7 @@ module.exports = grammar(HTMLX, {
     // {@render expr}
     render_tag: ($) =>
       seq(
-        token("{@"),
+        alias(token("{@"), $.block_open),
         "render",
         optional(
           field("expression", alias($._tag_expression, $.expression_value)),
@@ -667,7 +669,7 @@ module.exports = grammar(HTMLX, {
     // {@attach expr}
     attach_tag: ($) =>
       seq(
-        token("{@"),
+        alias(token("{@"), $.block_open),
         "attach",
         optional(
           field("expression", alias($._tag_expression, $.expression_value)),

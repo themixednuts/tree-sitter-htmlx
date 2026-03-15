@@ -35,6 +35,24 @@
   (#eq? @_less "less")
   (#set! injection.language "less"))
 
+; Expressions ({expr} in text and attribute contexts)
+((expression content: (js) @injection.content)
+  (#set! injection.language "javascript"))
+((expression content: (ts) @injection.content)
+  (#set! injection.language "typescript"))
+
+; Shorthand attributes ({foo})
+((shorthand_attribute content: (js) @injection.content)
+  (#set! injection.language "javascript"))
+((shorthand_attribute content: (ts) @injection.content)
+  (#set! injection.language "typescript"))
+
+; Spread attributes ({...props})
+((spread_attribute content: (js) @injection.content)
+  (#set! injection.language "javascript"))
+((spread_attribute content: (ts) @injection.content)
+  (#set! injection.language "typescript"))
+
 ; Tag expressions ({@const}, {@render}, {@html}, {@debug}, {@attach}, {:else if})
 ((expression_value content: (js) @injection.content)
   (#set! injection.language "javascript"))

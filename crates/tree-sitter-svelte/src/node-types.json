@@ -15,11 +15,15 @@
       }
     },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
           "type": "block_close",
+          "named": true
+        },
+        {
+          "type": "block_open",
           "named": true
         }
       ]
@@ -163,7 +167,7 @@
     },
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "await_branch",
@@ -175,6 +179,10 @@
         },
         {
           "type": "block_end",
+          "named": true
+        },
+        {
+          "type": "block_open",
           "named": true
         },
         {
@@ -207,16 +215,16 @@
             "named": true
           },
           {
+            "type": "block_open",
+            "named": true
+          },
+          {
             "type": "branch_kind",
             "named": true
           },
           {
             "type": "pattern",
             "named": true
-          },
-          {
-            "type": "{:",
-            "named": false
           }
         ]
       },
@@ -405,11 +413,15 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
           "type": "block_close",
+          "named": true
+        },
+        {
+          "type": "block_open",
           "named": true
         }
       ]
@@ -431,11 +443,15 @@
       }
     },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
           "type": "block_close",
+          "named": true
+        },
+        {
+          "type": "block_open",
           "named": true
         }
       ]
@@ -457,11 +473,15 @@
       }
     },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
           "type": "block_close",
+          "named": true
+        },
+        {
+          "type": "block_open",
           "named": true
         }
       ]
@@ -603,7 +623,7 @@
     },
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "attach_tag",
@@ -619,6 +639,10 @@
         },
         {
           "type": "block_end",
+          "named": true
+        },
+        {
+          "type": "block_open",
           "named": true
         },
         {
@@ -816,6 +840,10 @@
           "named": true
         },
         {
+          "type": "block_open",
+          "named": true
+        },
+        {
           "type": "const_tag",
           "named": true
         },
@@ -907,6 +935,14 @@
         },
         {
           "type": "block_close",
+          "named": true
+        },
+        {
+          "type": "block_open",
+          "named": true
+        },
+        {
+          "type": "branch_kind",
           "named": true
         },
         {
@@ -1058,11 +1094,15 @@
       }
     },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
           "type": "block_close",
+          "named": true
+        },
+        {
+          "type": "block_open",
           "named": true
         }
       ]
@@ -1085,7 +1125,7 @@
     },
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "attach_tag",
@@ -1101,6 +1141,10 @@
         },
         {
           "type": "block_end",
+          "named": true
+        },
+        {
+          "type": "block_open",
           "named": true
         },
         {
@@ -1199,7 +1243,7 @@
     },
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "attach_tag",
@@ -1215,6 +1259,10 @@
         },
         {
           "type": "block_end",
+          "named": true
+        },
+        {
+          "type": "block_open",
           "named": true
         },
         {
@@ -1350,11 +1398,15 @@
       }
     },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
           "type": "block_close",
+          "named": true
+        },
+        {
+          "type": "block_open",
           "named": true
         }
       ]
@@ -1439,11 +1491,15 @@
       }
     },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
           "type": "block_close",
+          "named": true
+        },
+        {
+          "type": "block_open",
           "named": true
         }
       ]
@@ -1529,7 +1585,7 @@
     },
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "attach_tag",
@@ -1545,6 +1601,10 @@
         },
         {
           "type": "block_end",
+          "named": true
+        },
+        {
+          "type": "block_open",
           "named": true
         },
         {
@@ -1852,6 +1912,10 @@
     "named": true
   },
   {
+    "type": "block_open",
+    "named": true
+  },
+  {
     "type": "block_sigil",
     "named": true
   },
@@ -1957,19 +2021,7 @@
     "named": false
   },
   {
-    "type": "{#",
-    "named": false
-  },
-  {
     "type": "{...",
-    "named": false
-  },
-  {
-    "type": "{:",
-    "named": false
-  },
-  {
-    "type": "{@",
     "named": false
   },
   {

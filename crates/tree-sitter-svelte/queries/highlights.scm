@@ -13,15 +13,9 @@
   "attach"
 ] @keyword.control
 
-[
-  "{#"
-  "{:"
-  "{@"
-] @tag.delimiter
-
+; Block delimiters
+(block_open) @tag.delimiter
 (block_close) @tag.delimiter
-
-(block_end) @tag.delimiter
 
 ; Shorthand kind (then/catch in await shorthand)
 (shorthand_kind) @keyword.control
@@ -53,6 +47,9 @@
 ; Snippet block
 (snippet_block name: (snippet_name) @function)
 (snippet_parameters parameter: (pattern) @variable)
+
+; Malformed blocks (e.g. { #if ...} with space before sigil)
+(block_sigil) @keyword.control
 
 ; Comments inside tag attribute lists
 (tag_comment kind: (line_comment) @comment)
