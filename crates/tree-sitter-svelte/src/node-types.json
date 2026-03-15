@@ -1302,6 +1302,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "block_close",
+          "named": true
+        }
+      ]
     }
   },
   {

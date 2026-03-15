@@ -131,7 +131,7 @@ module.exports = grammar(HTMLX, {
           alias(token(seq(/[#:@]/, /[a-z]+/)), $.block_sigil),
         ),
         /[^}]*/,
-        "}",
+        $._block_close,
       ),
 
     // A branch continuation outside the block grammar is still preserved as a typed

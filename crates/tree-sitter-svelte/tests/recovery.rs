@@ -139,7 +139,9 @@ fn test_trimmed_file_does_not_let_unclosed_if_recovery_swallow_siblings() {
 fn test_top_level_continuation_exposes_orphan_branch() {
     let tree = parse("{:then foo}");
     assert!(
-        tree.contains("(orphan_branch kind: (branch_kind) binding: (pattern content: (js)) (block_close))"),
+        tree.contains(
+            "(orphan_branch kind: (branch_kind) binding: (pattern content: (js)) (block_close))"
+        ),
         "Expected typed orphan_branch node: {tree}"
     );
 }

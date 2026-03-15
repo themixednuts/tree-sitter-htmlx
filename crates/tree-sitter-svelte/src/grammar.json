@@ -1922,8 +1922,8 @@
           "value": "[^}]*"
         },
         {
-          "type": "STRING",
-          "value": "}"
+          "type": "SYMBOL",
+          "name": "_block_close"
         }
       ]
     },
