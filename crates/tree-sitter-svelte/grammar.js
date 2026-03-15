@@ -15,12 +15,17 @@ module.exports = grammar(HTMLX, {
 
   externals: ($, original) =>
     original.concat([
-      // Svelte-specific tokens for block syntax
-      $._iterator_expression,
-      $._binding_pattern,
-      $._key_expression,
-      $._tag_expression,
-      $._snippet_parameter,
+      // Svelte-specific tokens for block syntax (JS/TS typed pairs)
+      $._iterator_expression_js,
+      $._iterator_expression_ts,
+      $._binding_pattern_js,
+      $._binding_pattern_ts,
+      $._key_expression_js,
+      $._key_expression_ts,
+      $._tag_expression_js,
+      $._tag_expression_ts,
+      $._snippet_parameter_js,
+      $._snippet_parameter_ts,
       $._snippet_type_params,
       $._block_end_open, // {/ only when followed by identifier (not comment)
       $._snippet_name, // snippet identifier or zero-width when absent
@@ -31,13 +36,41 @@ module.exports = grammar(HTMLX, {
 
   conflicts: ($, original) => (original || []).concat([
     [$._node, $._node_in_unclosed_block],
-    [$.await_pending],
-    [$.await_branch_children],
-    [$.await_block],
     [$._await_recovery_continuation, $.await_block],
   ]),
 
   rules: {
+    // Typed content helpers — produce nodes with content: js | ts
+    _iterator_expression: ($) =>
+      field("content", choice(
+        alias($._iterator_expression_js, $.js),
+        alias($._iterator_expression_ts, $.ts),
+      )),
+
+    _key_expression: ($) =>
+      field("content", choice(
+        alias($._key_expression_js, $.js),
+        alias($._key_expression_ts, $.ts),
+      )),
+
+    _tag_expression: ($) =>
+      field("content", choice(
+        alias($._tag_expression_js, $.js),
+        alias($._tag_expression_ts, $.ts),
+      )),
+
+    _binding_pattern: ($) =>
+      field("content", choice(
+        alias($._binding_pattern_js, $.js),
+        alias($._binding_pattern_ts, $.ts),
+      )),
+
+    _snippet_parameter: ($) =>
+      field("content", choice(
+        alias($._snippet_parameter_js, $.js),
+        alias($._snippet_parameter_ts, $.ts),
+      )),
+
     _node: ($) =>
       choice(
         prec(2, $.if_block),

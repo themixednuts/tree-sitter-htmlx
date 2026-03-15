@@ -11,10 +11,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args_os();
     let _bin = args.next();
 
-    let path = args
-        .next()
-        .map(PathBuf::from)
-        .ok_or("usage: cargo run -p tree-sitter-htmlx-svelte --example profile_parse -- <path> [repeat]")?;
+    let path = args.next().map(PathBuf::from).ok_or(
+        "usage: cargo run -p tree-sitter-htmlx-svelte --example profile_parse -- <path> [repeat]",
+    )?;
     let repeat = args
         .next()
         .map(|value| value.to_string_lossy().parse::<usize>())
@@ -51,12 +50,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for (name, value) in [
         ("svelte_scan_calls", stats.svelte_scan_calls),
         ("htmlx_fallback_calls", stats.htmlx_fallback_calls),
-        ("scan_lt_as_tag_boundary_calls", stats.scan_lt_as_tag_boundary_calls),
+        (
+            "scan_lt_as_tag_boundary_calls",
+            stats.scan_lt_as_tag_boundary_calls,
+        ),
         (
             "scan_lt_as_tag_boundary_successes",
             stats.scan_lt_as_tag_boundary_successes,
         ),
-        ("scan_lt_as_tag_boundary_bytes", stats.scan_lt_as_tag_boundary_bytes),
+        (
+            "scan_lt_as_tag_boundary_bytes",
+            stats.scan_lt_as_tag_boundary_bytes,
+        ),
         ("scan_balanced_calls", stats.scan_balanced_calls),
         ("scan_balanced_successes", stats.scan_balanced_successes),
         ("scan_balanced_bytes", stats.scan_balanced_bytes),
@@ -68,9 +73,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ("scan_key_calls", stats.scan_key_calls),
         ("scan_key_successes", stats.scan_key_successes),
         ("scan_tag_expression_calls", stats.scan_tag_expression_calls),
-        ("scan_tag_expression_successes", stats.scan_tag_expression_successes),
+        (
+            "scan_tag_expression_successes",
+            stats.scan_tag_expression_successes,
+        ),
         ("scan_tag_expression_bytes", stats.scan_tag_expression_bytes),
-        ("scan_snippet_parameter_calls", stats.scan_snippet_parameter_calls),
+        (
+            "scan_snippet_parameter_calls",
+            stats.scan_snippet_parameter_calls,
+        ),
         (
             "scan_snippet_parameter_successes",
             stats.scan_snippet_parameter_successes,
@@ -83,12 +94,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "scan_snippet_type_params_successes",
             stats.scan_snippet_type_params_successes,
         ),
-        ("scan_snippet_type_params_bytes", stats.scan_snippet_type_params_bytes),
+        (
+            "scan_snippet_type_params_bytes",
+            stats.scan_snippet_type_params_bytes,
+        ),
         ("scan_snippet_name_calls", stats.scan_snippet_name_calls),
-        ("scan_snippet_name_successes", stats.scan_snippet_name_successes),
+        (
+            "scan_snippet_name_successes",
+            stats.scan_snippet_name_successes,
+        ),
         ("scan_snippet_name_bytes", stats.scan_snippet_name_bytes),
         ("scan_block_end_open_calls", stats.scan_block_end_open_calls),
-        ("scan_block_end_open_successes", stats.scan_block_end_open_successes),
+        (
+            "scan_block_end_open_successes",
+            stats.scan_block_end_open_successes,
+        ),
         ("scan_block_end_open_bytes", stats.scan_block_end_open_bytes),
     ] {
         if value != 0 {

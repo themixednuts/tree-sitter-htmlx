@@ -38,6 +38,17 @@
 ; Expressions
 ((expression content: (js) @injection.content)
   (#set! injection.language "javascript"))
-
 ((expression content: (ts) @injection.content)
+  (#set! injection.language "typescript"))
+
+; Shorthand attributes ({count})
+((shorthand_attribute content: (js) @injection.content)
+  (#set! injection.language "javascript"))
+((shorthand_attribute content: (ts) @injection.content)
+  (#set! injection.language "typescript"))
+
+; Spread attributes ({...props})
+((spread_attribute content: (js) @injection.content)
+  (#set! injection.language "javascript"))
+((spread_attribute content: (ts) @injection.content)
   (#set! injection.language "typescript"))

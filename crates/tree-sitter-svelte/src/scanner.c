@@ -10,11 +10,16 @@
 // Svelte external token indices (after HTMLX's 26 tokens: 0-25)
 // HTML tokens (0-8) + HTMLX tokens (9-25, includes UNTERMINATED_TAG_END_OPEN at 25)
 enum {
-    ITERATOR_EXPRESSION = 26,
-    BINDING_PATTERN,
-    KEY_EXPRESSION,
-    TAG_EXPRESSION,
-    SNIPPET_PARAMETER,
+    ITERATOR_EXPRESSION_JS = 26,
+    ITERATOR_EXPRESSION_TS,
+    BINDING_PATTERN_JS,
+    BINDING_PATTERN_TS,
+    KEY_EXPRESSION_JS,
+    KEY_EXPRESSION_TS,
+    TAG_EXPRESSION_JS,
+    TAG_EXPRESSION_TS,
+    SNIPPET_PARAMETER_JS,
+    SNIPPET_PARAMETER_TS,
     SNIPPET_TYPE_PARAMS,
     BLOCK_END_OPEN,
     SNIPPET_NAME,
@@ -293,7 +298,7 @@ static inline bool match_keyword(TSLexer *lexer, const char *kw, int len) {
     return is_space(lexer->lookahead) || lexer->lookahead == '{' || lexer->lookahead == '}';
 }
 
-static bool scan_iterator(TSLexer *lexer) {
+static bool scan_iterator(State *state, TSLexer *lexer) {
     PROFILE_COUNT(scan_iterator_calls);
     int depth = 0;
     bool has_content = false;
@@ -305,7 +310,7 @@ static bool scan_iterator(TSLexer *lexer) {
     // This lets the compiler know WHERE the expression would be, even when absent.
     if (lexer->lookahead == '}') {
         lexer->mark_end(lexer);
-        lexer->result_symbol = ITERATOR_EXPRESSION;
+        lexer->result_symbol = state->is_typescript ? ITERATOR_EXPRESSION_TS : ITERATOR_EXPRESSION_JS;
         PROFILE_COUNT(scan_iterator_successes);
         return true;
     }
@@ -337,27 +342,27 @@ static bool scan_iterator(TSLexer *lexer) {
 
             c = lexer->lookahead;
             if (c == '<' && scan_lt_as_tag_boundary(lexer)) {
-                lexer->result_symbol = ITERATOR_EXPRESSION;
+                lexer->result_symbol = state->is_typescript ? ITERATOR_EXPRESSION_TS : ITERATOR_EXPRESSION_JS;
                 PROFILE_COUNT(scan_iterator_successes);
                 return has_content;
             }
             if (c == 'a') {
                 PROFILE_ADVANCE(scan_iterator_bytes, lexer);
                 if (match_keyword(lexer, "s", 1)) {
-                    lexer->result_symbol = ITERATOR_EXPRESSION;
+                    lexer->result_symbol = state->is_typescript ? ITERATOR_EXPRESSION_TS : ITERATOR_EXPRESSION_JS;
                     PROFILE_COUNT(scan_iterator_successes);
                     return has_content;
                 }
             } else if (c == 't' && match_keyword(lexer, "then", 4)) {
-                lexer->result_symbol = ITERATOR_EXPRESSION;
+                lexer->result_symbol = state->is_typescript ? ITERATOR_EXPRESSION_TS : ITERATOR_EXPRESSION_JS;
                 PROFILE_COUNT(scan_iterator_successes);
                 return has_content;
             } else if (c == 'c' && match_keyword(lexer, "catch", 5)) {
-                lexer->result_symbol = ITERATOR_EXPRESSION;
+                lexer->result_symbol = state->is_typescript ? ITERATOR_EXPRESSION_TS : ITERATOR_EXPRESSION_JS;
                 PROFILE_COUNT(scan_iterator_successes);
                 return has_content;
             } else if (c == 0) {
-                lexer->result_symbol = ITERATOR_EXPRESSION;
+                lexer->result_symbol = state->is_typescript ? ITERATOR_EXPRESSION_TS : ITERATOR_EXPRESSION_JS;
                 PROFILE_COUNT(scan_iterator_successes);
                 return has_content;
             }
@@ -382,39 +387,39 @@ static bool scan_iterator(TSLexer *lexer) {
     // Only return true if we found a valid terminator
     if (has_content && (found_terminator || lexer->lookahead == 0)) {
         lexer->mark_end(lexer);
-        lexer->result_symbol = ITERATOR_EXPRESSION;
+        lexer->result_symbol = state->is_typescript ? ITERATOR_EXPRESSION_TS : ITERATOR_EXPRESSION_JS;
         PROFILE_COUNT(scan_iterator_successes);
         return true;
     }
     return false;
 }
 
-static bool scan_binding(TSLexer *lexer) {
+static bool scan_binding(State *state, TSLexer *lexer) {
     PROFILE_COUNT(scan_binding_calls);
     while (is_space(lexer->lookahead)) PROFILE_ADVANCE(scan_balanced_bytes, lexer);
     if (!scan_balanced(lexer, '(', true, true)) return false;
 
-    lexer->result_symbol = BINDING_PATTERN;
+    lexer->result_symbol = state->is_typescript ? BINDING_PATTERN_TS : BINDING_PATTERN_JS;
     PROFILE_COUNT(scan_binding_successes);
     return true;
 }
 
-static bool scan_key(TSLexer *lexer) {
+static bool scan_key(State *state, TSLexer *lexer) {
     PROFILE_COUNT(scan_key_calls);
     while (is_space(lexer->lookahead)) PROFILE_ADVANCE(scan_balanced_bytes, lexer);
     if (!scan_balanced(lexer, ')', false, true)) return false;
 
-    lexer->result_symbol = KEY_EXPRESSION;
+    lexer->result_symbol = state->is_typescript ? KEY_EXPRESSION_TS : KEY_EXPRESSION_JS;
     PROFILE_COUNT(scan_key_successes);
     return true;
 }
 
-static bool scan_snippet_parameter(TSLexer *lexer) {
+static bool scan_snippet_parameter(State *state, TSLexer *lexer) {
     PROFILE_COUNT(scan_snippet_parameter_calls);
     while (is_space(lexer->lookahead)) PROFILE_ADVANCE(scan_balanced_bytes, lexer);
     if (!scan_balanced(lexer, ')', true, true)) return false;
 
-    lexer->result_symbol = SNIPPET_PARAMETER;
+    lexer->result_symbol = state->is_typescript ? SNIPPET_PARAMETER_TS : SNIPPET_PARAMETER_JS;
     PROFILE_COUNT(scan_snippet_parameter_successes);
     return true;
 }
@@ -437,7 +442,7 @@ static bool scan_block_eof(TSLexer *lexer) {
 
 // Tag expression: content after {@html, {@debug, etc.
 // Requires leading whitespace, then delegates to scan_balanced.
-static bool scan_tag_expression(TSLexer *lexer) {
+static bool scan_tag_expression(State *state, TSLexer *lexer) {
     PROFILE_COUNT(scan_tag_expression_calls);
     bool has_space = false;
     while (is_space(lexer->lookahead)) {
@@ -450,14 +455,14 @@ static bool scan_tag_expression(TSLexer *lexer) {
     // Empty expression: produce zero-width token at the terminator position.
     if (lexer->lookahead == '}') {
         lexer->mark_end(lexer);
-        lexer->result_symbol = TAG_EXPRESSION;
+        lexer->result_symbol = state->is_typescript ? TAG_EXPRESSION_TS : TAG_EXPRESSION_JS;
         PROFILE_COUNT(scan_tag_expression_successes);
         return true;
     }
 
     if (!scan_balanced(lexer, '}', false, false)) return false;
 
-    lexer->result_symbol = TAG_EXPRESSION;
+    lexer->result_symbol = state->is_typescript ? TAG_EXPRESSION_TS : TAG_EXPRESSION_JS;
     PROFILE_COUNT(scan_tag_expression_successes);
     return true;
 }
@@ -572,11 +577,11 @@ static bool svelte_scan(State *state, TSLexer *lexer, const bool *valid) {
     // because all three can be valid simultaneously (all are optional in the grammar).
     if (valid[SNIPPET_NAME]) return scan_snippet_name(lexer);
     if (valid[SNIPPET_TYPE_PARAMS]) return scan_snippet_type_params(lexer);
-    if (valid[SNIPPET_PARAMETER]) return scan_snippet_parameter(lexer);
-    if (valid[ITERATOR_EXPRESSION]) return scan_iterator(lexer);
-    if (valid[BINDING_PATTERN]) return scan_binding(lexer);
-    if (valid[KEY_EXPRESSION]) return scan_key(lexer);
-    if (valid[TAG_EXPRESSION]) return scan_tag_expression(lexer);
+    if (valid[SNIPPET_PARAMETER_JS] || valid[SNIPPET_PARAMETER_TS]) return scan_snippet_parameter(state, lexer);
+    if (valid[ITERATOR_EXPRESSION_JS] || valid[ITERATOR_EXPRESSION_TS]) return scan_iterator(state, lexer);
+    if (valid[BINDING_PATTERN_JS] || valid[BINDING_PATTERN_TS]) return scan_binding(state, lexer);
+    if (valid[KEY_EXPRESSION_JS] || valid[KEY_EXPRESSION_TS]) return scan_key(state, lexer);
+    if (valid[TAG_EXPRESSION_JS] || valid[TAG_EXPRESSION_TS]) return scan_tag_expression(state, lexer);
 
     // Fall through to HTMLX scanner for all other tokens.
     PROFILE_COUNT(htmlx_fallback_calls);

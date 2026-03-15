@@ -13,7 +13,7 @@
     }
   ],
   "metadata": {
-    "version": "0.1.1",
+    "version": "0.1.2",
     "license": "MIT",
     "description": "HTMLX grammar for tree-sitter (expression-enhanced HTML)",
     "authors": [

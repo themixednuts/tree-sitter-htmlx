@@ -61,7 +61,7 @@ fn test_textarea_expression_exposes_svelte_expression() {
 fn test_textarea_html_tag_exposes_svelte_tag() {
     assert_eq!(
         parse("<textarea>{@html value}</textarea>"),
-        "(document (element (start_tag (tag_name)) (html_tag expression: (expression_value)) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (html_tag expression: (expression_value content: (js))) (end_tag (tag_name))))"
     );
 }
 
@@ -69,7 +69,7 @@ fn test_textarea_html_tag_exposes_svelte_tag() {
 fn test_textarea_if_block_exposes_svelte_block() {
     assert_eq!(
         parse("<textarea>{#if ok}{/if}</textarea>"),
-        "(document (element (start_tag (tag_name)) (if_block expression: (expression) (block_end)) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (if_block expression: (expression content: (js)) (block_end)) (end_tag (tag_name))))"
     );
 }
 

@@ -11,7 +11,7 @@
 //! ## Example
 //!
 //! ```rust
-//! use tree_sitter_html::LANGUAGE;
+//! use tree_sitter_htmlx_html::LANGUAGE;
 //!
 //! let mut parser = tree_sitter::Parser::new();
 //! parser.set_language(&LANGUAGE.into()).expect("Failed to load HTML grammar");

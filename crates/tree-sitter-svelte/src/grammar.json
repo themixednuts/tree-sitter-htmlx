@@ -1607,6 +1607,141 @@
         }
       ]
     },
+    "_iterator_expression": {
+      "type": "FIELD",
+      "name": "content",
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_iterator_expression_js"
+            },
+            "named": true,
+            "value": "js"
+          },
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_iterator_expression_ts"
+            },
+            "named": true,
+            "value": "ts"
+          }
+        ]
+      }
+    },
+    "_key_expression": {
+      "type": "FIELD",
+      "name": "content",
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_key_expression_js"
+            },
+            "named": true,
+            "value": "js"
+          },
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_key_expression_ts"
+            },
+            "named": true,
+            "value": "ts"
+          }
+        ]
+      }
+    },
+    "_tag_expression": {
+      "type": "FIELD",
+      "name": "content",
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_tag_expression_js"
+            },
+            "named": true,
+            "value": "js"
+          },
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_tag_expression_ts"
+            },
+            "named": true,
+            "value": "ts"
+          }
+        ]
+      }
+    },
+    "_binding_pattern": {
+      "type": "FIELD",
+      "name": "content",
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_binding_pattern_js"
+            },
+            "named": true,
+            "value": "js"
+          },
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_binding_pattern_ts"
+            },
+            "named": true,
+            "value": "ts"
+          }
+        ]
+      }
+    },
+    "_snippet_parameter": {
+      "type": "FIELD",
+      "name": "content",
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_snippet_parameter_js"
+            },
+            "named": true,
+            "value": "js"
+          },
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_snippet_parameter_ts"
+            },
+            "named": true,
+            "value": "ts"
+          }
+        ]
+      }
+    },
     "_node_without_orphan_branch": {
       "type": "CHOICE",
       "members": [
@@ -4171,15 +4306,6 @@
       "_node_in_unclosed_block"
     ],
     [
-      "await_pending"
-    ],
-    [
-      "await_branch_children"
-    ],
-    [
-      "await_block"
-    ],
-    [
       "_await_recovery_continuation",
       "await_block"
     ]
@@ -4292,23 +4418,43 @@
     },
     {
       "type": "SYMBOL",
-      "name": "_iterator_expression"
+      "name": "_iterator_expression_js"
     },
     {
       "type": "SYMBOL",
-      "name": "_binding_pattern"
+      "name": "_iterator_expression_ts"
     },
     {
       "type": "SYMBOL",
-      "name": "_key_expression"
+      "name": "_binding_pattern_js"
     },
     {
       "type": "SYMBOL",
-      "name": "_tag_expression"
+      "name": "_binding_pattern_ts"
     },
     {
       "type": "SYMBOL",
-      "name": "_snippet_parameter"
+      "name": "_key_expression_js"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_key_expression_ts"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_tag_expression_js"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_tag_expression_ts"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_snippet_parameter_js"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_snippet_parameter_ts"
     },
     {
       "type": "SYMBOL",

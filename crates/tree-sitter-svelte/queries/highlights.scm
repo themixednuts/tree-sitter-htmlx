@@ -5,8 +5,6 @@
   "await"
   "key"
   "snippet"
-  "then"
-  "catch"
   "else"
   "html"
   "debug"
@@ -21,8 +19,24 @@
   "{@"
 ] @tag.delimiter
 
+; Closing } of block headers and branch headers
+(if_block "}" @tag.delimiter)
+(else_if_clause "}" @tag.delimiter)
+(else_clause "}" @tag.delimiter)
+(each_block "}" @tag.delimiter)
+(await_block "}" @tag.delimiter)
+(await_branch "}" @tag.delimiter)
+(orphan_branch "}" @tag.delimiter)
+(key_block "}" @tag.delimiter)
+(snippet_block "}" @tag.delimiter)
+(const_tag "}" @tag.delimiter)
+(render_tag "}" @tag.delimiter)
+(html_tag "}" @tag.delimiter)
+(debug_tag "}" @tag.delimiter)
+(attach_tag "}" @tag.delimiter)
+
 (block_end) @tag.delimiter
-(_block_end_keyword) @keyword.control
+(block_end "}" @tag.delimiter)
 
 ; Shorthand kind (then/catch in await shorthand)
 (shorthand_kind) @keyword.control
@@ -44,8 +58,9 @@
 
 ; Await block
 (await_block expression: (expression) @embedded)
-(_await_branch_header binding: (pattern) @variable)
-(await_block binding: (pattern) @variable)
+(await_branch (pattern) @variable)
+(await_block (pattern) @variable)
+(orphan_branch (pattern) @variable)
 
 ; Key block
 (key_block expression: (expression) @embedded)

@@ -967,6 +967,26 @@
     }
   },
   {
+    "type": "expression_value",
+    "named": true,
+    "fields": {
+      "content": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "js",
+            "named": true
+          },
+          {
+            "type": "ts",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "html_tag",
     "named": true,
     "fields": {
@@ -1240,6 +1260,26 @@
         "types": [
           {
             "type": "branch_kind",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "pattern",
+    "named": true,
+    "fields": {
+      "content": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "js",
+            "named": true
+          },
+          {
+            "type": "ts",
             "named": true
           }
         ]
@@ -1741,10 +1781,6 @@
     "named": true
   },
   {
-    "type": "expression_value",
-    "named": true
-  },
-  {
     "type": "html",
     "named": false
   },
@@ -1762,10 +1798,6 @@
   },
   {
     "type": "line_comment",
-    "named": true
-  },
-  {
-    "type": "pattern",
     "named": true
   },
   {

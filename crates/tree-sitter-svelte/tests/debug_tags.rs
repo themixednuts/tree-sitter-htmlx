@@ -7,7 +7,7 @@ use utils::parse;
 fn test_debug_single() {
     assert_eq!(
         parse("{@debug x}"),
-        "(document (debug_tag expression: (expression_value)))"
+        "(document (debug_tag expression: (expression_value content: (js))))"
     );
 }
 
@@ -15,7 +15,7 @@ fn test_debug_single() {
 fn test_debug_multiple() {
     assert_eq!(
         parse("{@debug a, b, c}"),
-        "(document (debug_tag expression: (expression_value)))"
+        "(document (debug_tag expression: (expression_value content: (js))))"
     );
 }
 
@@ -23,7 +23,7 @@ fn test_debug_multiple() {
 fn test_debug_with_store() {
     assert_eq!(
         parse("{@debug $store, localVar}"),
-        "(document (debug_tag expression: (expression_value)))"
+        "(document (debug_tag expression: (expression_value content: (js))))"
     );
 }
 
@@ -31,7 +31,7 @@ fn test_debug_with_store() {
 fn test_debug_property_access() {
     assert_eq!(
         parse("{@debug user.name, user.email}"),
-        "(document (debug_tag expression: (expression_value)))"
+        "(document (debug_tag expression: (expression_value content: (js))))"
     );
 }
 
@@ -44,6 +44,6 @@ fn test_debug_empty() {
 fn test_debug_with_whitespace() {
     assert_eq!(
         parse("{@debug   myfile   ,   otherFile   }"),
-        "(document (debug_tag expression: (expression_value)))"
+        "(document (debug_tag expression: (expression_value content: (js))))"
     );
 }
