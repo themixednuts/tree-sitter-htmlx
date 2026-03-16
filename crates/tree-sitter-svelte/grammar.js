@@ -198,11 +198,11 @@ module.exports = grammar(HTMLX, {
 
     // Typed block ends — each block type uses its own keyword for proper matching.
     // This prevents {/if} from closing a key_block, etc.
-    _if_block_end: ($) => seq(alias($._block_end_open, $.block_open), "if", $._block_close),
-    _each_block_end: ($) => seq(alias($._block_end_open, $.block_open), "each", $._block_close),
-    _await_block_end: ($) => seq(alias($._block_end_open, $.block_open), "await", $._block_close),
-    _key_block_end: ($) => seq(alias($._block_end_open, $.block_open), "key", $._block_close),
-    _snippet_block_end: ($) => seq(alias($._block_end_open, $.block_open), "snippet", $._block_close),
+    _if_block_end: ($) => seq(alias($._block_end_open, $.block_open), alias("if", $.block_keyword), $._block_close),
+    _each_block_end: ($) => seq(alias($._block_end_open, $.block_open), alias("each", $.block_keyword), $._block_close),
+    _await_block_end: ($) => seq(alias($._block_end_open, $.block_open), alias("await", $.block_keyword), $._block_close),
+    _key_block_end: ($) => seq(alias($._block_end_open, $.block_open), alias("key", $.block_keyword), $._block_close),
+    _snippet_block_end: ($) => seq(alias($._block_end_open, $.block_open), alias("snippet", $.block_keyword), $._block_close),
 
     // =========================================================================
     // Recovery helper

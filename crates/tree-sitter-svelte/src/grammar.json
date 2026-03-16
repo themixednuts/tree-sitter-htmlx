@@ -2253,8 +2253,13 @@
           "value": "block_open"
         },
         {
-          "type": "STRING",
-          "value": "if"
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "if"
+          },
+          "named": true,
+          "value": "block_keyword"
         },
         {
           "type": "SYMBOL",
@@ -2275,8 +2280,13 @@
           "value": "block_open"
         },
         {
-          "type": "STRING",
-          "value": "each"
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "each"
+          },
+          "named": true,
+          "value": "block_keyword"
         },
         {
           "type": "SYMBOL",
@@ -2297,8 +2307,13 @@
           "value": "block_open"
         },
         {
-          "type": "STRING",
-          "value": "await"
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "await"
+          },
+          "named": true,
+          "value": "block_keyword"
         },
         {
           "type": "SYMBOL",
@@ -2319,8 +2334,13 @@
           "value": "block_open"
         },
         {
-          "type": "STRING",
-          "value": "key"
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "key"
+          },
+          "named": true,
+          "value": "block_keyword"
         },
         {
           "type": "SYMBOL",
@@ -2341,8 +2361,13 @@
           "value": "block_open"
         },
         {
-          "type": "STRING",
-          "value": "snippet"
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "snippet"
+          },
+          "named": true,
+          "value": "block_keyword"
         },
         {
           "type": "SYMBOL",

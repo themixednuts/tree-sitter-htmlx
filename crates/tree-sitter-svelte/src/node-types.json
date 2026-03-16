@@ -421,6 +421,10 @@
           "named": true
         },
         {
+          "type": "block_keyword",
+          "named": true
+        },
+        {
           "type": "block_open",
           "named": true
         }
@@ -1909,6 +1913,10 @@
   },
   {
     "type": "block_comment",
+    "named": true
+  },
+  {
+    "type": "block_keyword",
     "named": true
   },
   {

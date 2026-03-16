@@ -13,6 +13,9 @@
   "attach"
 ] @keyword.control
 
+; Block end keywords ({/if}, {/each}, etc.)
+(block_keyword) @keyword.control
+
 ; Block delimiters
 (block_open) @tag.delimiter
 (block_close) @tag.delimiter
