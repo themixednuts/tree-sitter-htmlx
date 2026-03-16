@@ -30,7 +30,7 @@ fn get_expression_range(source: &str) -> (usize, usize, String) {
 fn test_html_variable() {
     assert_eq!(
         parse("{@html content}"),
-        "(document (html_tag expression: (expression_value content: (js)) (block_close)))"
+        "(document (html_tag (block_open) expression: (expression_value content: (js)) (block_close)))"
     );
 }
 
@@ -38,7 +38,7 @@ fn test_html_variable() {
 fn test_html_string_literal() {
     assert_eq!(
         parse(r#"{@html "<b>bold</b>"}"#),
-        "(document (html_tag expression: (expression_value content: (js)) (block_close)))"
+        "(document (html_tag (block_open) expression: (expression_value content: (js)) (block_close)))"
     );
 }
 
@@ -46,7 +46,7 @@ fn test_html_string_literal() {
 fn test_html_template_literal() {
     assert_eq!(
         parse("{@html `<p>${text}</p>`}"),
-        "(document (html_tag expression: (expression_value content: (js)) (block_close)))"
+        "(document (html_tag (block_open) expression: (expression_value content: (js)) (block_close)))"
     );
 }
 
@@ -54,7 +54,7 @@ fn test_html_template_literal() {
 fn test_html_template_literal_nested() {
     assert_eq!(
         parse("{@html `${`nested ${x}`}`}"),
-        "(document (html_tag expression: (expression_value content: (js)) (block_close)))"
+        "(document (html_tag (block_open) expression: (expression_value content: (js)) (block_close)))"
     );
 }
 
@@ -62,7 +62,7 @@ fn test_html_template_literal_nested() {
 fn test_html_template_literal_with_object() {
     assert_eq!(
         parse(r#"{@html `${ { class: "}" } }`}"#),
-        "(document (html_tag expression: (expression_value content: (js)) (block_close)))"
+        "(document (html_tag (block_open) expression: (expression_value content: (js)) (block_close)))"
     );
 }
 
@@ -70,7 +70,7 @@ fn test_html_template_literal_with_object() {
 fn test_html_function_call() {
     assert_eq!(
         parse("{@html sanitize(userInput)}"),
-        "(document (html_tag expression: (expression_value content: (js)) (block_close)))"
+        "(document (html_tag (block_open) expression: (expression_value content: (js)) (block_close)))"
     );
 }
 
@@ -78,7 +78,7 @@ fn test_html_function_call() {
 fn test_html_marked() {
     assert_eq!(
         parse("{@html marked(markdown)}"),
-        "(document (html_tag expression: (expression_value content: (js)) (block_close)))"
+        "(document (html_tag (block_open) expression: (expression_value content: (js)) (block_close)))"
     );
 }
 
@@ -86,7 +86,7 @@ fn test_html_marked() {
 fn test_html_complex_expression() {
     assert_eq!(
         parse("{@html post.content || '<p>No content</p>'}"),
-        "(document (html_tag expression: (expression_value content: (js)) (block_close)))"
+        "(document (html_tag (block_open) expression: (expression_value content: (js)) (block_close)))"
     );
 }
 
@@ -94,7 +94,7 @@ fn test_html_complex_expression() {
 fn test_html_json_script() {
     assert_eq!(
         parse(r#"{@html `<script type="application/ld+json">${JSON.stringify(schema)}</script>`}"#),
-        "(document (html_tag expression: (expression_value content: (js)) (block_close)))"
+        "(document (html_tag (block_open) expression: (expression_value content: (js)) (block_close)))"
     );
 }
 

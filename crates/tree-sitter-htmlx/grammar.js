@@ -252,7 +252,6 @@ module.exports = grammar(HTML, {
     attribute: ($) =>
       choice(
         seq($._ts_lang_marker, $.attribute_name, "=", $.quoted_attribute_value),
-        prec(1, $.spread_attribute),
         $.shorthand_attribute,
         // Use dynamic precedence to prefer longer unquoted_attribute_value matches
         // over shorter attribute_value + shorthand_attribute sequences
@@ -315,21 +314,7 @@ module.exports = grammar(HTML, {
         ),
         "}",
       ),
-    // Spread attribute: {...expr}
-    // Keep this expression-based so nested braces are handled correctly.
-    spread_attribute: ($) =>
-      seq(
-        "{...",
-        field(
-          "content",
-          choice(
-            alias($._attribute_expression_js, $.js),
-            alias($._attribute_expression_ts, $.ts),
-          ),
-        ),
-        "}",
-      ),
-    // Shorthand attribute: {identifier} - an expression used as an attribute
+    // Shorthand attribute: {identifier} or {...spread} - an expression used as an attribute
     // Uses expression structure (not regex) to allow proper precedence resolution
     // with unquoted_attribute_value (text{expr} patterns like style:attr=string{mixed})
     shorthand_attribute: ($) =>

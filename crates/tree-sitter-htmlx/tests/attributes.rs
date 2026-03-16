@@ -114,9 +114,10 @@ fn test_multiline_shorthand_attribute() {
 
 #[test]
 fn test_spread_attribute() {
+    // Spread attributes parse as shorthand_attribute — '...props' is JS content
     assert_eq!(
         parse("<Component {...props} />"),
-        "(document (element (self_closing_tag (tag_name) (attribute (spread_attribute content: (js))))))"
+        "(document (element (self_closing_tag (tag_name) (attribute (shorthand_attribute content: (js))))))"
     );
 }
 
@@ -124,7 +125,7 @@ fn test_spread_attribute() {
 fn test_spread_attribute_with_others() {
     assert_eq!(
         parse(r#"<Component id="main" {...props} />"#),
-        "(document (element (self_closing_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (attribute (spread_attribute content: (js))))))"
+        "(document (element (self_closing_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (attribute (shorthand_attribute content: (js))))))"
     );
 }
 
@@ -132,7 +133,25 @@ fn test_spread_attribute_with_others() {
 fn test_spread_attribute_nested_braces() {
     assert_eq!(
         parse("<input {...({})} onfocus={() => console.log('x')} />"),
-        "(document (element (self_closing_tag (tag_name) (attribute (spread_attribute content: (js))) (attribute (attribute_name) (expression content: (js))))))"
+        "(document (element (self_closing_tag (tag_name) (attribute (shorthand_attribute content: (js))) (attribute (attribute_name) (expression content: (js))))))"
+    );
+}
+
+#[test]
+fn test_spread_attribute_complex_expression() {
+    // Spread with computed expression
+    assert_eq!(
+        parse("<div {...{a: 1, b: 2}} />"),
+        "(document (element (self_closing_tag (tag_name) (attribute (shorthand_attribute content: (js))))))"
+    );
+}
+
+#[test]
+fn test_spread_and_shorthand_together() {
+    // Mix of spread and shorthand attributes
+    assert_eq!(
+        parse("<input {...rest} {value} />"),
+        "(document (element (self_closing_tag (tag_name) (attribute (shorthand_attribute content: (js))) (attribute (shorthand_attribute content: (js))))))"
     );
 }
 

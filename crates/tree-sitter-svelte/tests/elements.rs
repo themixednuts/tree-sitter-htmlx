@@ -61,7 +61,7 @@ fn test_textarea_expression_exposes_svelte_expression() {
 fn test_textarea_html_tag_exposes_svelte_tag() {
     assert_eq!(
         parse("<textarea>{@html value}</textarea>"),
-        "(document (element (start_tag (tag_name)) (html_tag expression: (expression_value content: (js)) (block_close)) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (html_tag (block_open) expression: (expression_value content: (js)) (block_close)) (end_tag (tag_name))))"
     );
 }
 
@@ -69,7 +69,7 @@ fn test_textarea_html_tag_exposes_svelte_tag() {
 fn test_textarea_if_block_exposes_svelte_block() {
     assert_eq!(
         parse("<textarea>{#if ok}{/if}</textarea>"),
-        "(document (element (start_tag (tag_name)) (if_block expression: (expression content: (js)) (block_close) (block_end (block_close))) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name)) (if_block (block_open) expression: (expression content: (js)) (block_close) (block_end (block_open) (block_keyword) (block_close))) (end_tag (tag_name))))"
     );
 }
 
@@ -175,9 +175,10 @@ fn test_element_multiline_shorthand_attribute() {
 
 #[test]
 fn test_element_spread_attribute() {
+    // Spread attributes parse as shorthand_attribute — '...props' is JS content
     assert_eq!(
         parse("<div {...props}></div>"),
-        "(document (element (start_tag (tag_name) (attribute (spread_attribute content: (js)))) (end_tag (tag_name))))"
+        "(document (element (start_tag (tag_name) (attribute (shorthand_attribute content: (js)))) (end_tag (tag_name))))"
     );
 }
 
@@ -193,7 +194,7 @@ fn test_element_boolean_attribute() {
 fn test_element_multiple_attributes() {
     assert_eq!(
         parse(r#"<div class="a" id={b} {c} {...d}></div>"#),
-        r#"(document (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (attribute (attribute_name) (expression content: (js))) (attribute (shorthand_attribute content: (js))) (attribute (spread_attribute content: (js)))) (end_tag (tag_name))))"#
+        r#"(document (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (attribute (attribute_name) (expression content: (js))) (attribute (shorthand_attribute content: (js))) (attribute (shorthand_attribute content: (js)))) (end_tag (tag_name))))"#
     );
 }
 

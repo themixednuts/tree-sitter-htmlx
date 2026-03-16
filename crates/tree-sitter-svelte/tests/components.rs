@@ -73,7 +73,7 @@ fn test_component_shorthand_prop() {
 fn test_component_spread_props() {
     assert_eq!(
         parse("<Component {...props} />"),
-        "(document (element (self_closing_tag (tag_name) (attribute (spread_attribute content: (js))))))"
+        "(document (element (self_closing_tag (tag_name) (attribute (shorthand_attribute content: (js))))))"
     );
 }
 
@@ -81,7 +81,7 @@ fn test_component_spread_props() {
 fn test_component_multiple_props() {
     assert_eq!(
         parse(r#"<Component a="1" b={2} {c} {...d} />"#),
-        r#"(document (element (self_closing_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (attribute (attribute_name) (expression content: (js))) (attribute (shorthand_attribute content: (js))) (attribute (spread_attribute content: (js))))))"#
+        r#"(document (element (self_closing_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (attribute (attribute_name) (expression content: (js))) (attribute (shorthand_attribute content: (js))) (attribute (shorthand_attribute content: (js))))))"#
     );
 }
 

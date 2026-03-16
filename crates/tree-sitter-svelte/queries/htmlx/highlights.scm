@@ -17,12 +17,10 @@
 (attribute_modifiers "|" @punctuation.delimiter)
 
 ; Expressions
-[
-  (expression)
-  (spread_attribute)
-] @embedded
+(expression) @embedded
 
-(shorthand_attribute) @variable
+; Shorthand/spread attribute content — braces captured by generic "{" "}" rule
+(shorthand_attribute content: (_) @variable)
 
 ; Punctuation
 [

@@ -1,3 +1,9 @@
 {name}
 <!-- <- punctuation.bracket -->
 <!-- ^ punctuation.bracket -->
+
+<div {hidden}></div>
+<!--  ^ variable -->
+
+<input {...rest} />
+<!--   ^ punctuation.bracket -->

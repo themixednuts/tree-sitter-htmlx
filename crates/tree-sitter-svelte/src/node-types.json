@@ -62,10 +62,6 @@
           "named": true
         },
         {
-          "type": "spread_attribute",
-          "named": true
-        },
-        {
           "type": "unquoted_attribute_value",
           "named": true
         }
@@ -1700,26 +1696,6 @@
     "fields": {}
   },
   {
-    "type": "spread_attribute",
-    "named": true,
-    "fields": {
-      "content": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "js",
-            "named": true
-          },
-          {
-            "type": "ts",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "start_tag",
     "named": true,
     "fields": {},
@@ -2026,10 +2002,6 @@
   },
   {
     "type": "{",
-    "named": false
-  },
-  {
-    "type": "{...",
     "named": false
   },
   {

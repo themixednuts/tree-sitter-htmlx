@@ -3,13 +3,13 @@ resolver = "2"
 members = ["crates/*"]
 
 [workspace.package]
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 license = "MIT"
 
 [workspace.dependencies]
 tree-sitter = "0.26"
 tree-sitter-language = "0.1"
-tree-sitter-html = { package = "tree-sitter-htmlx-html", version = "0.1.5", path = "crates/tree-sitter-html" }
-tree-sitter-htmlx = { version = "0.1.5", path = "crates/tree-sitter-htmlx" }
+tree-sitter-html = { package = "tree-sitter-htmlx-html", version = "0.1.6", path = "crates/tree-sitter-html" }
+tree-sitter-htmlx = { version = "0.1.6", path = "crates/tree-sitter-htmlx" }
 cc = "1.2"
