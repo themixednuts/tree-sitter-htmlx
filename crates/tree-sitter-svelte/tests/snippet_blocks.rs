@@ -7,7 +7,7 @@ use utils::parse;
 fn test_snippet_no_params() {
     assert_eq!(
         parse("{#snippet greeting()}<h1>Hello</h1>{/snippet}"),
-        "(document (snippet_block (block_open) name: (snippet_name) (block_close) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
+        "(document (snippet_block (block_open) name: (snippet_name) (block_close) (element (start_tag name: (tag_name)) (text) (end_tag name: (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
     );
 }
 
@@ -15,7 +15,7 @@ fn test_snippet_no_params() {
 fn test_snippet_with_param() {
     assert_eq!(
         parse("{#snippet button(text)}<button>{text}</button>{/snippet}"),
-        "(document (snippet_block (block_open) name: (snippet_name) parameters: (snippet_parameters parameter: (pattern content: (js))) (block_close) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
+        "(document (snippet_block (block_open) name: (snippet_name) parameters: (snippet_parameters parameter: (pattern content: (js))) (block_close) (element (start_tag name: (tag_name)) (expression content: (js)) (end_tag name: (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
     );
 }
 
@@ -23,7 +23,7 @@ fn test_snippet_with_param() {
 fn test_snippet_multiple_params() {
     assert_eq!(
         parse("{#snippet item(name, value)}<li>{name}: {value}</li>{/snippet}"),
-        "(document (snippet_block (block_open) name: (snippet_name) parameters: (snippet_parameters parameter: (pattern content: (js)) parameter: (pattern content: (js))) (block_close) (element (start_tag (tag_name)) (expression content: (js)) (text) (expression content: (js)) (end_tag (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
+        "(document (snippet_block (block_open) name: (snippet_name) parameters: (snippet_parameters parameter: (pattern content: (js)) parameter: (pattern content: (js))) (block_close) (element (start_tag name: (tag_name)) (expression content: (js)) (text) (expression content: (js)) (end_tag name: (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
     );
 }
 
@@ -31,7 +31,7 @@ fn test_snippet_multiple_params() {
 fn test_snippet_typed_params() {
     assert_eq!(
         parse("{#snippet row(item: Item, index: number)}<tr>{item.name}</tr>{/snippet}"),
-        "(document (snippet_block (block_open) name: (snippet_name) parameters: (snippet_parameters parameter: (pattern content: (js)) parameter: (pattern content: (js))) (block_close) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
+        "(document (snippet_block (block_open) name: (snippet_name) parameters: (snippet_parameters parameter: (pattern content: (js)) parameter: (pattern content: (js))) (block_close) (element (start_tag name: (tag_name)) (expression content: (js)) (end_tag name: (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
     );
 }
 
@@ -39,7 +39,7 @@ fn test_snippet_typed_params() {
 fn test_snippet_with_type_parameters() {
     assert_eq!(
         parse("{#snippet row<T>(item)}<tr>{item}</tr>{/snippet}"),
-        "(document (snippet_block (block_open) name: (snippet_name) type_parameters: (snippet_type_parameters) parameters: (snippet_parameters parameter: (pattern content: (js))) (block_close) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
+        "(document (snippet_block (block_open) name: (snippet_name) type_parameters: (snippet_type_parameters) parameters: (snippet_parameters parameter: (pattern content: (js))) (block_close) (element (start_tag name: (tag_name)) (expression content: (js)) (end_tag name: (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
     );
 }
 
@@ -47,7 +47,7 @@ fn test_snippet_with_type_parameters() {
 fn test_snippet_destructured_param() {
     assert_eq!(
         parse("{#snippet row({ name, value })}<td>{name}</td><td>{value}</td>{/snippet}"),
-        "(document (snippet_block (block_open) name: (snippet_name) parameters: (snippet_parameters parameter: (pattern content: (js))) (block_close) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
+        "(document (snippet_block (block_open) name: (snippet_name) parameters: (snippet_parameters parameter: (pattern content: (js))) (block_close) (element (start_tag name: (tag_name)) (expression content: (js)) (end_tag name: (tag_name))) (element (start_tag name: (tag_name)) (expression content: (js)) (end_tag name: (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
     );
 }
 
@@ -63,7 +63,7 @@ fn test_snippet_with_const() {
 fn test_snippet_nested_blocks() {
     assert_eq!(
         parse("{#snippet card(show)}{#if show}<div>content</div>{/if}{/snippet}"),
-        "(document (snippet_block (block_open) name: (snippet_name) parameters: (snippet_parameters parameter: (pattern content: (js))) (block_close) (if_block (block_open) expression: (expression content: (js)) (block_close) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (block_end (block_open) (block_keyword) (block_close))) (block_end (block_open) (block_keyword) (block_close))))"
+        "(document (snippet_block (block_open) name: (snippet_name) parameters: (snippet_parameters parameter: (pattern content: (js))) (block_close) (if_block (block_open) expression: (expression content: (js)) (block_close) (element (start_tag name: (tag_name)) (text) (end_tag name: (tag_name))) (block_end (block_open) (block_keyword) (block_close))) (block_end (block_open) (block_keyword) (block_close))))"
     );
 }
 
@@ -71,7 +71,7 @@ fn test_snippet_nested_blocks() {
 fn test_snippet_with_component() {
     assert_eq!(
         parse("{#snippet wrapper()}<Card><slot /></Card>{/snippet}"),
-        "(document (snippet_block (block_open) name: (snippet_name) (block_close) (element (start_tag (tag_name)) (element (self_closing_tag (tag_name))) (end_tag (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
+        "(document (snippet_block (block_open) name: (snippet_name) (block_close) (element (start_tag name: (tag_name)) (element (self_closing_tag name: (tag_name))) (end_tag name: (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
     );
 }
 
@@ -79,6 +79,6 @@ fn test_snippet_with_component() {
 fn test_snippet_default_value_with_parens() {
     assert_eq!(
         parse("{#snippet foo(bar = baz())}<p>x</p>{/snippet}"),
-        "(document (snippet_block (block_open) name: (snippet_name) parameters: (snippet_parameters parameter: (pattern content: (js))) (block_close) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
+        "(document (snippet_block (block_open) name: (snippet_name) parameters: (snippet_parameters parameter: (pattern content: (js))) (block_close) (element (start_tag name: (tag_name)) (text) (end_tag name: (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
     );
 }

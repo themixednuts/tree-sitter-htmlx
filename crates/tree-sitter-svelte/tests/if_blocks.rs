@@ -15,7 +15,7 @@ fn test_if_simple() {
 fn test_if_with_element() {
     assert_eq!(
         parse("{#if visible}<p>Hello</p>{/if}"),
-        "(document (if_block (block_open) expression: (expression content: (js)) (block_close) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
+        "(document (if_block (block_open) expression: (expression content: (js)) (block_close) (element (start_tag name: (tag_name)) (text) (end_tag name: (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
     );
 }
 
@@ -23,7 +23,7 @@ fn test_if_with_element() {
 fn test_if_inside_element_content() {
     assert_eq!(
         parse("<div>{#if visible}<span>ok</span>{/if}</div>"),
-        "(document (element (start_tag (tag_name)) (if_block (block_open) expression: (expression content: (js)) (block_close) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (block_end (block_open) (block_keyword) (block_close))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (if_block (block_open) expression: (expression content: (js)) (block_close) (element (start_tag name: (tag_name)) (text) (end_tag name: (tag_name))) (block_end (block_open) (block_keyword) (block_close))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -31,7 +31,7 @@ fn test_if_inside_element_content() {
 fn test_if_with_expression() {
     assert_eq!(
         parse("{#if count > 0}<p>{count}</p>{/if}"),
-        "(document (if_block (block_open) expression: (expression content: (js)) (block_close) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
+        "(document (if_block (block_open) expression: (expression content: (js)) (block_close) (element (start_tag name: (tag_name)) (expression content: (js)) (end_tag name: (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
     );
 }
 
@@ -55,7 +55,7 @@ fn test_if_else() {
 fn test_if_else_with_elements() {
     assert_eq!(
         parse("{#if show}<div>Visible</div>{:else}<span>Hidden</span>{/if}"),
-        "(document (if_block (block_open) expression: (expression content: (js)) (block_close) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (else_clause (block_open) (block_close) (element (start_tag (tag_name)) (text) (end_tag (tag_name)))) (block_end (block_open) (block_keyword) (block_close))))"
+        "(document (if_block (block_open) expression: (expression content: (js)) (block_close) (element (start_tag name: (tag_name)) (text) (end_tag name: (tag_name))) (else_clause (block_open) (block_close) (element (start_tag name: (tag_name)) (text) (end_tag name: (tag_name)))) (block_end (block_open) (block_keyword) (block_close))))"
     );
 }
 
@@ -87,7 +87,7 @@ fn test_if_else_if_no_else() {
 fn test_if_with_component() {
     assert_eq!(
         parse("{#if show}<Component />{/if}"),
-        "(document (if_block (block_open) expression: (expression content: (js)) (block_close) (element (self_closing_tag (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
+        "(document (if_block (block_open) expression: (expression content: (js)) (block_close) (element (self_closing_tag name: (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
     );
 }
 

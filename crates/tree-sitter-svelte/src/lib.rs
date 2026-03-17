@@ -253,6 +253,57 @@ mod tests {
     }
 
     #[test]
+    fn test_field_name_on_start_tag() {
+        let mut parser = tree_sitter::Parser::new();
+        parser.set_language(&LANGUAGE.into()).unwrap();
+
+        let source = r#"<div class="foo">hello</div>"#;
+        let tree = parser.parse(source, None).unwrap();
+        let root = tree.root_node();
+        let element = root.child(0).unwrap();
+        let start_tag = element.child(0).unwrap();
+        assert_eq!(start_tag.kind(), "start_tag");
+
+        let name = start_tag.child_by_field_name("name");
+        assert!(name.is_some(), "start_tag should have field 'name'");
+        let name = name.unwrap();
+        assert_eq!(name.kind(), "tag_name");
+        assert_eq!(&source[name.start_byte()..name.end_byte()], "div");
+
+        // Check attribute fields
+        let attr = start_tag.named_child(1).unwrap();
+        assert_eq!(attr.kind(), "attribute");
+        let attr_name = attr.child_by_field_name("name");
+        assert!(attr_name.is_some(), "attribute should have field 'name'");
+        let attr_value = attr.child_by_field_name("value");
+        assert!(attr_value.is_some(), "attribute should have field 'value'");
+
+        // Check end_tag field
+        let end_tag = element.named_child(2).unwrap();
+        assert_eq!(end_tag.kind(), "end_tag");
+        let end_name = end_tag.child_by_field_name("name");
+        assert!(end_name.is_some(), "end_tag should have field 'name'");
+        assert_eq!(&source[end_name.unwrap().start_byte()..end_name.unwrap().end_byte()], "div");
+    }
+
+    #[test]
+    fn test_field_name_on_self_closing_tag() {
+        let mut parser = tree_sitter::Parser::new();
+        parser.set_language(&LANGUAGE.into()).unwrap();
+
+        let source = r#"<Icon name="check" />"#;
+        let tree = parser.parse(source, None).unwrap();
+        let root = tree.root_node();
+        let element = root.child(0).unwrap();
+        let self_closing = element.child(0).unwrap();
+        assert_eq!(self_closing.kind(), "self_closing_tag");
+
+        let name = self_closing.child_by_field_name("name");
+        assert!(name.is_some(), "self_closing_tag should have field 'name'");
+        assert_eq!(&source[name.unwrap().start_byte()..name.unwrap().end_byte()], "Icon");
+    }
+
+    #[test]
     fn test_parse_key_block() {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&LANGUAGE.into()).unwrap();

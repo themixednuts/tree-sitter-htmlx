@@ -103,7 +103,7 @@ module.exports = grammar(HTML, {
     start_tag: ($) =>
       seq(
         "<",
-        alias($._start_tag_name, $.tag_name),
+        field("name", alias($._start_tag_name, $.tag_name)),
         repeat($._tag_attribute_item),
         ">",
       ),
@@ -111,7 +111,7 @@ module.exports = grammar(HTML, {
     _unterminated_start_tag: ($) =>
       seq(
         "<",
-        alias($._start_tag_name, $.tag_name),
+        field("name", alias($._start_tag_name, $.tag_name)),
         repeat($._tag_attribute_item),
         $._unterminated_tag_end,
       ),
@@ -119,7 +119,7 @@ module.exports = grammar(HTML, {
     _unterminated_start_tag_with_close: ($) =>
       seq(
         "<",
-        alias($._start_tag_name, $.tag_name),
+        field("name", alias($._start_tag_name, $.tag_name)),
         repeat($._tag_attribute_item),
         $._unterminated_tag_end_open,
       ),
@@ -127,7 +127,7 @@ module.exports = grammar(HTML, {
     _broken_member_unterminated_start_tag: ($) =>
       seq(
         "<",
-        alias($._start_tag_name, $.tag_name),
+        field("name", alias($._start_tag_name, $.tag_name)),
         ".",
         $._unterminated_tag_end,
       ),
@@ -135,9 +135,16 @@ module.exports = grammar(HTML, {
     self_closing_tag: ($) =>
       seq(
         "<",
-        alias($._start_tag_name, $.tag_name),
+        field("name", alias($._start_tag_name, $.tag_name)),
         repeat($._tag_attribute_item),
         "/>",
+      ),
+
+    end_tag: ($) =>
+      seq(
+        "</",
+        field("name", alias($._end_tag_name, $.tag_name)),
+        ">",
       ),
 
     // Override raw text element to use HTMLX-aware attribute handling
@@ -151,7 +158,7 @@ module.exports = grammar(HTML, {
     _raw_text_start_tag: ($) =>
       seq(
         "<",
-        alias($._raw_text_start_tag_name, $.tag_name),
+        field("name", alias($._raw_text_start_tag_name, $.tag_name)),
         repeat($._tag_attribute_item),
         ">",
       ),
@@ -159,7 +166,7 @@ module.exports = grammar(HTML, {
     _raw_text_unterminated_start_tag: ($) =>
       seq(
         "<",
-        alias($._raw_text_start_tag_name, $.tag_name),
+        field("name", alias($._raw_text_start_tag_name, $.tag_name)),
         repeat($._tag_attribute_item),
         $._unterminated_tag_end,
       ),
@@ -167,7 +174,7 @@ module.exports = grammar(HTML, {
     _namespaced_start_tag: ($) =>
       seq(
         "<",
-        alias($._namespaced_tag_name, $.tag_name),
+        field("name", alias($._namespaced_tag_name, $.tag_name)),
         repeat($._tag_attribute_item),
         ">",
       ),
@@ -175,7 +182,7 @@ module.exports = grammar(HTML, {
     _namespaced_unterminated_start_tag: ($) =>
       seq(
         "<",
-        alias($._namespaced_tag_name, $.tag_name),
+        field("name", alias($._namespaced_tag_name, $.tag_name)),
         repeat($._tag_attribute_item),
         $._unterminated_tag_end,
       ),
@@ -183,13 +190,13 @@ module.exports = grammar(HTML, {
     _namespaced_self_closing_tag: ($) =>
       seq(
         "<",
-        alias($._namespaced_tag_name, $.tag_name),
+        field("name", alias($._namespaced_tag_name, $.tag_name)),
         repeat($._tag_attribute_item),
         "/>",
       ),
 
     _namespaced_end_tag: ($) =>
-      seq("</", alias($._namespaced_tag_name, $.tag_name), ">"),
+      seq("</", field("name", alias($._namespaced_tag_name, $.tag_name)), ">"),
 
     _namespaced_tag_name: ($) =>
       seq(
@@ -202,7 +209,7 @@ module.exports = grammar(HTML, {
     _member_start_tag: ($) =>
       seq(
         "<",
-        alias($._member_tag_name, $.tag_name),
+        field("name", alias($._member_tag_name, $.tag_name)),
         repeat($._tag_attribute_item),
         ">",
       ),
@@ -210,7 +217,7 @@ module.exports = grammar(HTML, {
     _member_unterminated_start_tag: ($) =>
       seq(
         "<",
-        alias($._member_tag_name, $.tag_name),
+        field("name", alias($._member_tag_name, $.tag_name)),
         repeat($._tag_attribute_item),
         $._unterminated_tag_end,
       ),
@@ -218,7 +225,7 @@ module.exports = grammar(HTML, {
     _member_self_closing_tag: ($) =>
       seq(
         "<",
-        alias($._member_tag_name, $.tag_name),
+        field("name", alias($._member_tag_name, $.tag_name)),
         repeat($._tag_attribute_item),
         "/>",
       ),
@@ -232,7 +239,7 @@ module.exports = grammar(HTML, {
       ),
 
     _member_end_tag: ($) =>
-      seq("</", alias($._member_tag_name, $.tag_name), ">"),
+      seq("</", field("name", alias($._member_tag_name, $.tag_name)), ">"),
 
     // Member tag name: Object.Property or Object.Nested.Property
     // Use prec.right to prefer continuing with more properties over matching as attributes
@@ -251,23 +258,23 @@ module.exports = grammar(HTML, {
 
     attribute: ($) =>
       choice(
-        seq($._ts_lang_marker, $.attribute_name, "=", $.quoted_attribute_value),
+        seq($._ts_lang_marker, field("name", $.attribute_name), "=", field("value", $.quoted_attribute_value)),
         $.shorthand_attribute,
         // Use dynamic precedence to prefer longer unquoted_attribute_value matches
         // over shorter attribute_value + shorthand_attribute sequences
         prec.dynamic(
           2,
           seq(
-            $.attribute_name,
+            field("name", $.attribute_name),
             optional(
               seq(
                 "=",
-                choice(
+                field("value", choice(
                   $.unquoted_attribute_value, // Match text{expr} patterns
                   $.quoted_attribute_value,
                   alias($.attribute_expression, $.expression),
                   alias($._attribute_value, $.attribute_value), // Plain text value via external scanner
-                ),
+                )),
               ),
             ),
           ),

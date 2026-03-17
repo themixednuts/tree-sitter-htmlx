@@ -108,7 +108,7 @@ fn test_await_catch_shorthand() {
 fn test_await_with_elements() {
     assert_eq!(
         parse("{#await promise}<p>Loading</p>{:then data}<p>{data}</p>{:catch err}<p>{err}</p>{/await}"),
-        "(document (await_block (block_open) expression: (expression content: (js)) (block_close) pending: (await_pending (element (start_tag (tag_name)) (text) (end_tag (tag_name)))) (await_branch branch: (block_open) kind: (branch_kind) binding: (pattern content: (js)) branch: (block_close) children: (await_branch_children (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))))) (await_branch branch: (block_open) kind: (branch_kind) binding: (pattern content: (js)) branch: (block_close) children: (await_branch_children (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))))) (block_end (block_open) (block_keyword) (block_close))))"
+        "(document (await_block (block_open) expression: (expression content: (js)) (block_close) pending: (await_pending (element (start_tag name: (tag_name)) (text) (end_tag name: (tag_name)))) (await_branch branch: (block_open) kind: (branch_kind) binding: (pattern content: (js)) branch: (block_close) children: (await_branch_children (element (start_tag name: (tag_name)) (expression content: (js)) (end_tag name: (tag_name))))) (await_branch branch: (block_open) kind: (branch_kind) binding: (pattern content: (js)) branch: (block_close) children: (await_branch_children (element (start_tag name: (tag_name)) (expression content: (js)) (end_tag name: (tag_name))))) (block_end (block_open) (block_keyword) (block_close))))"
     );
 }
 
@@ -148,6 +148,6 @@ fn test_await_with_store() {
 fn test_await_with_slot() {
     assert_eq!(
         parse("{#await promise then value}<slot a={value}>Hello</slot>{/await}"),
-        "(document (await_block (block_open) expression: (expression content: (js)) shorthand: (shorthand_kind) binding: (pattern content: (js)) (block_close) shorthand_children: (await_branch_children (element (start_tag (tag_name) (attribute (attribute_name) (expression content: (js)))) (text) (end_tag (tag_name)))) (block_end (block_open) (block_keyword) (block_close))))"
+        "(document (await_block (block_open) expression: (expression content: (js)) shorthand: (shorthand_kind) binding: (pattern content: (js)) (block_close) shorthand_children: (await_branch_children (element (start_tag name: (tag_name) (attribute name: (attribute_name) value: (expression content: (js)))) (text) (end_tag name: (tag_name)))) (block_end (block_open) (block_keyword) (block_close))))"
     );
 }

@@ -91,14 +91,14 @@ module.exports = grammar({
     // Start tags for different element kinds
     start_tag: $ => seq(
       '<',
-      alias($._start_tag_name, $.tag_name),
+      field('name', alias($._start_tag_name, $.tag_name)),
       repeat($.attribute),
       '>',
     ),
 
     _raw_text_start_tag: $ => seq(
       '<',
-      alias($._raw_text_start_tag_name, $.tag_name),
+      field('name', alias($._raw_text_start_tag_name, $.tag_name)),
       repeat($.attribute),
       '>',
     ),
@@ -106,14 +106,14 @@ module.exports = grammar({
     // §13.1.2 - Void elements can use self-closing syntax
     self_closing_tag: $ => seq(
       '<',
-      alias($._start_tag_name, $.tag_name),
+      field('name', alias($._start_tag_name, $.tag_name)),
       repeat($.attribute),
       '/>',
     ),
 
     end_tag: $ => seq(
       '</',
-      alias($._end_tag_name, $.tag_name),
+      field('name', alias($._end_tag_name, $.tag_name)),
       '>',
     ),
 

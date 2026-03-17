@@ -11,7 +11,7 @@ use utils::parse;
 fn test_element_simple() {
     assert_eq!(
         parse("<div></div>"),
-        "(document (element (start_tag (tag_name)) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (end_tag name: (tag_name))))"
     );
 }
 
@@ -19,7 +19,7 @@ fn test_element_simple() {
 fn test_element_self_closing() {
     assert_eq!(
         parse("<br />"),
-        "(document (element (self_closing_tag (tag_name))))"
+        "(document (element (self_closing_tag name: (tag_name))))"
     );
 }
 
@@ -27,7 +27,7 @@ fn test_element_self_closing() {
 fn test_element_with_text() {
     assert_eq!(
         parse("<p>Hello</p>"),
-        "(document (element (start_tag (tag_name)) (text) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (text) (end_tag name: (tag_name))))"
     );
 }
 
@@ -35,7 +35,7 @@ fn test_element_with_text() {
 fn test_element_nested() {
     assert_eq!(
         parse("<div><span>text</span></div>"),
-        "(document (element (start_tag (tag_name)) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (element (start_tag name: (tag_name)) (text) (end_tag name: (tag_name))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -51,7 +51,7 @@ fn test_erroneous_end_tag_is_typed() {
 fn test_title_element_allows_expression_children() {
     assert_eq!(
         parse("<title>{pageTitle}</title>"),
-        "(document (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (expression content: (js)) (end_tag name: (tag_name))))"
     );
 }
 
@@ -59,7 +59,7 @@ fn test_title_element_allows_expression_children() {
 fn test_title_element_preserves_nested_elements_for_validation() {
     assert_eq!(
         parse("<title><span>bad</span></title>"),
-        "(document (element (start_tag (tag_name)) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (element (start_tag name: (tag_name)) (text) (end_tag name: (tag_name))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -67,7 +67,7 @@ fn test_title_element_preserves_nested_elements_for_validation() {
 fn test_textarea_plain_text_stays_text_like() {
     assert_eq!(
         parse("<textarea>plain <b>text</b></textarea>"),
-        "(document (element (start_tag (tag_name)) (text) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (text) (end_tag name: (tag_name))))"
     );
 }
 
@@ -75,7 +75,7 @@ fn test_textarea_plain_text_stays_text_like() {
 fn test_textarea_expression_exposes_htmlx_expression() {
     assert_eq!(
         parse("<textarea>{value}</textarea>"),
-        "(document (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (expression content: (js)) (end_tag name: (tag_name))))"
     );
 }
 
@@ -83,7 +83,7 @@ fn test_textarea_expression_exposes_htmlx_expression() {
 fn test_textarea_ignores_malformed_close_until_real_end_tag() {
     assert_eq!(
         parse("<textarea>x</textarea\n\n\n</textarea\n\n>"),
-        "(document (element (start_tag (tag_name)) (text) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (text) (end_tag name: (tag_name))))"
     );
 }
 
@@ -91,7 +91,7 @@ fn test_textarea_ignores_malformed_close_until_real_end_tag() {
 fn test_void_element_closes_before_following_expression() {
     assert_eq!(
         parse("<label><input>{value}</label>"),
-        "(document (element (start_tag (tag_name)) (element (start_tag (tag_name))) (expression content: (js)) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (element (start_tag name: (tag_name))) (expression content: (js)) (end_tag name: (tag_name))))"
     );
 }
 
@@ -103,7 +103,7 @@ fn test_void_element_closes_before_following_expression() {
 fn test_component_element() {
     assert_eq!(
         parse("<MyComponent />"),
-        "(document (element (self_closing_tag (tag_name))))"
+        "(document (element (self_closing_tag name: (tag_name))))"
     );
 }
 
@@ -111,7 +111,7 @@ fn test_component_element() {
 fn test_component_element_with_unicode_name() {
     assert_eq!(
         parse("<Wunderschön />"),
-        "(document (element (self_closing_tag (tag_name))))"
+        "(document (element (self_closing_tag name: (tag_name))))"
     );
 }
 
@@ -119,7 +119,7 @@ fn test_component_element_with_unicode_name() {
 fn test_component_with_children() {
     assert_eq!(
         parse("<Layout><Content /></Layout>"),
-        "(document (element (start_tag (tag_name)) (element (self_closing_tag (tag_name))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (element (self_closing_tag name: (tag_name))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -128,7 +128,7 @@ fn test_component_dotted() {
     // Dotted components are parsed with object and property fields containing tag_member nodes
     assert_eq!(
         parse("<UI.Button />"),
-        "(document (element (self_closing_tag (tag_name object: (tag_member) property: (tag_member)))))"
+        "(document (element (self_closing_tag name: (tag_name object: (tag_member) property: (tag_member)))))"
     );
 }
 
@@ -136,7 +136,7 @@ fn test_component_dotted() {
 fn test_component_dotted_with_unicode_property() {
     assert_eq!(
         parse("<UI.Schön />"),
-        "(document (element (self_closing_tag (tag_name object: (tag_member) property: (tag_member)))))"
+        "(document (element (self_closing_tag name: (tag_name object: (tag_member) property: (tag_member)))))"
     );
 }
 
@@ -144,7 +144,7 @@ fn test_component_dotted_with_unicode_property() {
 fn test_component_dotted_with_children() {
     assert_eq!(
         parse("<UI.Card>content</UI.Card>"),
-        "(document (element (start_tag (tag_name object: (tag_member) property: (tag_member))) (text) (end_tag (tag_name object: (tag_member) property: (tag_member)))))"
+        "(document (element (start_tag name: (tag_name object: (tag_member) property: (tag_member))) (text) (end_tag name: (tag_name object: (tag_member) property: (tag_member)))))"
     );
 }
 
@@ -153,7 +153,7 @@ fn test_component_deeply_dotted() {
     // Multiple levels of dotting: object + multiple property fields
     assert_eq!(
         parse("<Lib.UI.Button />"),
-        "(document (element (self_closing_tag (tag_name object: (tag_member) property: (tag_member) property: (tag_member)))))"
+        "(document (element (self_closing_tag name: (tag_name object: (tag_member) property: (tag_member) property: (tag_member)))))"
     );
 }
 
@@ -165,7 +165,7 @@ fn test_component_deeply_dotted() {
 fn test_namespaced_element() {
     assert_eq!(
         parse("<svelte:head></svelte:head>"),
-        "(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (element (start_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name))) (end_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }
 
@@ -173,7 +173,7 @@ fn test_namespaced_element() {
 fn test_custom_element_with_unicode_suffix() {
     assert_eq!(
         parse("<math-α></math-α>"),
-        "(document (element (start_tag (tag_name)) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (end_tag name: (tag_name))))"
     );
 }
 
@@ -181,7 +181,7 @@ fn test_custom_element_with_unicode_suffix() {
 fn test_invalid_element_name_with_brackets_stays_single_tag_name() {
     assert_eq!(
         parse("<yes[no]></yes[no]>"),
-        "(document (element (start_tag (tag_name)) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (end_tag name: (tag_name))))"
     );
 }
 
@@ -189,7 +189,7 @@ fn test_invalid_element_name_with_brackets_stays_single_tag_name() {
 fn test_namespaced_self_closing() {
     assert_eq!(
         parse("<svelte:self />"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }
 
@@ -198,7 +198,7 @@ fn test_namespaced_self_closing_inside_element() {
     // Namespaced self-closing tags must not pop the parent from the tag stack
     assert_eq!(
         parse("<div><svelte:window/></div>"),
-        "(document (element (start_tag (tag_name)) (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -211,7 +211,7 @@ fn test_unterminated_tag_with_comment_then_close() {
     // <div //comment\n</div> should produce a proper element, not standalone + erroneous end tag
     assert_eq!(
         parse("<div //comment\n</div>"),
-        "(document (element (start_tag (tag_name) (tag_comment kind: (line_comment))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name) (tag_comment kind: (line_comment))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -219,7 +219,7 @@ fn test_unterminated_tag_with_comment_then_close() {
 fn test_unterminated_tag_with_attr_and_comment_then_close() {
     assert_eq!(
         parse("<div class=\"x\" //comment\n</div>"),
-        "(document (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (tag_comment kind: (line_comment))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value))) (tag_comment kind: (line_comment))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -231,7 +231,7 @@ fn test_unterminated_tag_with_attr_and_comment_then_close() {
 fn test_script_element() {
     assert_eq!(
         parse("<script>let x = 1;</script>"),
-        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (raw_text) (end_tag name: (tag_name))))"
     );
 }
 
@@ -239,6 +239,6 @@ fn test_script_element() {
 fn test_style_element() {
     assert_eq!(
         parse("<style>div { color: red; }</style>"),
-        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (raw_text) (end_tag name: (tag_name))))"
     );
 }

@@ -172,7 +172,7 @@ mod tests {
         assert!(!tree.root_node().has_error());
         assert_eq!(
             tree.root_node().to_sexp(),
-            "(document (element (start_tag (tag_name)) (element (start_tag (tag_name))) (text) (end_tag (tag_name))))"
+            "(document (element (start_tag name: (tag_name)) (element (start_tag name: (tag_name))) (text) (end_tag name: (tag_name))))"
         );
     }
 

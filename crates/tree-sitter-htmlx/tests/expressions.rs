@@ -33,7 +33,7 @@ fn test_expression_simple() {
 fn test_expression_in_element() {
     assert_eq!(
         parse("<p>{message}</p>"),
-        "(document (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (expression content: (js)) (end_tag name: (tag_name))))"
     );
 }
 

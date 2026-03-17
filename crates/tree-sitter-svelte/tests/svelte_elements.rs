@@ -14,7 +14,7 @@ use utils::parse;
 fn test_svelte_self_basic() {
     assert_eq!(
         parse("<svelte:self />"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }
 
@@ -22,7 +22,7 @@ fn test_svelte_self_basic() {
 fn test_svelte_self_with_props() {
     assert_eq!(
         parse("<svelte:self count={n - 1} />"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (expression content: (js))))))"
+        "(document (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute name: (attribute_name) value: (expression content: (js))))))"
     );
 }
 
@@ -34,7 +34,7 @@ fn test_svelte_self_with_props() {
 fn test_svelte_component_this() {
     assert_eq!(
         parse("<svelte:component this={Component} />"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (expression content: (js))))))"
+        "(document (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute name: (attribute_name) value: (expression content: (js))))))"
     );
 }
 
@@ -42,7 +42,7 @@ fn test_svelte_component_this() {
 fn test_svelte_component_with_props() {
     assert_eq!(
         parse(r#"<svelte:component this={comp} name="test" />"#),
-        r#"(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (expression content: (js))) (attribute (attribute_name) (quoted_attribute_value (attribute_value))))))"#
+        r#"(document (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute name: (attribute_name) value: (expression content: (js))) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value))))))"#
     );
 }
 
@@ -50,7 +50,7 @@ fn test_svelte_component_with_props() {
 fn test_svelte_component_with_css_custom_properties() {
     assert_eq!(
         parse(r#"<svelte:component this={comp} --rail-color="rgb(0, 0, 0)" />"#),
-        r#"(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (expression content: (js))) (attribute (attribute_name) (quoted_attribute_value (attribute_value))))))"#
+        r#"(document (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute name: (attribute_name) value: (expression content: (js))) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value))))))"#
     );
 }
 
@@ -60,7 +60,7 @@ fn test_svelte_component_with_multiline_css_custom_properties() {
         parse(
             "<svelte:component\n\tthis={comp}\n\tid=\"component1\"\n\t--rail-color=\"rgb(0, 0, 0)\"\n\t--track-color=\"rgb(255, 0, 0)\"\n/>"
         ),
-        r#"(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (expression content: (js))) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (attribute (attribute_name) (quoted_attribute_value (attribute_value))))))"#
+        r#"(document (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute name: (attribute_name) value: (expression content: (js))) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value))) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value))) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value))))))"#
     );
 }
 
@@ -68,7 +68,7 @@ fn test_svelte_component_with_multiline_css_custom_properties() {
 fn test_svelte_component_with_children() {
     assert_eq!(
         parse("<svelte:component this={Layout}><p>content</p></svelte:component>"),
-        "(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (expression content: (js)))) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (element (start_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute name: (attribute_name) value: (expression content: (js)))) (element (start_tag name: (tag_name)) (text) (end_tag name: (tag_name))) (end_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }
 
@@ -80,7 +80,7 @@ fn test_svelte_component_with_children() {
 fn test_svelte_element_this() {
     assert_eq!(
         parse("<svelte:element this={tag} />"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (expression content: (js))))))"
+        "(document (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute name: (attribute_name) value: (expression content: (js))))))"
     );
 }
 
@@ -88,7 +88,7 @@ fn test_svelte_element_this() {
 fn test_svelte_element_with_content() {
     assert_eq!(
         parse(r#"<svelte:element this="div">content</svelte:element>"#),
-        r#"(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (text) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"#
+        r#"(document (element (start_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value)))) (text) (end_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"#
     );
 }
 
@@ -100,7 +100,7 @@ fn test_svelte_element_with_content() {
 fn test_svelte_window_basic() {
     assert_eq!(
         parse("<svelte:window />"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }
 
@@ -108,7 +108,7 @@ fn test_svelte_window_basic() {
 fn test_svelte_window_on_event() {
     assert_eq!(
         parse("<svelte:window on:keydown={handleKey} />"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js))))))"
+        "(document (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute name: (attribute_name (attribute_directive) (attribute_identifier)) value: (expression content: (js))))))"
     );
 }
 
@@ -116,7 +116,7 @@ fn test_svelte_window_on_event() {
 fn test_svelte_window_bind_scrolly() {
     assert_eq!(
         parse("<svelte:window bind:scrollY={y} />"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js))))))"
+        "(document (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute name: (attribute_name (attribute_directive) (attribute_identifier)) value: (expression content: (js))))))"
     );
 }
 
@@ -124,7 +124,7 @@ fn test_svelte_window_bind_scrolly() {
 fn test_svelte_window_bind_innerwidth() {
     assert_eq!(
         parse("<svelte:window bind:innerWidth={width} bind:innerHeight={height} />"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js))) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js))))))"
+        "(document (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute name: (attribute_name (attribute_directive) (attribute_identifier)) value: (expression content: (js))) (attribute name: (attribute_name (attribute_directive) (attribute_identifier)) value: (expression content: (js))))))"
     );
 }
 
@@ -136,7 +136,7 @@ fn test_svelte_window_bind_innerwidth() {
 fn test_svelte_document_basic() {
     assert_eq!(
         parse("<svelte:document />"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }
 
@@ -144,7 +144,7 @@ fn test_svelte_document_basic() {
 fn test_svelte_document_on_event() {
     assert_eq!(
         parse("<svelte:document on:visibilitychange={handleVisibility} />"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js))))))"
+        "(document (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute name: (attribute_name (attribute_directive) (attribute_identifier)) value: (expression content: (js))))))"
     );
 }
 
@@ -156,7 +156,7 @@ fn test_svelte_document_on_event() {
 fn test_svelte_body_basic() {
     assert_eq!(
         parse("<svelte:body />"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }
 
@@ -164,7 +164,7 @@ fn test_svelte_body_basic() {
 fn test_svelte_body_on_event() {
     assert_eq!(
         parse("<svelte:body on:mouseenter={handleEnter} on:mouseleave={handleLeave} />"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js))) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js))))))"
+        "(document (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute name: (attribute_name (attribute_directive) (attribute_identifier)) value: (expression content: (js))) (attribute name: (attribute_name (attribute_directive) (attribute_identifier)) value: (expression content: (js))))))"
     );
 }
 
@@ -176,7 +176,7 @@ fn test_svelte_body_on_event() {
 fn test_svelte_head_empty() {
     assert_eq!(
         parse("<svelte:head></svelte:head>"),
-        "(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (element (start_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name))) (end_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }
 
@@ -184,7 +184,7 @@ fn test_svelte_head_empty() {
 fn test_svelte_head_with_title() {
     assert_eq!(
         parse("<svelte:head><title>Page Title</title></svelte:head>"),
-        "(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name))) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (element (start_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name))) (element (start_tag name: (tag_name)) (text) (end_tag name: (tag_name))) (end_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }
 
@@ -192,7 +192,7 @@ fn test_svelte_head_with_title() {
 fn test_svelte_head_with_meta() {
     assert_eq!(
         parse(r#"<svelte:head><meta name="description" content="My app" /></svelte:head>"#),
-        r#"(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name))) (element (self_closing_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (attribute (attribute_name) (quoted_attribute_value (attribute_value))))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"#
+        r#"(document (element (start_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name))) (element (self_closing_tag name: (tag_name) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value))) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value))))) (end_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"#
     );
 }
 
@@ -200,7 +200,7 @@ fn test_svelte_head_with_meta() {
 fn test_svelte_head_dynamic_title() {
     assert_eq!(
         parse("<svelte:head><title>{pageTitle}</title></svelte:head>"),
-        "(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name))) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (element (start_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name))) (element (start_tag name: (tag_name)) (expression content: (js)) (end_tag name: (tag_name))) (end_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }
 
@@ -208,7 +208,7 @@ fn test_svelte_head_dynamic_title() {
 fn test_svelte_head_title_preserves_nested_elements_for_validation() {
     assert_eq!(
         parse("<svelte:head><title><span>bad</span></title></svelte:head>"),
-        "(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name))) (element (start_tag (tag_name)) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (end_tag (tag_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (element (start_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name))) (element (start_tag name: (tag_name)) (element (start_tag name: (tag_name)) (text) (end_tag name: (tag_name))) (end_tag name: (tag_name))) (end_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }
 
@@ -220,7 +220,7 @@ fn test_svelte_head_title_preserves_nested_elements_for_validation() {
 fn test_svelte_options_immutable() {
     assert_eq!(
         parse("<svelte:options immutable />"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name)))))"
+        "(document (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute name: (attribute_name)))))"
     );
 }
 
@@ -228,7 +228,7 @@ fn test_svelte_options_immutable() {
 fn test_svelte_options_immutable_true() {
     assert_eq!(
         parse("<svelte:options immutable={true} />"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (expression content: (js))))))"
+        "(document (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute name: (attribute_name) value: (expression content: (js))))))"
     );
 }
 
@@ -236,7 +236,7 @@ fn test_svelte_options_immutable_true() {
 fn test_svelte_options_accessors() {
     assert_eq!(
         parse("<svelte:options accessors={true} />"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (expression content: (js))))))"
+        "(document (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute name: (attribute_name) value: (expression content: (js))))))"
     );
 }
 
@@ -244,7 +244,7 @@ fn test_svelte_options_accessors() {
 fn test_svelte_options_namespace() {
     assert_eq!(
         parse(r#"<svelte:options namespace="svg" />"#),
-        r#"(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (quoted_attribute_value (attribute_value))))))"#
+        r#"(document (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value))))))"#
     );
 }
 
@@ -253,7 +253,7 @@ fn test_svelte_options_namespace() {
 fn test_svelte_options_customElement() {
     assert_eq!(
         parse(r#"<svelte:options customElement="my-element" />"#),
-        r#"(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (quoted_attribute_value (attribute_value))))))"#
+        r#"(document (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value))))))"#
     );
 }
 
@@ -261,7 +261,7 @@ fn test_svelte_options_customElement() {
 fn test_svelte_options_runes() {
     assert_eq!(
         parse("<svelte:options runes={true} />"),
-        "(document (element (self_closing_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (expression content: (js))))))"
+        "(document (element (self_closing_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute name: (attribute_name) value: (expression content: (js))))))"
     );
 }
 
@@ -273,7 +273,7 @@ fn test_svelte_options_runes() {
 fn test_svelte_fragment_basic() {
     assert_eq!(
         parse("<svelte:fragment></svelte:fragment>"),
-        "(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (element (start_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name))) (end_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }
 
@@ -281,7 +281,7 @@ fn test_svelte_fragment_basic() {
 fn test_svelte_fragment_with_slot() {
     assert_eq!(
         parse(r#"<svelte:fragment slot="header"><h1>Title</h1></svelte:fragment>"#),
-        r#"(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (element (start_tag (tag_name)) (text) (end_tag (tag_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"#
+        r#"(document (element (start_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value)))) (element (start_tag name: (tag_name)) (text) (end_tag name: (tag_name))) (end_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"#
     );
 }
 
@@ -289,7 +289,7 @@ fn test_svelte_fragment_with_slot() {
 fn test_svelte_fragment_let_directive() {
     assert_eq!(
         parse("<svelte:fragment let:item>{item}</svelte:fragment>"),
-        "(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name (attribute_directive) (attribute_identifier)))) (expression content: (js)) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (element (start_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute name: (attribute_name (attribute_directive) (attribute_identifier)))) (expression content: (js)) (end_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }
 
@@ -301,7 +301,7 @@ fn test_svelte_fragment_let_directive() {
 fn test_svelte_boundary_basic() {
     assert_eq!(
         parse("<svelte:boundary><Child /></svelte:boundary>"),
-        "(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name))) (element (self_closing_tag (tag_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (element (start_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name))) (element (self_closing_tag name: (tag_name))) (end_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }
 
@@ -317,7 +317,7 @@ fn test_erroneous_end_tag_is_typed() {
 fn test_void_element_closes_before_following_expression() {
     assert_eq!(
         parse("<label><input>{value}</label>"),
-        "(document (element (start_tag (tag_name)) (element (start_tag (tag_name))) (expression content: (js)) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (element (start_tag name: (tag_name))) (expression content: (js)) (end_tag name: (tag_name))))"
     );
 }
 
@@ -325,7 +325,7 @@ fn test_void_element_closes_before_following_expression() {
 fn test_svelte_boundary_onerror() {
     assert_eq!(
         parse("<svelte:boundary onerror={handleError}><Child /></svelte:boundary>"),
-        "(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (attribute_name) (expression content: (js)))) (element (self_closing_tag (tag_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (element (start_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute name: (attribute_name) value: (expression content: (js)))) (element (self_closing_tag name: (tag_name))) (end_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }
 
@@ -333,6 +333,6 @@ fn test_svelte_boundary_onerror() {
 fn test_svelte_boundary_failed_snippet() {
     assert_eq!(
         parse("{#snippet failed(error)}<p>Error: {error}</p>{/snippet}<svelte:boundary {failed}><Child /></svelte:boundary>"),
-        "(document (snippet_block (block_open) name: (snippet_name) parameters: (snippet_parameters parameter: (pattern content: (js))) (block_close) (element (start_tag (tag_name)) (text) (expression content: (js)) (end_tag (tag_name))) (block_end (block_open) (block_keyword) (block_close))) (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (shorthand_attribute content: (js)))) (element (self_closing_tag (tag_name))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (snippet_block (block_open) name: (snippet_name) parameters: (snippet_parameters parameter: (pattern content: (js))) (block_close) (element (start_tag name: (tag_name)) (text) (expression content: (js)) (end_tag name: (tag_name))) (block_end (block_open) (block_keyword) (block_close))) (element (start_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (attribute (shorthand_attribute content: (js)))) (element (self_closing_tag name: (tag_name))) (end_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }

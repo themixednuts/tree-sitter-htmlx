@@ -15,7 +15,7 @@ fn test_each_simple() {
 fn test_each_with_element() {
     assert_eq!(
         parse("{#each items as item}<li>{item}</li>{/each}"),
-        "(document (each_block (block_open) expression: (expression content: (js)) binding: (pattern content: (js)) (block_close) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
+        "(document (each_block (block_open) expression: (expression content: (js)) binding: (pattern content: (js)) (block_close) (element (start_tag name: (tag_name)) (expression content: (js)) (end_tag name: (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
     );
 }
 
@@ -71,7 +71,7 @@ fn test_each_else() {
 fn test_each_else_with_element() {
     assert_eq!(
         parse("{#each items as item}<p>{item}</p>{:else}<p>Empty</p>{/each}"),
-        "(document (each_block (block_open) expression: (expression content: (js)) binding: (pattern content: (js)) (block_close) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (else_clause (block_open) (block_close) (element (start_tag (tag_name)) (text) (end_tag (tag_name)))) (block_end (block_open) (block_keyword) (block_close))))"
+        "(document (each_block (block_open) expression: (expression content: (js)) binding: (pattern content: (js)) (block_close) (element (start_tag name: (tag_name)) (expression content: (js)) (end_tag name: (tag_name))) (else_clause (block_open) (block_close) (element (start_tag name: (tag_name)) (text) (end_tag name: (tag_name)))) (block_end (block_open) (block_keyword) (block_close))))"
     );
 }
 
@@ -95,7 +95,7 @@ fn test_each_with_const() {
 fn test_each_with_slot() {
     assert_eq!(
         parse("{#each items as item}<slot a={item}>Hello</slot>{/each}"),
-        "(document (each_block (block_open) expression: (expression content: (js)) binding: (pattern content: (js)) (block_close) (element (start_tag (tag_name) (attribute (attribute_name) (expression content: (js)))) (text) (end_tag (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
+        "(document (each_block (block_open) expression: (expression content: (js)) binding: (pattern content: (js)) (block_close) (element (start_tag name: (tag_name) (attribute name: (attribute_name) value: (expression content: (js)))) (text) (end_tag name: (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
     );
 }
 

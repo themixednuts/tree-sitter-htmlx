@@ -146,7 +146,7 @@ fn test_expression_nullish_coalescing() {
 fn test_expression_in_element() {
     assert_eq!(
         parse("<p>{message}</p>"),
-        "(document (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (expression content: (js)) (end_tag name: (tag_name))))"
     );
 }
 
@@ -154,7 +154,7 @@ fn test_expression_in_element() {
 fn test_expression_mixed_with_text() {
     assert_eq!(
         parse("<p>Hello {name}, you have {count} messages</p>"),
-        "(document (element (start_tag (tag_name)) (text) (expression content: (js)) (text) (expression content: (js)) (text) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (text) (expression content: (js)) (text) (expression content: (js)) (text) (end_tag name: (tag_name))))"
     );
 }
 
@@ -162,7 +162,7 @@ fn test_expression_mixed_with_text() {
 fn test_expression_nested_elements() {
     assert_eq!(
         parse("<div><span>{a}</span><span>{b}</span></div>"),
-        "(document (element (start_tag (tag_name)) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (element (start_tag (tag_name)) (expression content: (js)) (end_tag (tag_name))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (element (start_tag name: (tag_name)) (expression content: (js)) (end_tag name: (tag_name))) (element (start_tag name: (tag_name)) (expression content: (js)) (end_tag name: (tag_name))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -261,7 +261,7 @@ fn test_expression_multiline() {
 fn test_reactive_statement_in_script() {
     assert_eq!(
         parse("<script>$: doubled = count * 2;</script>"),
-        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (raw_text) (end_tag name: (tag_name))))"
     );
 }
 
@@ -269,7 +269,7 @@ fn test_reactive_statement_in_script() {
 fn test_reactive_block_in_script() {
     assert_eq!(
         parse("<script>$: { console.log(count); updateUI(); }</script>"),
-        "(document (element (start_tag (tag_name)) (raw_text) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (raw_text) (end_tag name: (tag_name))))"
     );
 }
 
@@ -286,7 +286,7 @@ fn test_store_subscription() {
 fn test_store_subscription_in_element() {
     assert_eq!(
         parse("<p>Count: {$count}</p>"),
-        "(document (element (start_tag (tag_name)) (text) (expression content: (js)) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name)) (text) (expression content: (js)) (end_tag name: (tag_name))))"
     );
 }
 

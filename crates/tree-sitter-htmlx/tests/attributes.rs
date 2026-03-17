@@ -11,7 +11,7 @@ use utils::parse;
 fn test_attribute_standard() {
     assert_eq!(
         parse(r#"<div class="foo"></div>"#),
-        "(document (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value)))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -19,7 +19,7 @@ fn test_attribute_standard() {
 fn test_attribute_css_custom_property_name() {
     assert_eq!(
         parse(r#"<div --rail-color="rgb(0, 0, 0)"></div>"#),
-        r#"(document (element (start_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (end_tag (tag_name))))"#
+        r#"(document (element (start_tag name: (tag_name) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value)))) (end_tag name: (tag_name))))"#
     );
 }
 
@@ -27,7 +27,7 @@ fn test_attribute_css_custom_property_name() {
 fn test_multiline_attribute_css_custom_property_name() {
     assert_eq!(
         parse("<div\n\tid=\"x\"\n\t--rail-color=\"rgb(0, 0, 0)\"\n/>"),
-        r#"(document (element (self_closing_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (attribute (attribute_name) (quoted_attribute_value (attribute_value))))))"#
+        r#"(document (element (self_closing_tag name: (tag_name) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value))) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value))))))"#
     );
 }
 
@@ -35,7 +35,7 @@ fn test_multiline_attribute_css_custom_property_name() {
 fn test_attribute_expression_value() {
     assert_eq!(
         parse("<input value={text} />"),
-        "(document (element (self_closing_tag (tag_name) (attribute (attribute_name) (expression content: (js))))))"
+        "(document (element (self_closing_tag name: (tag_name) (attribute name: (attribute_name) value: (expression content: (js))))))"
     );
 }
 
@@ -43,7 +43,7 @@ fn test_attribute_expression_value() {
 fn test_tag_line_comment_between_attributes() {
     assert_eq!(
         parse("<div // comment\n class=\"x\" />"),
-        "(document (element (self_closing_tag (tag_name) (tag_comment kind: (line_comment)) (attribute (attribute_name) (quoted_attribute_value (attribute_value))))))"
+        "(document (element (self_closing_tag name: (tag_name) (tag_comment kind: (line_comment)) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value))))))"
     );
 }
 
@@ -51,7 +51,7 @@ fn test_tag_line_comment_between_attributes() {
 fn test_tag_block_comment_between_attributes() {
     assert_eq!(
         parse("<span /* inline */ data-one=\"1\"></span>"),
-        "(document (element (start_tag (tag_name) (tag_comment kind: (block_comment)) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name) (tag_comment kind: (block_comment)) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value)))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -59,7 +59,7 @@ fn test_tag_block_comment_between_attributes() {
 fn test_tag_comment_in_namespaced_tag() {
     assert_eq!(
         parse("<svelte:head // note\n data-x=\"1\"></svelte:head>"),
-        "(document (element (start_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)) (tag_comment kind: (line_comment)) (attribute (attribute_name) (quoted_attribute_value (attribute_value)))) (end_tag (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
+        "(document (element (start_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)) (tag_comment kind: (line_comment)) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value)))) (end_tag name: (tag_name namespace: (tag_namespace) name: (tag_local_name)))))"
     );
 }
 
@@ -67,7 +67,7 @@ fn test_tag_comment_in_namespaced_tag() {
 fn test_tag_comment_in_member_tag() {
     assert_eq!(
         parse("<UI.Button /* note */ data-x=\"1\" />"),
-        "(document (element (self_closing_tag (tag_name object: (tag_member) property: (tag_member)) (tag_comment kind: (block_comment)) (attribute (attribute_name) (quoted_attribute_value (attribute_value))))))"
+        "(document (element (self_closing_tag name: (tag_name object: (tag_member) property: (tag_member)) (tag_comment kind: (block_comment)) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value))))))"
     );
 }
 
@@ -75,7 +75,7 @@ fn test_tag_comment_in_member_tag() {
 fn test_tag_line_comment_stops_before_tag_close() {
     assert_eq!(
         parse("<div // note></div>"),
-        "(document (element (start_tag (tag_name) (tag_comment kind: (line_comment))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name) (tag_comment kind: (line_comment))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -88,7 +88,7 @@ fn test_shorthand_attribute() {
     // shorthand_attribute now uses expression structure with content field
     assert_eq!(
         parse("<div {hidden}></div>"),
-        "(document (element (start_tag (tag_name) (attribute (shorthand_attribute content: (js)))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name) (attribute (shorthand_attribute content: (js)))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -96,7 +96,7 @@ fn test_shorthand_attribute() {
 fn test_shorthand_attribute_multiple() {
     assert_eq!(
         parse("<div {id} {hidden}></div>"),
-        "(document (element (start_tag (tag_name) (attribute (shorthand_attribute content: (js))) (attribute (shorthand_attribute content: (js)))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name) (attribute (shorthand_attribute content: (js))) (attribute (shorthand_attribute content: (js)))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -104,7 +104,7 @@ fn test_shorthand_attribute_multiple() {
 fn test_multiline_shorthand_attribute() {
     assert_eq!(
         parse("<div\n {hidden}\n></div>"),
-        "(document (element (start_tag (tag_name) (attribute (shorthand_attribute content: (js)))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name) (attribute (shorthand_attribute content: (js)))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -117,7 +117,7 @@ fn test_spread_attribute() {
     // Spread attributes parse as shorthand_attribute — '...props' is JS content
     assert_eq!(
         parse("<Component {...props} />"),
-        "(document (element (self_closing_tag (tag_name) (attribute (shorthand_attribute content: (js))))))"
+        "(document (element (self_closing_tag name: (tag_name) (attribute (shorthand_attribute content: (js))))))"
     );
 }
 
@@ -125,7 +125,7 @@ fn test_spread_attribute() {
 fn test_spread_attribute_with_others() {
     assert_eq!(
         parse(r#"<Component id="main" {...props} />"#),
-        "(document (element (self_closing_tag (tag_name) (attribute (attribute_name) (quoted_attribute_value (attribute_value))) (attribute (shorthand_attribute content: (js))))))"
+        "(document (element (self_closing_tag name: (tag_name) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value))) (attribute (shorthand_attribute content: (js))))))"
     );
 }
 
@@ -133,7 +133,7 @@ fn test_spread_attribute_with_others() {
 fn test_spread_attribute_nested_braces() {
     assert_eq!(
         parse("<input {...({})} onfocus={() => console.log('x')} />"),
-        "(document (element (self_closing_tag (tag_name) (attribute (shorthand_attribute content: (js))) (attribute (attribute_name) (expression content: (js))))))"
+        "(document (element (self_closing_tag name: (tag_name) (attribute (shorthand_attribute content: (js))) (attribute name: (attribute_name) value: (expression content: (js))))))"
     );
 }
 
@@ -142,7 +142,7 @@ fn test_spread_attribute_complex_expression() {
     // Spread with computed expression
     assert_eq!(
         parse("<div {...{a: 1, b: 2}} />"),
-        "(document (element (self_closing_tag (tag_name) (attribute (shorthand_attribute content: (js))))))"
+        "(document (element (self_closing_tag name: (tag_name) (attribute (shorthand_attribute content: (js))))))"
     );
 }
 
@@ -151,7 +151,7 @@ fn test_spread_and_shorthand_together() {
     // Mix of spread and shorthand attributes
     assert_eq!(
         parse("<input {...rest} {value} />"),
-        "(document (element (self_closing_tag (tag_name) (attribute (shorthand_attribute content: (js))) (attribute (shorthand_attribute content: (js))))))"
+        "(document (element (self_closing_tag name: (tag_name) (attribute (shorthand_attribute content: (js))) (attribute (shorthand_attribute content: (js))))))"
     );
 }
 
@@ -163,7 +163,7 @@ fn test_spread_and_shorthand_together() {
 fn test_directive_bind() {
     assert_eq!(
         parse("<input bind:value={name} />"),
-        "(document (element (self_closing_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js))))))"
+        "(document (element (self_closing_tag name: (tag_name) (attribute name: (attribute_name (attribute_directive) (attribute_identifier)) value: (expression content: (js))))))"
     );
 }
 
@@ -171,7 +171,7 @@ fn test_directive_bind() {
 fn test_directive_on() {
     assert_eq!(
         parse("<button on:click={handleClick}></button>"),
-        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name) (attribute name: (attribute_name (attribute_directive) (attribute_identifier)) value: (expression content: (js)))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -179,7 +179,7 @@ fn test_directive_on() {
 fn test_directive_with_modifiers() {
     assert_eq!(
         parse("<button on:click|preventDefault|stopPropagation={handler}></button>"),
-        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier) (attribute_modifiers (attribute_modifier) (attribute_modifier))) (expression content: (js)))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name) (attribute name: (attribute_name (attribute_directive) (attribute_identifier) (attribute_modifiers (attribute_modifier) (attribute_modifier))) value: (expression content: (js)))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -187,7 +187,7 @@ fn test_directive_with_modifiers() {
 fn test_directive_class() {
     assert_eq!(
         parse("<div class:active={isActive}></div>"),
-        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name) (attribute name: (attribute_name (attribute_directive) (attribute_identifier)) value: (expression content: (js)))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -195,7 +195,7 @@ fn test_directive_class() {
 fn test_directive_class_with_colon_in_name() {
     assert_eq!(
         parse("<div class:foo:bar={enabled}></div>"),
-        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name) (attribute name: (attribute_name (attribute_directive) (attribute_identifier)) value: (expression content: (js)))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -203,7 +203,7 @@ fn test_directive_class_with_colon_in_name() {
 fn test_directive_style() {
     assert_eq!(
         parse("<div style:color={textColor}></div>"),
-        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name) (attribute name: (attribute_name (attribute_directive) (attribute_identifier)) value: (expression content: (js)))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -211,7 +211,7 @@ fn test_directive_style() {
 fn test_directive_style_custom_property() {
     assert_eq!(
         parse("<div style:--color={textColor}></div>"),
-        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name) (attribute name: (attribute_name (attribute_directive) (attribute_identifier)) value: (expression content: (js)))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -222,7 +222,7 @@ fn test_directive_style_unquoted_mixed_value() {
     // NOT as two separate attributes (style:attr=string and {mixed} shorthand)
     assert_eq!(
         parse("<div style:attr=string{mixed}></div>"),
-        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (unquoted_attribute_value (attribute_value) (expression content: (js))))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name) (attribute name: (attribute_name (attribute_directive) (attribute_identifier)) value: (unquoted_attribute_value (attribute_value) (expression content: (js))))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -230,7 +230,7 @@ fn test_directive_style_unquoted_mixed_value() {
 fn test_directive_use() {
     assert_eq!(
         parse("<div use:tooltip></div>"),
-        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name) (attribute name: (attribute_name (attribute_directive) (attribute_identifier)))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -238,7 +238,7 @@ fn test_directive_use() {
 fn test_directive_use_store_member_action() {
     assert_eq!(
         parse("<div use:$store.action={text}></div>"),
-        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)) (expression content: (js)))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name) (attribute name: (attribute_name (attribute_directive) (attribute_identifier)) value: (expression content: (js)))) (end_tag name: (tag_name))))"
     );
 }
 
@@ -246,6 +246,6 @@ fn test_directive_use_store_member_action() {
 fn test_directive_transition() {
     assert_eq!(
         parse("<div transition:fade></div>"),
-        "(document (element (start_tag (tag_name) (attribute (attribute_name (attribute_directive) (attribute_identifier)))) (end_tag (tag_name))))"
+        "(document (element (start_tag name: (tag_name) (attribute name: (attribute_name (attribute_directive) (attribute_identifier)))) (end_tag name: (tag_name))))"
     );
 }
