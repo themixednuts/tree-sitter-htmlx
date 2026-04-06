@@ -372,3 +372,52 @@ fn test_snippet_block_missing_right_paren_before_block_end() {
         "Should preserve snippet_parameters: {tree}"
     );
 }
+
+#[test]
+fn test_attribute_sequence_tail_is_typed() {
+    let tree = parse("<Component onclick={true}} />");
+    assert!(
+        tree.contains("(attribute_sequence_recovery_tail)"),
+        "{tree}"
+    );
+}
+
+#[test]
+fn test_missing_attribute_expression_close_is_typed() {
+    let tree = parse("<Component test={ />");
+    assert!(tree.contains("(attribute "), "{tree}");
+    assert!(tree.contains("(incomplete_attribute_expression"), "{tree}");
+}
+
+#[test]
+fn test_attribute_missing_equals_tail_is_typed() {
+    let tree = parse(r#"<h1 class"=foo">"#);
+    assert!(tree.contains("(attribute"), "{tree}");
+    assert!(tree.contains("(attribute_expected_equals_tail"), "{tree}");
+}
+
+#[test]
+fn test_special_tag_missing_whitespace_is_typed() {
+    for source in [
+        "{@htmlfoo}",
+        "{@constfoo = 'bar'}",
+        "{@debugx}",
+        "{@renderchild()}",
+    ] {
+        let tree = parse(source);
+        assert!(tree.contains("tag_missing_whitespace_trailing"), "{tree}");
+    }
+}
+
+#[test]
+fn test_snippet_missing_name_and_parameters_stays_typed() {
+    for source in [
+        "{#snippet }{/snippet}",
+        "{#snippet }",
+        "{#snippet foo}{/snippet}",
+        "{#snippet foo}",
+    ] {
+        let tree = parse(source);
+        assert!(tree.contains("(snippet_block"), "{tree}");
+    }
+}

@@ -28,6 +28,14 @@ fn test_each_with_index() {
 }
 
 #[test]
+fn test_each_with_index_only_shorthand() {
+    assert_eq!(
+        parse("{#each Array(10), i}{i}{/each}"),
+        "(document (each_block (block_open) expression: (expression content: (js)) index: (pattern content: (js)) (block_close) (expression content: (js)) (block_end (block_open) (block_keyword) (block_close))))"
+    );
+}
+
+#[test]
 fn test_each_with_key() {
     assert_eq!(
         parse("{#each items as item (item.id)}{item}{/each}"),
@@ -36,10 +44,26 @@ fn test_each_with_key() {
 }
 
 #[test]
+fn test_each_with_key_only_shorthand() {
+    assert_eq!(
+        parse("{#each items (item.id)}{item}{/each}"),
+        "(document (each_block (block_open) expression: (expression content: (js)) key: (expression content: (js)) (block_close) (expression content: (js)) (block_end (block_open) (block_keyword) (block_close))))"
+    );
+}
+
+#[test]
 fn test_each_with_index_and_key() {
     assert_eq!(
         parse("{#each items as item, i (item.id)}{i}: {item}{/each}"),
         "(document (each_block (block_open) expression: (expression content: (js)) binding: (pattern content: (js)) index: (pattern content: (js)) key: (expression content: (js)) (block_close) (expression content: (js)) (text) (expression content: (js)) (block_end (block_open) (block_keyword) (block_close))))"
+    );
+}
+
+#[test]
+fn test_each_with_index_and_key_only_shorthand() {
+    assert_eq!(
+        parse("{#each Array(10), i (i)}{i}{/each}"),
+        "(document (each_block (block_open) expression: (expression content: (js)) index: (pattern content: (js)) key: (expression content: (js)) (block_close) (expression content: (js)) (block_end (block_open) (block_keyword) (block_close))))"
     );
 }
 

@@ -1,7 +1,3 @@
-/**
- * Auto-vendored during build. Do not edit manually.
- */
-
 #include "tree_sitter/parser.h"
 
 #define scan html_scan
@@ -203,20 +199,17 @@ static bool scan_textarea_text(State *state, TSLexer *lexer, const bool *valid) 
             match_index++;
             if (match_index == delimiter_len) {
                 advance(lexer);
-
-                while (is_space(lexer->lookahead)) {
-                    advance(lexer);
-                }
-
-                if (lexer->lookahead == '>') {
+                // Per HTML spec §13.2.6.1, raw text end tag must be followed by
+                // whitespace, '/', '>', or EOF — not a letter continuation.
+                int32_t next = lexer->lookahead;
+                if (next == '>' || next == '/' || is_space(next) || next == 0) {
                     if (!has_content && valid[TEXTAREA_END_BOUNDARY]) {
                         lexer->result_symbol = TEXTAREA_END_BOUNDARY;
                         return true;
                     }
-
                     break;
                 }
-
+                // Not a valid end tag (e.g. "</textaread") — continue scanning
                 has_content = true;
                 lexer->mark_end(lexer);
                 match_index = 0;
@@ -729,17 +722,35 @@ static bool scan_member_tag_property(TSLexer *lexer) {
 // Scan unquoted attribute value segment
 // Matches: [^<>{}\"'/=\s]+
 // This is used for attribute values like: class=foo or style:color=red
-static bool scan_attribute_value(TSLexer *lexer) {
+static bool scan_attribute_value(TSLexer *lexer, bool self_closing_valid) {
     bool has_content = false;
 
     while (lexer->lookahead) {
         int32_t c = lexer->lookahead;
 
-        // Stop at characters that end unquoted attribute values
+        // Stop at characters that end unquoted attribute values.
         if (c == '<' || c == '>' || c == '{' || c == '}' ||
-            c == '"' || c == '\'' || c == '/' || c == '=' ||
+            c == '"' || c == '\'' || c == '=' ||
             is_space(c)) {
             break;
+        }
+
+        // Handle '/' carefully: always stop at '/>' (self-closing delimiter).
+        // For standalone '/' not before '>', consume as value (e.g. href=/foo).
+        if (c == '/') {
+            lexer->mark_end(lexer);
+            advance(lexer);
+            if (lexer->lookahead == '>' && self_closing_valid) {
+                // '/>' and self-closing is a valid token — stop, exclude '/'
+                if (has_content) {
+                    lexer->result_symbol = ATTRIBUTE_VALUE;
+                    return true;
+                }
+                return false;
+            }
+            // Not '/>' or self-closing not valid — '/' is part of the value
+            has_content = true;
+            continue;
         }
 
         advance(lexer);
@@ -1042,6 +1053,11 @@ static bool scan(State *state, TSLexer *lexer, const bool *valid) {
 
     if (c == '/'
         && (valid[SELF_CLOSING_TAG_DELIMITER] || valid[LINE_TAG_COMMENT] || valid[BLOCK_TAG_COMMENT])) {
+        // When ATTRIBUTE_VALUE is also valid, prefer it so that `href=/foo`
+        // parses `/foo` as the unquoted value rather than `/>` as self-closing.
+        if (valid[ATTRIBUTE_VALUE] && scan_attribute_value(lexer, valid[SELF_CLOSING_TAG_DELIMITER])) {
+            return true;
+        }
         if (scan_slash_prefixed(state, lexer, valid)) return true;
     }
 
@@ -1056,7 +1072,7 @@ static bool scan(State *state, TSLexer *lexer, const bool *valid) {
         return true;
     }
 
-    if (valid[ATTRIBUTE_VALUE] && scan_attribute_value(lexer)) {
+    if (valid[ATTRIBUTE_VALUE] && scan_attribute_value(lexer, valid[SELF_CLOSING_TAG_DELIMITER])) {
         return true;
     }
 

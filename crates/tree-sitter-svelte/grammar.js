@@ -28,9 +28,13 @@ module.exports = grammar(HTMLX, {
       $._snippet_parameter_ts,
       $._snippet_type_params,
       $._block_end_open, // {/ only when followed by identifier (not comment)
-      $._snippet_name, // snippet identifier or zero-width when absent
+      $._snippet_name,
+      $._snippet_name_no_params,
+      $._snippet_name_missing,
       $._block_start_eof, // zero-width EOF marker for unterminated {#... block starts
       $._block_eof, // zero-width EOF marker for blocks missing their {/end}
+      $._snippet_header_trailing,
+      $._incomplete_attribute_expression,
       // Note: _ts_lang_attr, _expression_js, _expression_ts are inherited from HTMLX
     ]),
 
@@ -531,6 +535,20 @@ module.exports = grammar(HTMLX, {
           repeat($._node),
           alias($._snippet_block_end, $.block_end),
         ),
+        prec(
+          -1,
+          seq(
+            alias(token("{#"), $.block_open),
+            "snippet",
+            field("name", alias($._snippet_name, $.snippet_name)),
+            optional(field("type_parameters", $.snippet_type_parameters)),
+            "(",
+            optional(field("parameters", $.snippet_parameters)),
+            ")",
+            field("trailing", $.snippet_header_trailing),
+            alias($._snippet_block_end, $.block_end),
+          ),
+        ),
         // Recovery: unclosed block (no block_end)
         prec.dynamic(
           -10,
@@ -542,6 +560,18 @@ module.exports = grammar(HTMLX, {
 
     _snippet_block_start: ($) =>
       choice(
+        seq(
+          alias(token("{#"), $.block_open),
+          "snippet",
+          field("name", alias($._snippet_name_missing, $.snippet_name)),
+          $._block_close,
+        ),
+        seq(
+          alias(token("{#"), $.block_open),
+          "snippet",
+          field("name", alias($._snippet_name_no_params, $.snippet_name)),
+          $._block_close,
+        ),
         seq(
           alias(token("{#"), $.block_open),
           "snippet",
@@ -584,28 +614,42 @@ module.exports = grammar(HTMLX, {
       ),
 
     _snippet_block_start_unclosed: ($) =>
-      seq(
-        alias(token("{#"), $.block_open),
-        "snippet",
-        field("name", alias($._snippet_name, $.snippet_name)),
-        choice(
-          prec(
-            2,
-            seq(
-              field("type_parameters", $.snippet_type_parameters),
-              "(",
-              optional(field("parameters", $.snippet_parameters)),
-              ")",
-              $._block_start_eof,
+      choice(
+        seq(
+          alias(token("{#"), $.block_open),
+          "snippet",
+          field("name", alias($._snippet_name_missing, $.snippet_name)),
+          $._block_start_eof,
+        ),
+        seq(
+          alias(token("{#"), $.block_open),
+          "snippet",
+          field("name", alias($._snippet_name_no_params, $.snippet_name)),
+          $._block_start_eof,
+        ),
+        seq(
+          alias(token("{#"), $.block_open),
+          "snippet",
+          field("name", alias($._snippet_name, $.snippet_name)),
+          choice(
+            prec(
+              2,
+              seq(
+                field("type_parameters", $.snippet_type_parameters),
+                "(",
+                optional(field("parameters", $.snippet_parameters)),
+                ")",
+                $._block_start_eof,
+              ),
             ),
-          ),
-          prec(
-            1,
-            seq(
-              "(",
-              optional(field("parameters", $.snippet_parameters)),
-              ")",
-              $._block_start_eof,
+            prec(
+              1,
+              seq(
+                "(",
+                optional(field("parameters", $.snippet_parameters)),
+                ")",
+                $._block_start_eof,
+              ),
             ),
           ),
         ),
@@ -618,75 +662,135 @@ module.exports = grammar(HTMLX, {
         optional(","),
       ),
 
+    snippet_header_trailing: ($) => $._snippet_header_trailing,
+
     // =========================================================================
     // Typed tags
     // =========================================================================
 
     // {@html expr}
     html_tag: ($) =>
-      seq(
-        alias(token("{@"), $.block_open),
-        "html",
-        optional(
-          field("expression", alias($._tag_expression, $.expression_value)),
+      choice(
+        seq(
+          alias(token("{@"), $.block_open),
+          "html",
+          optional(
+            field("expression", alias($._tag_expression, $.expression_value)),
+          ),
+          $._block_close,
         ),
-        $._block_close,
+        seq(
+          alias(token("{@"), $.block_open),
+          "html",
+          field("trailing", $.tag_missing_whitespace_trailing),
+          $._block_close,
+        ),
       ),
 
     // {@debug expr?}
     debug_tag: ($) =>
-      seq(
-        alias(token("{@"), $.block_open),
-        "debug",
-        optional(
-          field("expression", alias($._tag_expression, $.expression_value)),
+      choice(
+        seq(
+          alias(token("{@"), $.block_open),
+          "debug",
+          optional(
+            field("expression", alias($._tag_expression, $.expression_value)),
+          ),
+          $._block_close,
         ),
-        $._block_close,
+        seq(
+          alias(token("{@"), $.block_open),
+          "debug",
+          field("trailing", $.tag_missing_whitespace_trailing),
+          $._block_close,
+        ),
       ),
 
     // {@const expr}
     const_tag: ($) =>
-      seq(
-        alias(token("{@"), $.block_open),
-        "const",
-        optional(
-          field("expression", alias($._tag_expression, $.expression_value)),
+      choice(
+        seq(
+          alias(token("{@"), $.block_open),
+          "const",
+          optional(
+            field("expression", alias($._tag_expression, $.expression_value)),
+          ),
+          $._block_close,
         ),
-        $._block_close,
+        seq(
+          alias(token("{@"), $.block_open),
+          "const",
+          field("trailing", $.tag_missing_whitespace_trailing),
+          $._block_close,
+        ),
       ),
 
     // {@render expr}
     render_tag: ($) =>
-      seq(
-        alias(token("{@"), $.block_open),
-        "render",
-        optional(
-          field("expression", alias($._tag_expression, $.expression_value)),
+      choice(
+        seq(
+          alias(token("{@"), $.block_open),
+          "render",
+          optional(
+            field("expression", alias($._tag_expression, $.expression_value)),
+          ),
+          $._block_close,
         ),
-        $._block_close,
+        seq(
+          alias(token("{@"), $.block_open),
+          "render",
+          field("trailing", $.tag_missing_whitespace_trailing),
+          $._block_close,
+        ),
       ),
 
     // {@attach expr}
     attach_tag: ($) =>
-      seq(
-        alias(token("{@"), $.block_open),
-        "attach",
-        optional(
-          field("expression", alias($._tag_expression, $.expression_value)),
+      choice(
+        seq(
+          alias(token("{@"), $.block_open),
+          "attach",
+          optional(
+            field("expression", alias($._tag_expression, $.expression_value)),
+          ),
+          $._block_close,
         ),
-        $._block_close,
+        seq(
+          alias(token("{@"), $.block_open),
+          "attach",
+          field("trailing", $.tag_missing_whitespace_trailing),
+          $._block_close,
+        ),
       ),
 
     // Generic expressions - excludes block/tag markers at start
     _expression_value: ($) => /[^#:/@}\s][^}]*/,
+
+    tag_missing_whitespace_trailing: (_) => token.immediate(/[^\s}][^}]*/),
 
     // Note: shorthand_attribute is inherited from HTMLX as a structured rule (not regex)
     // to allow proper precedence resolution with unquoted_attribute_value.
     // We don't override it here - invalid Svelte-specific tag/block placement is
     // represented by allowing existing typed nodes in quoted attribute content.
 
-    // Attributes - extend HTMLX to include attach_tag for {@attach ...}
-    attribute: ($, original) => choice(original, prec(2, $.attach_tag)),
+    // Attributes - extend HTMLX to include attach_tag and typed recovery nodes.
+    attribute: ($, original) => choice(
+      original,
+      prec(2, $.attach_tag),
+    ),
+
+    _tag_attribute_item: ($, original) => choice(
+      original,
+      $.attribute_sequence_recovery_tail,
+    ),
+
+    // Attributes - extend HTMLX to include attach_tag.
+    attribute: ($, original) => choice(
+      original,
+      prec(2, $.attach_tag),
+    ),
+
+    attribute_sequence_recovery_tail: (_) => token(prec(-1, /\}+/)),
 
     _quoted_attribute_content_single: ($) =>
       choice(

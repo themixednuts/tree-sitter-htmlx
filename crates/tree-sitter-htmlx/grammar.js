@@ -260,6 +260,13 @@ module.exports = grammar(HTML, {
       choice(
         seq($._ts_lang_marker, field("name", $.attribute_name), "=", field("value", $.quoted_attribute_value)),
         $.shorthand_attribute,
+        prec.dynamic(
+          3,
+          seq(
+            field("name", $.attribute_name),
+            field("tail", $.attribute_expected_equals_tail),
+          ),
+        ),
         // Use dynamic precedence to prefer longer unquoted_attribute_value matches
         // over shorter attribute_value + shorthand_attribute sequences
         prec.dynamic(
@@ -280,6 +287,8 @@ module.exports = grammar(HTML, {
           ),
         ),
       ),
+
+    attribute_expected_equals_tail: (_) => token.immediate(/["'][^>\s]*/),
 
     attribute_name: ($) =>
       choice(
@@ -361,13 +370,16 @@ module.exports = grammar(HTML, {
     // This allows patterns like style:color=red{expr} or class=item-{type}-active
     // Uses external scanner _attribute_value to properly handle lookahead for {
     unquoted_attribute_value: ($) =>
-      prec.right(
-        seq(
-          alias($._attribute_value, $.attribute_value), // Required leading text via external scanner
-          repeat1(
-            seq(
-              alias($.attribute_expression, $.expression),
-              optional(alias($._attribute_value, $.attribute_value)), // Optional trailing text
+      prec.dynamic(
+        3, // Higher than attribute's prec.dynamic(2) so GLR prefers longer text{expr} match
+        prec.right(
+          seq(
+            alias($._attribute_value, $.attribute_value), // Required leading text via external scanner
+            repeat1(
+              seq(
+                alias($.attribute_expression, $.expression),
+                optional(alias($._attribute_value, $.attribute_value)), // Optional trailing text
+              ),
             ),
           ),
         ),

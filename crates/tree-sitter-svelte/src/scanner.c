@@ -23,8 +23,12 @@ enum {
     SNIPPET_TYPE_PARAMS,
     BLOCK_END_OPEN,
     SNIPPET_NAME,
+    SNIPPET_NAME_NO_PARAMS,
+    SNIPPET_NAME_MISSING,
     BLOCK_START_EOF,
     BLOCK_EOF,
+    SNIPPET_HEADER_TRAILING,
+    INCOMPLETE_ATTRIBUTE_EXPRESSION,
 };
 
 typedef struct {
@@ -467,6 +471,82 @@ static bool scan_tag_expression(State *state, TSLexer *lexer) {
     return true;
 }
 
+static bool scan_incomplete_attribute_expression(TSLexer *lexer) {
+    if (lexer->lookahead != '{') return false;
+
+    lexer->mark_end(lexer);
+    advance(lexer);
+
+    for (;;) {
+        while (is_space(lexer->lookahead)) {
+            advance(lexer);
+            lexer->mark_end(lexer);
+        }
+
+        if (lexer->lookahead == '/') {
+            advance(lexer);
+
+            if (lexer->lookahead == '/') {
+                advance(lexer);
+                while (lexer->lookahead && lexer->lookahead != '\n' && lexer->lookahead != '\r') {
+                    advance(lexer);
+                }
+                lexer->mark_end(lexer);
+                continue;
+            }
+
+            if (lexer->lookahead == '*') {
+                advance(lexer);
+                while (lexer->lookahead) {
+                    if (lexer->lookahead != '*') {
+                        advance(lexer);
+                        continue;
+                    }
+                    advance(lexer);
+                    if (lexer->lookahead == '/') {
+                        advance(lexer);
+                        break;
+                    }
+                }
+                lexer->mark_end(lexer);
+                continue;
+            }
+
+            if (lexer->lookahead == '>') {
+                lexer->result_symbol = INCOMPLETE_ATTRIBUTE_EXPRESSION;
+                return true;
+            }
+
+            return false;
+        }
+
+        if (lexer->lookahead == '>') {
+            lexer->result_symbol = INCOMPLETE_ATTRIBUTE_EXPRESSION;
+            return true;
+        }
+
+        return false;
+    }
+}
+
+static bool scan_snippet_header_trailing(TSLexer *lexer) {
+    while (is_space(lexer->lookahead)) {
+        advance(lexer);
+    }
+
+    if (lexer->lookahead == 0 || lexer->lookahead == '<' || lexer->lookahead == '{' || lexer->lookahead == '}' || lexer->lookahead == '(') {
+        return false;
+    }
+
+    while (lexer->lookahead && lexer->lookahead != '<' && lexer->lookahead != '{' && lexer->lookahead != '}') {
+        advance(lexer);
+    }
+
+    lexer->mark_end(lexer);
+    lexer->result_symbol = SNIPPET_HEADER_TRAILING;
+    return true;
+}
+
 static bool scan_snippet_type_params(TSLexer *lexer) {
     PROFILE_COUNT(scan_snippet_type_params_calls);
     if (lexer->lookahead != '<') return false;
@@ -509,14 +589,6 @@ static bool scan_snippet_name(TSLexer *lexer) {
     PROFILE_COUNT(scan_snippet_name_calls);
     while (is_space(lexer->lookahead)) PROFILE_SKIP(scan_snippet_name_bytes, lexer);
 
-    // Empty name: produce zero-width token at the terminator position.
-    if (lexer->lookahead == '}' || lexer->lookahead == '(') {
-        lexer->mark_end(lexer);
-        lexer->result_symbol = SNIPPET_NAME;
-        PROFILE_COUNT(scan_snippet_name_successes);
-        return true;
-    }
-
     // Must start with identifier start char or $
     if (!is_ident_start(lexer->lookahead) && lexer->lookahead != '$') return false;
 
@@ -526,16 +598,37 @@ static bool scan_snippet_name(TSLexer *lexer) {
     }
 
     lexer->mark_end(lexer);
-    while (is_space(lexer->lookahead)) PROFILE_SKIP(scan_snippet_name_bytes, lexer);
-    if (
-        lexer->lookahead != '}'
-        && lexer->lookahead != '('
-        && lexer->lookahead != '<'
-    ) {
-        return false;
-    }
+    while (is_space(lexer->lookahead)) PROFILE_ADVANCE(scan_snippet_name_bytes, lexer);
+    if (lexer->lookahead != '(' && lexer->lookahead != '<') return false;
     lexer->result_symbol = SNIPPET_NAME;
     PROFILE_COUNT(scan_snippet_name_successes);
+    return true;
+}
+
+static bool scan_snippet_name_no_params(TSLexer *lexer) {
+    PROFILE_COUNT(scan_snippet_name_calls);
+    while (is_space(lexer->lookahead)) PROFILE_SKIP(scan_snippet_name_bytes, lexer);
+
+    if (!is_ident_start(lexer->lookahead) && lexer->lookahead != '$') return false;
+
+    PROFILE_ADVANCE(scan_snippet_name_bytes, lexer);
+    while (is_ident_char(lexer->lookahead) || lexer->lookahead == '$') {
+        PROFILE_ADVANCE(scan_snippet_name_bytes, lexer);
+    }
+
+    lexer->mark_end(lexer);
+    while (is_space(lexer->lookahead)) PROFILE_ADVANCE(scan_snippet_name_bytes, lexer);
+    if (lexer->lookahead != '}' && lexer->lookahead != 0) return false;
+    lexer->result_symbol = SNIPPET_NAME_NO_PARAMS;
+    PROFILE_COUNT(scan_snippet_name_successes);
+    return true;
+}
+
+static bool scan_snippet_name_missing(TSLexer *lexer) {
+    while (is_space(lexer->lookahead)) PROFILE_SKIP(scan_snippet_name_bytes, lexer);
+    if (lexer->lookahead != '}' && lexer->lookahead != 0) return false;
+    lexer->mark_end(lexer);
+    lexer->result_symbol = SNIPPET_NAME_MISSING;
     return true;
 }
 
@@ -575,13 +668,20 @@ static bool svelte_scan(State *state, TSLexer *lexer, const bool *valid) {
     // Svelte block expression tokens — each valid in exclusive grammar contexts.
     // SNIPPET_NAME must be checked before SNIPPET_TYPE_PARAMS and SNIPPET_PARAMETER
     // because all three can be valid simultaneously (all are optional in the grammar).
-    if (valid[SNIPPET_NAME]) return scan_snippet_name(lexer);
+    if (valid[SNIPPET_NAME] || valid[SNIPPET_NAME_NO_PARAMS] || valid[SNIPPET_NAME_MISSING]) {
+        if (scan_snippet_name(lexer)) return true;
+        if (valid[SNIPPET_NAME_NO_PARAMS] && scan_snippet_name_no_params(lexer)) return true;
+        if (valid[SNIPPET_NAME_MISSING] && scan_snippet_name_missing(lexer)) return true;
+        if (valid[SNIPPET_NAME]) return false;
+    }
+    if (valid[SNIPPET_HEADER_TRAILING]) return scan_snippet_header_trailing(lexer);
     if (valid[SNIPPET_TYPE_PARAMS]) return scan_snippet_type_params(lexer);
     if (valid[SNIPPET_PARAMETER_JS] || valid[SNIPPET_PARAMETER_TS]) return scan_snippet_parameter(state, lexer);
     if (valid[ITERATOR_EXPRESSION_JS] || valid[ITERATOR_EXPRESSION_TS]) return scan_iterator(state, lexer);
     if (valid[BINDING_PATTERN_JS] || valid[BINDING_PATTERN_TS]) return scan_binding(state, lexer);
     if (valid[KEY_EXPRESSION_JS] || valid[KEY_EXPRESSION_TS]) return scan_key(state, lexer);
     if (valid[TAG_EXPRESSION_JS] || valid[TAG_EXPRESSION_TS]) return scan_tag_expression(state, lexer);
+    if (valid[INCOMPLETE_ATTRIBUTE_EXPRESSION]) return scan_incomplete_attribute_expression(lexer);
 
     // Fall through to HTMLX scanner for all other tokens.
     PROFILE_COUNT(htmlx_fallback_calls);

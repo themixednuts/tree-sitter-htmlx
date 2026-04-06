@@ -551,6 +551,31 @@
         },
         {
           "type": "PREC_DYNAMIC",
+          "value": 3,
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "FIELD",
+                "name": "name",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "attribute_name"
+                }
+              },
+              {
+                "type": "FIELD",
+                "name": "tail",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "attribute_expected_equals_tail"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "PREC_DYNAMIC",
           "value": 2,
           "content": {
             "type": "SEQ",
@@ -1195,6 +1220,13 @@
         ]
       }
     },
+    "attribute_expected_equals_tail": {
+      "type": "IMMEDIATE_TOKEN",
+      "content": {
+        "type": "PATTERN",
+        "value": "[\"'][^>\\s]*"
+      }
+    },
     "expression": {
       "type": "SEQ",
       "members": [
@@ -1398,55 +1430,59 @@
       "value": "[a-zA-Z_$][a-zA-Z0-9_$]*"
     },
     "unquoted_attribute_value": {
-      "type": "PREC_RIGHT",
-      "value": 0,
+      "type": "PREC_DYNAMIC",
+      "value": 3,
       "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "ALIAS",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_attribute_value"
+        "type": "PREC_RIGHT",
+        "value": 0,
+        "content": {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_attribute_value"
+              },
+              "named": true,
+              "value": "attribute_value"
             },
-            "named": true,
-            "value": "attribute_value"
-          },
-          {
-            "type": "REPEAT1",
-            "content": {
-              "type": "SEQ",
-              "members": [
-                {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "SYMBOL",
-                    "name": "attribute_expression"
-                  },
-                  "named": true,
-                  "value": "expression"
-                },
-                {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "ALIAS",
-                      "content": {
-                        "type": "SYMBOL",
-                        "name": "_attribute_value"
-                      },
-                      "named": true,
-                      "value": "attribute_value"
+            {
+              "type": "REPEAT1",
+              "content": {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "attribute_expression"
                     },
-                    {
-                      "type": "BLANK"
-                    }
-                  ]
-                }
-              ]
+                    "named": true,
+                    "value": "expression"
+                  },
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "ALIAS",
+                        "content": {
+                          "type": "SYMBOL",
+                          "name": "_attribute_value"
+                        },
+                        "named": true,
+                        "value": "attribute_value"
+                      },
+                      {
+                        "type": "BLANK"
+                      }
+                    ]
+                  }
+                ]
+              }
             }
-          }
-        ]
+          ]
+        }
       }
     },
     "_quoted_attribute_content_single": {

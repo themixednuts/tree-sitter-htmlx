@@ -13,6 +13,16 @@
           }
         ]
       },
+      "tail": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "attribute_expected_equals_tail",
+            "named": true
+          }
+        ]
+      },
       "value": {
         "multiple": false,
         "required": false,
@@ -454,6 +464,10 @@
   },
   {
     "type": "attribute_directive",
+    "named": true
+  },
+  {
+    "type": "attribute_expected_equals_tail",
     "named": true
   },
   {

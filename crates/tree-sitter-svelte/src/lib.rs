@@ -283,7 +283,10 @@ mod tests {
         assert_eq!(end_tag.kind(), "end_tag");
         let end_name = end_tag.child_by_field_name("name");
         assert!(end_name.is_some(), "end_tag should have field 'name'");
-        assert_eq!(&source[end_name.unwrap().start_byte()..end_name.unwrap().end_byte()], "div");
+        assert_eq!(
+            &source[end_name.unwrap().start_byte()..end_name.unwrap().end_byte()],
+            "div"
+        );
     }
 
     #[test]
@@ -300,7 +303,10 @@ mod tests {
 
         let name = self_closing.child_by_field_name("name");
         assert!(name.is_some(), "self_closing_tag should have field 'name'");
-        assert_eq!(&source[name.unwrap().start_byte()..name.unwrap().end_byte()], "Icon");
+        assert_eq!(
+            &source[name.unwrap().start_byte()..name.unwrap().end_byte()],
+            "Icon"
+        );
     }
 
     #[test]
