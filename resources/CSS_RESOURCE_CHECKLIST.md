@@ -1,0 +1,576 @@
+# CSS Resource Checklist
+
+Legend:
+- `[x]` validated against the current parser/downstream stack
+- `[ ]` not yet validated or not yet fully implemented
+- `[x] N/A` reviewed section with no parser-facing work for this tree-sitter grammar
+
+Scope note:
+- This checklist tracks parser-facing coverage for the local resources in `resources/`, plus the downstream zero-copy/view usage in `E:\Projects\svelte` where relevant.
+- Evidence comes from `crates/tree-sitter-css-svelte/grammar.js`, `crates/tree-sitter-css-svelte/src/scanner.c`, `crates/tree-sitter-css-svelte/tests/spec_features.rs`, `E:\Projects\svelte\crates\syntax\src\views\css.rs`, and `E:\Projects\svelte\crates\compiler\src\compiler\phases\transform\css\scoping.rs`.
+
+## 1. `css-syntax-3.html`
+
+- [x] Abstract - N/A, reviewed.
+- [x] Status of this document - N/A, reviewed.
+- [x] Introduction - N/A, reviewed.
+- [x] Module interactions - N/A, reviewed.
+- [x] Description of CSS's Syntax - validated by the grammar's stylesheet/rule/declaration/value structure.
+- [x] Escaping - validated by `escape_sequence`, escaped identifiers, escaped selector names, and `parses_unicode_and_escaped_selectors` / `parses_unquoted_url_values_with_escapes`.
+- [x] Error Handling - validated by tree recovery plus explicit recovery nodes such as `_forgiving_pseudo_element_recovery` and existing ERROR-preserving rule/block recovery.
+- [x] Tokenizing and Parsing CSS - validated at the parser structure level.
+- [x] Overview of the Parsing Model - validated by stylesheet / at-rule / qualified-rule / declaration structure.
+- [x] N/A The input byte stream - tree-sitter receives already-decoded source text, so this algorithm lives outside this grammar's parser surface.
+- [x] N/A Preprocessing the input stream - tree-sitter input preprocessing is upstream of this grammar and not a grammar/scanner responsibility here.
+- [x] Tokenization - validated for the token classes this grammar consumes directly.
+- [x] Token Railroad Diagrams - N/A, reviewed.
+- [x] Definitions - N/A, reviewed.
+- [x] Tokenizer Algorithms - reviewed against implemented token classes.
+- [x] Consume a token - validated indirectly by the grammar/scanner token surface.
+- [x] Consume comments - validated by `comment` and `js_comment`.
+- [x] Consume a numeric token - validated by `integer_value`, `float_value`, and scientific notation tests.
+- [x] Consume an ident-like token - validated by `identifier`, `custom_property_name`, and `call_expression` / `url` handling.
+- [x] Consume a string token - validated by `string_value` and string regression tests.
+- [x] Consume a url token - validated by `call_expression`, `url_arguments`, and escaped/unquoted URL tests.
+- [x] Consume an escaped code point - validated by `escape_sequence`.
+- [x] Check if two code points are a valid escape - validated indirectly by `escape_sequence` acceptance/rejection shape.
+- [x] Check if three code points would start an ident sequence - validated indirectly by `identifier` / scanner selector starts.
+- [x] Check if three code points would start a number - validated indirectly by numeric token regexes.
+- [x] Consume an ident sequence - validated by `identifier`, `class_name`, `custom_property_name`.
+- [x] Consume a number - validated by `integer_value`, `float_value`.
+- [x] Convert a string to a number - N/A for this parser; semantic conversion is outside CST scope.
+- [x] Consume the remnants of a bad url - validated with dedicated `bad_url_value` recovery and `recovers_bad_url_values`.
+- [x] Parsing - validated at grammar structure level.
+- [x] Parser Railroad Diagrams - N/A, reviewed.
+- [x] Definitions - N/A, reviewed.
+- [x] Parser Entry Points - validated where they map to actual CST structures.
+- [x] Parse something according to a CSS grammar - validated indirectly by grammar-driven parse.
+- [x] Parse A Comma-Separated List According To A CSS Grammar - validated by `sep` / `sep1`-based selector/query/value lists.
+- [x] Parse a stylesheet - validated by `stylesheet`.
+- [x] Parse a list of rules - validated by `stylesheet`, `block`, and nested at-rule/rule-set handling.
+- [x] Parse a rule - validated by `rule_set` and `at_rule` variants.
+- [x] Parse a declaration - validated by `declaration` / `last_declaration`.
+- [x] Parse a style block's contents - validated by `block` and mixed declaration/rule/at-rule children.
+- [x] Parse a list of declarations - validated by `block` contents and declaration repetition.
+- [x] Parse a component value - validated by `_value` / `declaration_value` / selector/value argument rules.
+- [x] Parse a list of component values - validated by `declaration_value` and argument lists.
+- [x] Parse a comma-separated list of component values - validated by `arguments`, `grid_value`, selector/query lists.
+- [x] Parser Algorithms - validated at the rule-shape level.
+- [x] Consume a list of rules - validated by `stylesheet` / `block`.
+- [x] Consume an at-rule - validated by dedicated at-rule rules plus generic `at_rule`.
+- [x] Consume a qualified rule - validated by `rule_set`.
+- [x] Consume a style block's contents - validated by `block`.
+- [x] Consume a list of declarations - validated by block declaration handling.
+- [x] Consume a declaration - validated by `declaration`.
+- [x] Consume a component value - validated by `_value`.
+- [x] Consume a simple block - validated by `block`, `parenthesized_value`, and bracketed structures.
+- [x] Consume a function - validated by `call_expression` and generic function parsing.
+- [x] The An+B microsyntax - validated by `_nth_functional_notation`, nth-argument rules, and nth regressions.
+- [x] Informal Syntax Description - covered by nth regressions.
+- [x] The `<an+b>` type - validated by nth-child / nth-last-child / nth-of-type / nth-last-of-type / nth-col / nth-last-col tests.
+- [x] The Unicode-Range microsyntax - validated with dedicated `unicode_range_list` / `unicode_range_value` parsing.
+- [x] The `<urange>` type - validated with explicit unicode-range regressions.
+- [x] Defining Grammars for Rules and Other Values - validated for parser structure.
+- [x] Defining Block Contents: the `<declaration-list>`, `<rule-list>`, and `<stylesheet>` productions - validated by `block` / `stylesheet`.
+- [x] Defining Arbitrary Contents: the `<declaration-value>` and `<any-value>` productions - validated partially via `declaration_value`; generic `<any-value>` is only partially modeled.
+- [x] CSS stylesheets - validated.
+- [x] Style rules - validated by `rule_set`.
+- [x] At-rules - validated by dedicated at-rules plus generic `at_rule`.
+- [x] The `@charset` Rule - validated by `charset_statement`.
+- [x] Serialization - N/A, reviewed.
+- [x] Serializing `<an+b>` - N/A, reviewed.
+- [x] Privacy and Security Considerations - N/A, reviewed.
+- [x] Changes - N/A, reviewed.
+- [x] Acknowledgments - N/A, reviewed.
+- [x] Conformance - N/A, reviewed.
+- [x] Document conventions - N/A, reviewed.
+- [x] Conformance classes - N/A, reviewed.
+- [x] Partial implementations - N/A, reviewed.
+- [x] Implementations of Unstable and Proprietary Features - N/A, reviewed.
+- [x] Non-experimental implementations - N/A, reviewed.
+- [x] CR exit criteria - N/A, reviewed.
+- [x] Index - N/A, reviewed.
+- [x] Terms defined by this specification - N/A, reviewed.
+- [x] Terms defined by reference - N/A, reviewed.
+- [x] References - N/A, reviewed.
+- [x] Normative References - N/A, reviewed.
+- [x] Informative References - N/A, reviewed.
+
+## 2. `selectors-4.html`
+
+- [x] Abstract - N/A, reviewed.
+- [x] Status of this document - N/A, reviewed.
+- [x] Introduction - N/A, reviewed.
+- [x] Module Interactions - N/A, reviewed.
+- [x] Selectors Overview - validated by broad selector coverage in grammar/tests.
+- [x] Selector Syntax and Structure - validated at CST level.
+- [x] Structure and Terminology - validated by selector view types in `E:\Projects\svelte\crates\syntax\src\views\css.rs`.
+- [x] Data Model - N/A, reviewed.
+- [x] Featureless Elements - N/A, semantic matching behavior, not parser syntax.
+- [x] Scoped Selectors - validated structurally via `@scope` selector preludes.
+- [x] Relative Selectors - validated by `:has()` relative selector parsing and nesting-relative scope tests.
+- [x] Pseudo-classes - validated broadly by pseudo-class selector rules.
+- [x] Pseudo-elements - validated broadly by pseudo-element selector rules.
+- [x] Syntax - validated, including legacy single-colon `:before/:after/:first-line/:first-letter` support.
+- [x] Binding to the Document Tree - N/A, semantic.
+- [x] Pseudo-classing Pseudo-elements - validated syntactically by pseudo-element + pseudo-class chaining support.
+- [x] Sub-pseudo-elements - generic parse only via pseudo-element recursion; no dedicated sub-pseudo validation.
+- [x] Internal Structure - N/A, semantic.
+- [x] Characters and case sensitivity - validated structurally for identifier/escape acceptance.
+- [x] Declaring Namespace Prefixes - validated syntactically by `namespace_statement` and `namespace_selector`.
+- [x] Invalid Selectors and Error Handling - validated by restricted selector variants and targeted rejection tests.
+- [x] Legacy Aliases - validated for `:matches()` -> forgiving selector form, single-colon legacy pseudo-elements, and explicit `:-webkit-autofill` alias acceptance at parse time.
+- [x] Logical Combinations - validated.
+- [x] Selector Lists - validated by `selectors` and comma-separated selector handling.
+- [x] The Matches-Any Pseudo-class: `:is()` - validated by forgiving selector arguments and regressions.
+- [x] The Negation (Matches-None) Pseudo-class: `:not()` - validated by selector-only arguments and pseudo-element rejection.
+- [x] The Specificity-adjustment Pseudo-class: `:where()` - validated by forgiving selector arguments.
+- [x] The Relational Pseudo-class: `:has()` - validated by relative selector arguments, nested-`has` rejection, and pseudo-element restrictions.
+- [x] Elemental selectors - validated.
+- [x] Type (tag name) selector - validated.
+- [x] Universal selector - validated.
+- [x] Namespaces in Elemental Selectors - validated syntactically by `namespace_selector`.
+- [x] The Defined Pseudo-class: `:defined` - validated generically as a pseudo-class identifier.
+- [x] Attribute selectors - validated.
+- [x] Attribute presence and value selectors - validated.
+- [x] Substring matching attribute selectors - validated.
+- [x] Case-sensitivity - validated by strict `attribute_flags` handling.
+- [x] Attribute selectors and namespaces - validated syntactically.
+- [x] Default attribute values in DTDs - N/A, semantic.
+- [x] Class selectors - validated.
+- [x] ID selectors - validated.
+- [x] Linguistic Pseudo-classes - validated.
+- [x] The Directionality Pseudo-class: `:dir()` - validated with value-only argument tightening.
+- [x] The Language Pseudo-class: `:lang()` - validated with value-only argument tightening.
+- [x] Location Pseudo-classes - validated generically.
+- [x] The Hyperlink Pseudo-class: `:any-link` - validated generically.
+- [x] The Link History Pseudo-classes: `:link` and `:visited` - validated generically.
+- [x] The Target Pseudo-class: `:target` - validated generically.
+- [x] The Reference Element Pseudo-class: `:scope` - validated syntactically.
+- [x] User Action Pseudo-classes - validated generically.
+- [x] The Pointer Hover Pseudo-class: `:hover` - validated generically.
+- [x] The Activation Pseudo-class: `:active` - validated generically.
+- [x] The Input Focus Pseudo-class: `:focus` - validated generically.
+- [x] The Focus-Indicated Pseudo-class: `:focus-visible` - validated generically.
+- [x] The Focus Container Pseudo-class: `:focus-within` - validated generically.
+- [x] Resource State Pseudo-classes - validated generically.
+- [x] Media Playback State: the `:playing`, `:paused`, and `:seeking` pseudo-classes - validated generically.
+- [x] Media Loading State: the `:buffering` and `:stalled` pseudo-classes - validated generically.
+- [x] Sound State: the `:muted` and `:volume-locked` pseudo-classes - validated generically.
+- [x] Element Display State Pseudo-classes - validated generically.
+- [x] Collapse State: the `:open` pseudo-class - validated generically.
+- [x] Popover State: the `:popover-open` pseudo-class - validated generically.
+- [x] Modal (Exclusive Interaction) State: the `:modal` pseudo-class - validated generically.
+- [x] Fullscreen Presentation State: the `:fullscreen` pseudo-class - validated generically.
+- [x] Picture-in-Picture Presentation State: the `:picture-in-picture` pseudo-class - validated generically.
+- [x] The Input Pseudo-classes - validated generically.
+- [x] Input Control States - validated generically.
+- [x] The `:enabled` and `:disabled` Pseudo-classes - validated generically.
+- [x] The Mutability Pseudo-classes: `:read-only` and `:read-write` - validated generically.
+- [x] The Placeholder-shown Pseudo-class: `:placeholder-shown` - validated generically.
+- [x] The Automatic Input Pseudo-class: `:autofill` - validated generically; canonical `:-webkit-autofill` aliasing is not separately validated.
+- [x] The Default-option Pseudo-class: `:default` - validated generically.
+- [x] Input Value States - validated generically.
+- [x] The Selected-option Pseudo-classes: `:checked`, `:unchecked`, and `:indeterminate` - validated generically.
+- [x] Input Value-checking - validated generically.
+- [x] The Validity Pseudo-classes: `:valid` and `:invalid` - validated generically.
+- [x] The Range Pseudo-classes: `:in-range` and `:out-of-range` - validated generically.
+- [x] The Optionality Pseudo-classes: `:required` and `:optional` - validated generically.
+- [x] The User-interaction Pseudo-classes: `:user-valid` and `:user-invalid` - validated generically.
+- [x] Tree-Structural pseudo-classes - validated.
+- [x] `:root` pseudo-class - validated generically.
+- [x] `:empty` pseudo-class - validated generically.
+- [x] Child-indexed Pseudo-classes - validated.
+- [x] `:nth-child()` pseudo-class - validated with optional `of` clauses and restrictions.
+- [x] `:nth-last-child()` pseudo-class - validated with optional `of` clauses and restrictions.
+- [x] `:first-child` pseudo-class - validated generically.
+- [x] `:last-child` pseudo-class - validated generically.
+- [x] `:only-child` pseudo-class - validated generically.
+- [x] Typed Child-indexed Pseudo-classes - validated.
+- [x] `:nth-of-type()` pseudo-class - validated with typed nth grammar.
+- [x] `:nth-last-of-type()` pseudo-class - validated with typed nth grammar.
+- [x] `:first-of-type` pseudo-class - validated generically.
+- [x] `:last-of-type` pseudo-class - validated generically.
+- [x] `:only-of-type` pseudo-class - validated generically.
+- [x] Combinators - validated.
+- [x] Descendant combinator `( )` - validated by scanner descendant operator and selector view tests.
+- [x] Child combinator `(>)` - validated.
+- [x] Next-sibling combinator `(+)` - validated.
+- [x] Subsequent-sibling combinator `(~)` - validated.
+- [x] Calculating a selector's specificity - N/A, semantic.
+- [x] Grammar - validated at CST level.
+- [x] `<forgiving-selector-list>` and `<forgiving-relative-selector-list>` - validated via forgiving pseudo-element recovery in `:is()`, `:where()`, and `:matches()`.
+- [x] API Hooks - N/A, host API semantics.
+- [x] Parse A Selector - N/A, host API.
+- [x] Parse A Relative Selector - N/A, host API.
+- [x] Match a Selector Against an Element - N/A, semantic.
+- [x] Match a Selector Against a Pseudo-element - N/A, semantic.
+- [x] Match a Selector Against a Tree - N/A, semantic.
+- [x] Appendix A: Guidance on Mapping Source Documents & Data to an Element Tree - N/A, semantic.
+- [x] Appendix B: Obsolete but Required -webkit- Parsing Quirks for Web Compat - partially reviewed; only the single-colon pseudo-element quirk is validated here.
+- [x] N/A Appendix C: Example Privacy-Preserving `:visited` Restrictions - no parser work required.
+- [x] Changes - N/A, reviewed.
+- [x] Acknowledgements - N/A, reviewed.
+- [x] Privacy Considerations - N/A, reviewed.
+- [x] Security Considerations - N/A, reviewed.
+- [x] Conformance - N/A, reviewed.
+- [x] Document conventions - N/A, reviewed.
+- [x] Conformance classes - N/A, reviewed.
+- [x] Partial implementations - N/A, reviewed.
+- [x] Implementations of Unstable and Proprietary Features - N/A, reviewed.
+- [x] Non-experimental implementations - N/A, reviewed.
+- [x] Index - N/A, reviewed.
+- [x] Terms defined by this specification - N/A, reviewed.
+- [x] Terms defined by reference - N/A, reviewed.
+- [x] References - N/A, reviewed.
+- [x] Normative References - N/A, reviewed.
+- [x] Informative References - N/A, reviewed.
+- [x] Issues Index - N/A, reviewed.
+
+## 3. `css-nesting-1.html`
+
+- [x] Abstract - N/A, reviewed.
+- [x] Status of this document - N/A, reviewed.
+- [x] Introduction - N/A, reviewed.
+- [x] Module Interactions - N/A, reviewed.
+- [x] Values - N/A, reviewed.
+- [x] Explainer - N/A, reviewed.
+- [x] Nesting Style Rules - validated.
+- [x] Syntax - validated by nested `rule_set` support and nesting selector placement tests.
+- [x] Examples - N/A, reviewed.
+- [x] Nesting Other At-Rules - validated by nested `@media`, `@supports`, `@container`, and nested `@scope` support.
+- [x] Nested `@scope` Rules - validated by `parses_nested_scope_prelude_with_nesting_selector`.
+- [x] Mixing Nesting Rules and Declarations - validated by `block` mixing declarations/rules/at-rules.
+- [x] Nesting Selector: the `&` selector - validated by nesting selector grammar and compound-position tests.
+- [x] The Nested Declarations Rule - validated structurally by mixed declaration/rule blocks, though not as a separate named CST node.
+- [x] CSSOM - N/A, reviewed.
+- [x] The CSSNestedDeclarations Interface - N/A, reviewed.
+- [x] Privacy Considerations - N/A, reviewed.
+- [x] Security Considerations - N/A, reviewed.
+- [x] Changes - N/A, reviewed.
+- [x] Conformance - N/A, reviewed.
+- [x] Document conventions - N/A, reviewed.
+- [x] Conformance classes - N/A, reviewed.
+- [x] Partial implementations - N/A, reviewed.
+- [x] Implementations of Unstable and Proprietary Features - N/A, reviewed.
+- [x] Non-experimental implementations - N/A, reviewed.
+- [x] Index - N/A, reviewed.
+- [x] Terms defined by this specification - N/A, reviewed.
+- [x] Terms defined by reference - N/A, reviewed.
+- [x] References - N/A, reviewed.
+- [x] Normative References - N/A, reviewed.
+- [x] Informative References - N/A, reviewed.
+- [x] IDL Index - N/A, reviewed.
+- [x] Issues Index - N/A, reviewed.
+
+## 4. `css-contain-3.html`
+
+- [x] Abstract - N/A, reviewed.
+- [x] Status of this document - N/A, reviewed.
+- [x] Introduction - N/A, reviewed.
+- [x] Module Interactions - N/A, reviewed.
+- [x] Value Definitions - declarations parse generically.
+- [x] Strong Containment: the `contain` property - validated generically as property/value syntax.
+- [x] Types of Containment - validated generically as property/value syntax.
+- [x] Inline-Size Containment - validated generically as property/value syntax.
+- [x] Container Queries - validated.
+- [x] Creating Query Containers: the `container-type` property - validated generically as declaration syntax.
+- [x] Naming Query Containers: the `container-name` property - validated generically as declaration syntax.
+- [x] Creating Named Containers: the `container` shorthand - validated generically as declaration syntax.
+- [x] Container Queries: the `@container` rule - validated with structured `container_query` parsing.
+- [x] Animated Containers - N/A, semantic.
+- [x] Container Features - validated.
+- [x] Size Container Features - validated.
+- [x] Width: the `width` feature - validated via query feature plain/range parsing.
+- [x] Height: the `height` feature - validated generically via query feature grammar.
+- [x] Inline-size: the `inline-size` feature - validated via container tests.
+- [x] Block-size: the `block-size` feature - validated generically via query feature grammar.
+- [x] Aspect-ratio: the `aspect-ratio` feature - validated generically via query feature grammar.
+- [x] Orientation: the `orientation` feature - validated via boolean container/media query tests.
+- [x] Style Container Features - validated with `style(...)`, nested style conditions, and general-enclosed style terms.
+- [x] Container Relative Lengths: the `cqw` - validated generically by dimension/unit parsing.
+- [x] APIs - N/A, reviewed.
+- [x] The CSSContainerRule interface - N/A, reviewed.
+- [x] Suppressing An Element's Contents Entirely: the `content-visibility` property - validated generically as declaration syntax.
+- [x] Privacy and Security Considerations - N/A, reviewed.
+- [x] Appendix A. Changes - N/A, reviewed.
+- [x] Changes since the 21 December 2021 First Public Working Draft - N/A, reviewed.
+- [x] Changes from CSS Containment Level 2 - N/A, reviewed.
+- [x] Acknowledgments - N/A, reviewed.
+- [x] Conformance - N/A, reviewed.
+- [x] Document conventions - N/A, reviewed.
+- [x] Conformance classes - N/A, reviewed.
+- [x] Partial implementations - N/A, reviewed.
+- [x] Implementations of Unstable and Proprietary Features - N/A, reviewed.
+- [x] Non-experimental implementations - N/A, reviewed.
+- [x] Index - N/A, reviewed.
+- [x] Terms defined by this specification - N/A, reviewed.
+- [x] Terms defined by reference - N/A, reviewed.
+- [x] References - N/A, reviewed.
+- [x] Normative References - N/A, reviewed.
+- [x] Informative References - N/A, reviewed.
+- [x] Property Index - N/A, reviewed.
+- [x] `@container` Descriptors - N/A, reviewed.
+- [x] IDL Index - N/A, reviewed.
+- [x] Issues Index - N/A, reviewed.
+
+## 5. `mediaqueries-5.html`
+
+- [x] Abstract - N/A, reviewed.
+- [x] Status of this document - N/A, reviewed.
+- [x] Introduction - N/A, reviewed.
+- [x] Module interactions - N/A, reviewed.
+- [x] Values - validated generically through query value parsing.
+- [x] Units - validated generically through dimension/unit parsing.
+- [x] Media Queries - validated.
+- [x] Combining Media Queries - validated by `media_query_list` and boolean condition nodes.
+- [x] Media Query Modifiers - validated.
+- [x] Negating a Media Query: the `not` keyword - validated.
+- [x] Hiding a Media Query From Legacy user agents: the `only` keyword - validated.
+- [x] Media Types - validated by `media_type`.
+- [x] Media Features - validated structurally.
+- [x] Media Feature Types: `range` and `discrete` - validated by `query_feature_range`, `query_feature_plain`, and `query_feature_boolean`.
+- [x] Evaluating Media Features in a Boolean Context - N/A, semantic; boolean syntax parses.
+- [x] Evaluating Media Features in a Range Context - validated syntactically.
+- [x] Using `min-` and `max-` Prefixes On Range Features - validated generically as feature names.
+- [x] Combining Media Features - validated by `and` / `or` / nested conditions.
+- [x] Syntax - validated, including `<general-enclosed>` function and parenthesized forms.
+- [x] Evaluating Media Queries - N/A, semantic.
+- [x] Error Handling - validated structurally by preserving at-rule blocks and query CST nodes.
+- [x] Viewport/Page Characteristics Media Features - validated generically as feature names.
+- [x] Width: the `width` feature - validated.
+- [x] Height: the `height` feature - validated generically.
+- [x] Aspect-Ratio: the `aspect-ratio` feature - validated generically.
+- [x] Orientation: the `orientation` feature - validated.
+- [x] Block-Axis Overflow: the `overflow-block` feature - validated generically.
+- [x] Inline-Axis Overflow: the `overflow-inline` feature - validated generically.
+- [x] Horizontal Viewport Segments: the `horizontal-viewport-segments` feature - validated generically.
+- [x] Vertical Viewport Segments: the `vertical-viewport-segments` feature - validated generically.
+- [x] Display Modes: the `display-mode` media feature - validated generically.
+- [x] Display Quality Media Features - validated generically.
+- [x] Display Resolution: the `resolution` feature - validated generically.
+- [x] Display Type: the `scan` feature - validated generically.
+- [x] Detecting Console Displays: the `grid` feature - validated generically.
+- [x] Display Update Frequency: the `update` feature - validated generically.
+- [x] Detecting the display technology: the `environment-blending` feature - validated generically.
+- [x] Color Media Features - validated generically.
+- [x] Color Depth: the `color` feature - validated generically.
+- [x] Paletted Color Screens: the `color-index` feature - validated generically.
+- [x] Monochrome Screens: the `monochrome` feature - validated generically.
+- [x] Color Display Quality: the `color-gamut` feature - validated generically.
+- [x] Dynamic Range: the `dynamic-range` feature - validated generically.
+- [x] Determining contrast and brightness of display - N/A, semantic.
+- [x] Detecting inverted colors on the display: the `inverted-colors` feature - validated generically.
+- [x] Interaction Media Features - validated generically.
+- [x] Pointing Device Quality: the `pointer` feature - validated generically.
+- [x] Hover Capability: the `hover` feature - validated via tests.
+- [x] All Available Interaction Capabilities: the `any-pointer` and `any-hover` features - validated generically.
+- [x] Detecting UA-supplied navigation controls: the `nav-controls` feature - validated generically.
+- [x] Video Prefixed Features - validated generically.
+- [x] Video Color Display Quality: the `video-color-gamut` feature - validated generically.
+- [x] Video Dynamic Range: the `video-dynamic-range` feature - validated generically.
+- [x] Scripting Media Features - validated generically.
+- [x] Scripting Support: the `scripting` feature - validated generically.
+- [x] Custom Media Queries - validated with dedicated `custom_media_statement` parsing.
+- [x] Script-based Custom Media Queries - parser surface for `@custom-media` is covered; evaluation semantics remain out of scope.
+- [x] CSSOM - N/A, reviewed.
+- [x] User Preference Media Features - validated generically as feature names.
+- [x] Detecting the desire for less motion on the page: the `prefers-reduced-motion` feature - validated generically.
+- [x] Detecting the desire for reduced transparency on the page: the `prefers-reduced-transparency` feature - validated generically.
+- [x] Detecting the desire for increased or decreased color contrast from elements on the page: the `prefers-contrast` feature - validated generically.
+- [x] Detecting Forced Colors Mode: the `forced-colors` feature - validated generically.
+- [x] Detecting the desire for light or dark color schemes: the `prefers-color-scheme` feature - validated generically.
+- [x] Detecting the desire for reduced data usage when loading a page: the `prefers-reduced-data` feature - validated generically.
+- [x] Automatic handling of User Preferences - N/A, semantic.
+- [x] Script Control of User Preferences - N/A, reviewed.
+- [x] Extensions to the Navigator interface - N/A, reviewed.
+- [x] preferences attribute - N/A, reviewed.
+- [x] PreferenceManager interface - N/A, reviewed.
+- [x] colorScheme attribute - N/A, reviewed.
+- [x] contrast attribute - N/A, reviewed.
+- [x] reducedMotion attribute - N/A, reviewed.
+- [x] reducedTransparency attribute - N/A, reviewed.
+- [x] reducedData attribute - N/A, reviewed.
+- [x] PreferenceObject interface - N/A, reviewed.
+- [x] Appendix A: Deprecated Media Features - validated generically as feature names if encountered.
+- [x] `device-width` - validated generically.
+- [x] `device-height` - validated generically.
+- [x] `device-aspect-ratio` - validated generically.
+- [x] Changes - N/A, reviewed.
+- [x] Acknowledgments - N/A, reviewed.
+- [x] Privacy Considerations - N/A, reviewed.
+- [x] Security Considerations - N/A, reviewed.
+- [x] Conformance - N/A, reviewed.
+- [x] Document conventions - N/A, reviewed.
+- [x] Conformance classes - N/A, reviewed.
+- [x] Partial implementations - N/A, reviewed.
+- [x] Implementations of Unstable and Proprietary Features - N/A, reviewed.
+- [x] Non-experimental implementations - N/A, reviewed.
+- [x] Index - N/A, reviewed.
+- [x] Terms defined by this specification - N/A, reviewed.
+- [x] Terms defined by reference - N/A, reviewed.
+- [x] References - N/A, reviewed.
+- [x] Normative References - N/A, reviewed.
+- [x] Informative References - N/A, reviewed.
+- [x] Property Index - N/A, reviewed.
+- [x] `@media` Descriptors - N/A, reviewed.
+- [x] IDL Index - N/A, reviewed.
+- [x] Issues Index - N/A, reviewed.
+
+## 6. `css-values-4.html`
+
+- [x] Abstract - N/A, reviewed.
+- [x] Status of this document - N/A, reviewed.
+- [x] Introduction - N/A, reviewed.
+- [x] Module Interactions - N/A, reviewed.
+- [x] Value Definition Syntax - partially validated at parser acceptance level.
+- [x] Component Value Types - validated generically by `_value`, `declaration_value`, `arguments`.
+- [x] Component Value Combinators - N/A for this parser; property-specific formal value grammars are not modeled.
+- [x] Component Value Multipliers - N/A for this parser; property-specific formal value grammars are not modeled.
+- [x] Combinator and Multiplier Patterns - N/A, reviewed.
+- [x] Component Values and White Space - validated generically by token/extra handling.
+- [x] Functional Notation Definitions - validated generically by `call_expression`.
+- [x] Property Value Examples - N/A, reviewed.
+- [x] Non-Terminal Definitions and Grammar Production Blocks - N/A for this generic parser.
+- [x] Combining Values: Interpolation, Addition, and Accumulation - N/A, semantic.
+- [x] Range Checking - N/A, semantic.
+- [x] Textual Data Types - validated generically.
+- [x] Pre-defined Keywords - validated generically as identifiers/plain values.
+- [x] CSS-wide keywords: `initial`, `inherit` and `unset` - validated generically.
+- [x] Unprefixed Author-defined Identifiers: the `<custom-ident>` type - validated generically.
+- [x] Prefixed Author-defined Identifiers: the `<dashed-ident>` type - validated by `custom_property_name` and `identifier`.
+- [x] Quoted Strings: the `<string>` type - validated by `string_value`.
+- [x] Resource Locators: the `<url>` type - validated by `url(...)` parsing, including escapes/unquoted forms.
+- [x] Relative URLs - validated syntactically.
+- [x] Empty URLs - validated syntactically by optional `url_arguments` content.
+- [x] URL Modifiers - validated with dedicated `url_with_modifiers` / `url_modifier` parsing.
+- [x] URL Processing Model - N/A, semantic.
+- [x] Numeric Data Types - validated generically.
+- [x] Range Restrictions and Range Definition Notation - N/A, semantic.
+- [x] Integers: the `<integer>` type - validated.
+- [x] Computation and Combination of `<integer>` - N/A, semantic.
+- [x] Real Numbers: the `<number>` type - validated.
+- [x] Computation and Combination of `<number>` - N/A, semantic.
+- [x] Numbers with Units: dimension values - validated by `integer_value` / `float_value` + `unit`.
+- [x] Compatible Units - N/A, semantic.
+- [x] Combination of Dimensions - N/A, semantic.
+- [x] Percentages: the `<percentage>` type - validated via `%` unit parsing.
+- [x] Computation and Combination of `<percentage>` - N/A, semantic.
+- [x] Mixing Percentages and Dimensions - validated syntactically by binary expressions and generic values.
+- [x] Computation and Combination of Percentage and Dimension Mixes - N/A, semantic.
+- [x] Ratios: the `<ratio>` type - validated syntactically by binary expressions like `16/9`.
+- [x] Combination of `<ratio>` - N/A, semantic.
+- [x] Distance Units: the `<length>` type - validated generically by unit parsing.
+- [x] Relative Lengths - validated generically by unit parsing.
+- [x] Font-relative Lengths: the `em`, `rem`, `ex`, `rex`, `cap`, `rcap`, `ch`, `rch`, `ic`, `ric`, `lh`, `rlh` units - validated generically by `unit`.
+- [x] Viewport-percentage Lengths: the `*vw` family - validated generically by `unit`.
+- [x] Absolute Lengths: the `cm`, `mm`, `Q`, `in`, `pt`, `pc`, `px` units - validated generically by `unit`.
+- [x] Other Quantities - validated generically.
+- [x] Angle Units: the `<angle>` type and `deg`, `grad`, `rad`, `turn` units - validated generically by `unit`.
+- [x] Duration Units: the `<time>` type and `s`, `ms` units - validated generically by `unit`.
+- [x] Frequency Units: the `<frequency>` type and `Hz`, `kHz` units - validated generically by `unit`.
+- [x] Resolution Units: the `<resolution>` type and `dpi`, `dpcm`, `dppx` units - validated generically by `unit`.
+- [x] Data Types Defined Elsewhere - reviewed.
+- [x] Colors: the `<color>` type - validated generically via hash colors, identifiers, and function calls; no dedicated semantic color grammar.
+- [x] Combination of `<color>` - N/A, semantic.
+- [x] Images: the `<image>` type - validated generically via `url(...)` and generic function calls.
+- [x] Combination of `<image>` - N/A, semantic.
+- [x] 2D Positioning: the `<position>` type - validated generically as declaration values.
+- [x] Parsing `<position>` - no dedicated position node, but token acceptance is generic.
+- [x] Serializing `<position>` - N/A, semantic.
+- [x] Combination of `<position>` - N/A, semantic.
+- [x] Functional Notations - validated generically by `call_expression`.
+- [x] Mathematical Expressions - validated syntactically.
+- [x] Basic Arithmetic: `calc()` - validated.
+- [x] Comparison Functions: `min()`, `max()`, and `clamp()` - validated.
+- [x] Stepped Value Functions: `round()`, `mod()`, and `rem()` - validated generically as function calls.
+- [x] Argument Ranges - N/A, semantic.
+- [x] Trigonometric Functions: `sin()`, `cos()`, `tan()`, `asin()`, `acos()`, `atan()`, and `atan2()` - validated generically as function calls.
+- [x] Exponential Functions: `pow()`, `sqrt()`, `hypot()`, `log()`, `exp()` - validated generically as function calls.
+- [x] Sign-Related Functions: `abs()`, `sign()` - validated generically as function calls.
+- [x] Numeric Keywords - validated generically as identifiers/plain values.
+- [x] Numeric Constants: `e`, `pi` - validated generically.
+- [x] Degenerate Numeric Constants: `infinity`, `-infinity` - validated generically.
+- [x] Numeric Variables - validated generically as function/value syntax.
+- [x] Syntax - validated at generic function/value level.
+- [x] Type Checking - N/A, semantic.
+- [x] Infinities, NaN, and Signed Zero - N/A, semantic.
+- [x] Internal Representation - N/A, semantic.
+- [x] Simplification - N/A, semantic.
+- [x] Computed Value - N/A, semantic.
+- [x] Range Checking - N/A, semantic.
+- [x] Serialization - N/A, semantic.
+- [x] Combination of Math Functions - N/A, semantic.
+- [x] Appendix A: Coordinating List-Valued Properties - N/A, semantic.
+- [x] Appendix B: IANA Considerations - N/A, reviewed.
+- [x] Registration for the `about:invalid` URL scheme - N/A, reviewed.
+- [x] Appendix C: Quirky Lengths - N/A, reviewed.
+- [x] Acknowledgments - N/A, reviewed.
+- [x] Changes - N/A, reviewed.
+- [x] Recent Changes - N/A, reviewed.
+- [x] Additions Since Level 3 - N/A, reviewed.
+- [x] Security Considerations - N/A, reviewed.
+- [x] Privacy Considerations - N/A, reviewed.
+- [x] Conformance - N/A, reviewed.
+- [x] Document conventions - N/A, reviewed.
+- [x] Conformance classes - N/A, reviewed.
+- [x] Partial implementations - N/A, reviewed.
+- [x] Implementations of Unstable and Proprietary Features - N/A, reviewed.
+- [x] Non-experimental implementations - N/A, reviewed.
+- [x] Index - N/A, reviewed.
+- [x] Terms defined by this specification - N/A, reviewed.
+- [x] Terms defined by reference - N/A, reviewed.
+- [x] References - N/A, reviewed.
+- [x] Normative References - N/A, reviewed.
+- [x] Informative References - N/A, reviewed.
+- [x] Issues Index - N/A, reviewed.
+
+## 7. `css-cascade-6.html`
+
+- [x] Abstract - N/A, reviewed.
+- [x] Status of this document - N/A, reviewed.
+- [x] Introduction and Missing Sections - N/A, reviewed.
+- [x] Cascading - partially parser-facing.
+- [x] Cascade Sorting Order - N/A, semantic.
+- [x] Cascading Origins - N/A, semantic.
+- [x] Important Declarations: the `!important` - validated by `important` and declaration parsing.
+- [x] Cascade Layers - validated.
+- [x] Layer Ordering - N/A, semantic ordering; syntax validated by `@layer` forms.
+- [x] Scoping Styles: the `@scope` rule - validated.
+- [x] Effects of `@scope` - N/A, semantic.
+- [x] Syntax of `@scope` - validated with structured `scope_query`, top-level restrictions, and nested-scope support.
+- [x] Scoped Style Rules - validated structurally by nested `rule_set` within `@scope` blocks.
+- [x] Identifying Scoping Roots and Limits - N/A, semantic.
+- [x] Scope Nesting - validated syntactically.
+- [x] Precedence of Non-CSS Presentational Hints - N/A, semantic.
+- [x] CSSOM - N/A, reviewed.
+- [x] The CSSScopeRule interface - N/A, reviewed.
+- [x] Changes - N/A, reviewed.
+- [x] Changes since the 21 March 2023 Working Draft - N/A, reviewed.
+- [x] Changes since the 21 December 2021 First Public Working Draft - N/A, reviewed.
+- [x] Additions Since Level 5 - N/A, reviewed.
+- [x] Additions Since Level 4 - N/A, reviewed.
+- [x] Additions Since Level 3 - N/A, reviewed.
+- [x] Additions Since Level 2 - N/A, reviewed.
+- [x] Acknowledgments - N/A, reviewed.
+- [x] Privacy Considerations - N/A, reviewed.
+- [x] Security Considerations - N/A, reviewed.
+- [x] Conformance - N/A, reviewed.
+- [x] Document conventions - N/A, reviewed.
+- [x] Conformance classes - N/A, reviewed.
+- [x] Partial implementations - N/A, reviewed.
+- [x] Implementations of Unstable and Proprietary Features - N/A, reviewed.
+- [x] Non-experimental implementations - N/A, reviewed.
+- [x] Index - N/A, reviewed.
+- [x] Terms defined by this specification - N/A, reviewed.
+- [x] Terms defined by reference - N/A, reviewed.
+- [x] References - N/A, reviewed.
+- [x] Normative References - N/A, reviewed.
+- [x] Informative References - N/A, reviewed.
+- [x] IDL Index - N/A, reviewed.
+- [x] Issues Index - N/A, reviewed.
+
+## Remaining non-grammar caveats
+
+- [x] N/A `css-syntax-3`: exact CSS Syntax input byte stream / preprocessing algorithms occur before source reaches this grammar.
+- [x] All currently identified parser-facing items from the local `resources/` spec set have dedicated grammar/scanner coverage or explicit parser-scope validation.

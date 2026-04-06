@@ -1,0 +1,28 @@
+[package]
+name = "tree-sitter-css-svelte"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Extended CSS grammar for the Svelte toolchain"
+repository = "https://github.com/themixednuts/tree-sitter-htmlx"
+build = "build.rs"
+include = [
+  "src/**",
+  "queries/**",
+  "grammar.js",
+  "tree-sitter.json",
+  "build.rs",
+  "Cargo.toml",
+  "README*",
+  "LICENSE*",
+]
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+tree-sitter = { workspace = true }
+tree-sitter-language = { workspace = true }
+
+[build-dependencies]
+cc = { workspace = true }

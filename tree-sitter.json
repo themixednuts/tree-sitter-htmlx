@@ -39,12 +39,22 @@
         "queries/highlights.scm"
       ],
       "injections": ["queries/htmlx/injections.scm", "queries/injections.scm"]
+    },
+    {
+      "name": "css",
+      "camelcase": "CSS",
+      "scope": "source.css",
+      "path": "crates/tree-sitter-css-svelte",
+      "external-files": ["src/scanner.c"],
+      "file-types": ["css"],
+      "injection-regex": "^css$",
+      "highlights": "queries/highlights.scm"
     }
   ],
   "metadata": {
     "version": "0.1.6",
     "license": "MIT",
-    "description": "Tree-sitter grammars for HTML, HTMLX, and Svelte",
+    "description": "Tree-sitter grammars for HTML, HTMLX, Svelte, and CSS",
     "authors": [
       {
         "name": "mixednuts"
