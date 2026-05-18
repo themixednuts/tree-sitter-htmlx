@@ -78,6 +78,24 @@ fn test_component_spread_props() {
 }
 
 #[test]
+fn test_element_attributes_after_indented_blank_line_with_child_component() {
+    assert_eq!(
+        parse(concat!(
+            "<button\n",
+            "      \n",
+            "        type=\"button\"\n",
+            "        class=\"x\"\n",
+            "        onclick={onSignOut}\n",
+            "      >\n",
+            "        <LogOut size={12} />\n",
+            "        Sign out\n",
+            "      </button>"
+        )),
+        r#"(document (element (start_tag name: (tag_name) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value))) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value))) (attribute name: (attribute_name) value: (expression content: (js)))) (text) (element (self_closing_tag name: (tag_name) (attribute name: (attribute_name) value: (expression content: (js))))) (text) (end_tag name: (tag_name))))"#
+    );
+}
+
+#[test]
 fn test_component_multiple_props() {
     assert_eq!(
         parse(r#"<Component a="1" b={2} {c} {...d} />"#),

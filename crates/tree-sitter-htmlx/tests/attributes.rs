@@ -32,6 +32,14 @@ fn test_multiline_attribute_css_custom_property_name() {
 }
 
 #[test]
+fn test_multiline_attributes_after_indented_blank_line() {
+    assert_eq!(
+        parse("<button\n      \n        type=\"button\"\n        class=\"x\"\n      ></button>"),
+        r#"(document (element (start_tag name: (tag_name) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value))) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value)))) (end_tag name: (tag_name))))"#
+    );
+}
+
+#[test]
 fn test_attribute_expression_value() {
     assert_eq!(
         parse("<input value={text} />"),

@@ -806,16 +806,24 @@ static bool scan_unterminated_tag_end(State *state, TSLexer *lexer, const bool *
 
     if (lexer->lookahead != '\n' && lexer->lookahead != '\r') return false;
 
-    skip(lexer);
-    if (lexer->lookahead == '\n') {
-        skip(lexer);
-    }
+    do {
+        if (lexer->lookahead == '\r') {
+            skip(lexer);
+            if (lexer->lookahead == '\n') {
+                skip(lexer);
+            }
+        } else if (lexer->lookahead == '\n') {
+            skip(lexer);
+        } else {
+            break;
+        }
 
-    while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
-        skip(lexer);
-    }
+        while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
+            skip(lexer);
+        }
+    } while (lexer->lookahead == '\n' || lexer->lookahead == '\r');
 
-    // Boundary token spans newline + indentation only.
+    // Boundary token spans only line breaks and indentation.
     lexer->mark_end(lexer);
 
     int32_t next = lexer->lookahead;
