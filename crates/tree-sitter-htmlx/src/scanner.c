@@ -78,7 +78,11 @@ static inline bool is_alnum(int32_t c) {
 }
 
 static inline bool is_space(int32_t c) {
-    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v';
+}
+
+static inline bool is_horizontal_space(int32_t c) {
+    return c == ' ' || c == '\t' || c == '\f' || c == '\v';
 }
 
 static inline bool is_name_char(int32_t c) {
@@ -633,7 +637,7 @@ done:
 
 static bool check_ts_lang_attr(TSLexer *lexer) {
     // Skip horizontal whitespace only; do not consume newlines here.
-    while (lexer->lookahead == ' ' || lexer->lookahead == '\t') skip(lexer);
+    while (is_horizontal_space(lexer->lookahead)) skip(lexer);
 
     // Quick check: if first char isn't 'l', this isn't lang=
     // Return early WITHOUT consuming input.
@@ -818,7 +822,7 @@ static bool scan_unterminated_tag_end(State *state, TSLexer *lexer, const bool *
             break;
         }
 
-        while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
+        while (is_horizontal_space(lexer->lookahead)) {
             skip(lexer);
         }
     } while (lexer->lookahead == '\n' || lexer->lookahead == '\r');
@@ -834,7 +838,7 @@ static bool scan_unterminated_tag_end(State *state, TSLexer *lexer, const bool *
         // multiline shorthand/spread attributes and Svelte attach tags.
         advance(lexer);
         int32_t marker = lexer->lookahead;
-        while (marker == ' ' || marker == '\t') {
+        while (is_horizontal_space(marker)) {
             advance(lexer);
             marker = lexer->lookahead;
         }
@@ -925,7 +929,7 @@ static bool scan_block_boundary(State *state, TSLexer *lexer) {
             (len == 7 && kind[0] == 's' && kind[1] == 'n' && kind[2] == 'i' && kind[3] == 'p' && kind[4] == 'p' && kind[5] == 'e' && kind[6] == 't');
         if (!is_block_kind) return false;
 
-        while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
+        while (is_horizontal_space(lexer->lookahead)) {
             advance(lexer);
         }
 

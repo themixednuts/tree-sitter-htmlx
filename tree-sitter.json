@@ -52,7 +52,7 @@
     }
   ],
   "metadata": {
-    "version": "0.1.11",
+    "version": "0.1.12",
     "license": "MIT",
     "description": "Tree-sitter grammars for HTML, HTMLX, Svelte, and CSS",
     "authors": [

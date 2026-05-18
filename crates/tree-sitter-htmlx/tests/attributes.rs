@@ -32,11 +32,27 @@ fn test_multiline_attribute_css_custom_property_name() {
 }
 
 #[test]
-fn test_multiline_attributes_after_indented_blank_line() {
-    assert_eq!(
-        parse("<button\n      \n        type=\"button\"\n        class=\"x\"\n      ></button>"),
-        r#"(document (element (start_tag name: (tag_name) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value))) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value)))) (end_tag name: (tag_name))))"#
-    );
+fn test_multiline_attributes_after_blank_line_whitespace_matrix() {
+    let cases = [
+        ("lf_spaces", "\n      \n"),
+        ("lf_tabs", "\n\t\t\n"),
+        ("lf_mixed", "\n \t  \t\n"),
+        ("lf_multiple_blank_lines", "\n      \n\t\t\n   \n"),
+        ("crlf_spaces", "\r\n      \r\n"),
+        ("crlf_tabs", "\r\n\t\t\r\n"),
+        ("cr_only_spaces", "\r      \r"),
+        ("space_before_lf_spaces", "    \n      \n"),
+        ("form_feed", "\n\x0c\n"),
+        ("vertical_tab", "\n\x0b\n"),
+    ];
+
+    let expected = r#"(document (element (start_tag name: (tag_name) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value))) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value)))) (end_tag name: (tag_name))))"#;
+
+    for (name, gap) in cases {
+        let source =
+            format!("<button{gap}        type=\"button\"\n        class=\"x\"\n      ></button>");
+        assert_eq!(parse(&source), expected, "{name}");
+    }
 }
 
 #[test]
