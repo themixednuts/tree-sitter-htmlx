@@ -8,12 +8,12 @@
       "external-files": ["src/html/tag.h", "src/html/scanner.c"],
       "file-types": ["htmlx"],
       "injection-regex": "^htmlx$",
-      "highlights": ["queries/html/highlights.scm", "queries/highlights.scm"],
+      "highlights": "queries/highlights.scm",
       "injections": "queries/injections.scm"
     }
   ],
   "metadata": {
-    "version": "0.1.6",
+    "version": "0.1.10",
     "license": "MIT",
     "description": "HTMLX grammar for tree-sitter (expression-enhanced HTML)",
     "authors": [

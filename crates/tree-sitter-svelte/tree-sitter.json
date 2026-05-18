@@ -12,16 +12,12 @@
       ],
       "file-types": ["svelte"],
       "injection-regex": "^svelte$",
-      "highlights": [
-        "queries/htmlx/html/highlights.scm",
-        "queries/htmlx/highlights.scm",
-        "queries/highlights.scm"
-      ],
+      "highlights": "queries/highlights.scm",
       "injections": ["queries/htmlx/injections.scm", "queries/injections.scm"]
     }
   ],
   "metadata": {
-    "version": "0.1.6",
+    "version": "0.1.10",
     "license": "MIT",
     "description": "Svelte 5 grammar for tree-sitter",
     "authors": [

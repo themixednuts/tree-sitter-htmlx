@@ -44,6 +44,9 @@ pub fn language() -> tree_sitter::Language {
 /// The syntax highlighting query for HTMLX.
 pub const HIGHLIGHTS_QUERY: &str = include_str!("../queries/highlights.scm");
 
+/// The injection query for HTMLX.
+pub const INJECTIONS_QUERY: &str = include_str!("../queries/injections.scm");
+
 /// The content of the [`node-types.json`] file for HTMLX.
 pub const NODE_TYPES: &str = include_str!("../src/node-types.json");
 
@@ -135,5 +138,20 @@ mod tests {
         let tree = parser.parse(source, None).unwrap();
 
         assert!(!tree.root_node().has_error());
+    }
+
+    #[test]
+    fn test_highlights_query_includes_html_captures() {
+        let language = language();
+        let query = tree_sitter::Query::new(&language, HIGHLIGHTS_QUERY)
+            .expect("HTMLX highlights query should compile");
+        let captures = query.capture_names();
+
+        for capture in ["tag", "attribute", "string", "punctuation.bracket"] {
+            assert!(
+                captures.iter().any(|name| *name == capture),
+                "missing @{capture} from HTMLX highlights query"
+            );
+        }
     }
 }
