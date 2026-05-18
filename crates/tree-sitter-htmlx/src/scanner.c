@@ -77,12 +77,19 @@ static inline bool is_alnum(int32_t c) {
     return is_alpha(c) || is_digit(c);
 }
 
-static inline bool is_space(int32_t c) {
-    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v';
+static inline bool is_line_break(int32_t c) {
+    return c == '\n' || c == '\r' || c == 0x0085 || c == 0x2028 || c == 0x2029;
 }
 
 static inline bool is_horizontal_space(int32_t c) {
-    return c == ' ' || c == '\t' || c == '\f' || c == '\v';
+    return c == ' ' || c == '\t' || c == '\f' || c == '\v' ||
+           c == 0x00A0 || c == 0x1680 ||
+           (c >= 0x2000 && c <= 0x200B) ||
+           c == 0x202F || c == 0x205F || c == 0x3000 || c == 0xFEFF;
+}
+
+static inline bool is_space(int32_t c) {
+    return is_line_break(c) || is_horizontal_space(c);
 }
 
 static inline bool is_name_char(int32_t c) {
@@ -808,7 +815,7 @@ static bool scan_unterminated_tag_end(State *state, TSLexer *lexer, const bool *
         return true;
     }
 
-    if (lexer->lookahead != '\n' && lexer->lookahead != '\r') return false;
+    if (!is_line_break(lexer->lookahead)) return false;
 
     do {
         if (lexer->lookahead == '\r') {
@@ -816,7 +823,7 @@ static bool scan_unterminated_tag_end(State *state, TSLexer *lexer, const bool *
             if (lexer->lookahead == '\n') {
                 skip(lexer);
             }
-        } else if (lexer->lookahead == '\n') {
+        } else if (is_line_break(lexer->lookahead)) {
             skip(lexer);
         } else {
             break;
@@ -825,7 +832,7 @@ static bool scan_unterminated_tag_end(State *state, TSLexer *lexer, const bool *
         while (is_horizontal_space(lexer->lookahead)) {
             skip(lexer);
         }
-    } while (lexer->lookahead == '\n' || lexer->lookahead == '\r');
+    } while (is_line_break(lexer->lookahead));
 
     // Boundary token spans only line breaks and indentation.
     lexer->mark_end(lexer);

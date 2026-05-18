@@ -331,7 +331,7 @@ fn test_unterminated_tag_breaks_before_block_branches() {
 fn test_if_block_missing_right_brace_recovers_typed_block_start() {
     assert_eq!(
         parse("{#if visible <p>ok</p>{/if}"),
-        "(document (if_block (block_open) expression: (expression content: (js)) (MISSING block_close) (element (start_tag name: (tag_name)) (text) (end_tag name: (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
+        "(document (if_block (block_open) expression: (expression content: (js)) (MISSING block_close) (text) (element (start_tag name: (tag_name)) (text) (end_tag name: (tag_name))) (block_end (block_open) (block_keyword) (block_close))))"
     );
 }
 

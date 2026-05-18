@@ -224,7 +224,7 @@ module.exports = grammar(HTML, {
         ),
       ),
 
-    attribute_expected_equals_tail: (_) => token.immediate(/["'][^>\s]*/),
+    attribute_expected_equals_tail: (_) => token.immediate(/["'][^>\s\u0085\u00a0\u1680\u2000-\u200b\u2028\u2029\u202f\u205f\u3000\ufeff]*/),
 
     attribute_name: ($) =>
       choice(
@@ -234,7 +234,7 @@ module.exports = grammar(HTML, {
         $._pipe_attribute_name,
         // Exclude '.', '|', '(' and ')' from the start to avoid conflicts with dotted
         // component properties, directive modifiers, and malformed expression tails
-        /[^<>{}\"':\\/=\s|.()][^<>{}\"':\\/=\s|()]*/,
+        /[^<>{}\"':\\/=\s\u0085\u00a0\u1680\u2000-\u200b\u2028\u2029\u202f\u205f\u3000\ufeff|.()][^<>{}\"':\\/=\s\u0085\u00a0\u1680\u2000-\u200b\u2028\u2029\u202f\u205f\u3000\ufeff|()]*/,
       ),
 
     expression: ($) =>
@@ -262,7 +262,7 @@ module.exports = grammar(HTML, {
     // delimiters and then splits modifiers with `|`.
     // Keep identifier permissive so names like `--color` and `$store.action`
     // are parsed in CST and validated later in semantic phases.
-    attribute_identifier: ($) => /[^<>{}"'\\\/=\s|]+/,
+    attribute_identifier: ($) => /[^<>{}"'\\\/=\s\u0085\u00a0\u1680\u2000-\u200b\u2028\u2029\u202f\u205f\u3000\ufeff|]+/,
     attribute_modifiers: ($) => repeat1(seq("|", $.attribute_modifier)),
     attribute_modifier: ($) => /[a-zA-Z_$][a-zA-Z0-9_$]*/,
 

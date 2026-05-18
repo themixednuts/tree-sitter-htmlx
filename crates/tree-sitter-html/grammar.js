@@ -19,12 +19,14 @@
 /// <reference types="tree-sitter-cli/dsl" />
 // @ts-check
 
+const WHITESPACE = /[\s\u0085\u00a0\u1680\u2000-\u200b\u2028\u2029\u202f\u205f\u3000\ufeff]+/;
+
 module.exports = grammar({
   name: 'html',
 
   extras: $ => [
     $.comment,
-    /\s+/,
+    WHITESPACE,
   ],
 
   externals: $ => [
@@ -136,10 +138,10 @@ module.exports = grammar({
     ),
 
     // Attribute names: any character except whitespace, quotes, =, <, >, /
-    attribute_name: _ => /[^<>"'/=\s]+/,
+    attribute_name: _ => /[^<>"'/=\s\u0085\u00a0\u1680\u2000-\u200b\u2028\u2029\u202f\u205f\u3000\ufeff]+/,
 
     // Unquoted attribute values: any character except whitespace, quotes, =, <, >, `
-    attribute_value: _ => /[^<>"'=\s`]+/,
+    attribute_value: _ => /[^<>"'=\s\u0085\u00a0\u1680\u2000-\u200b\u2028\u2029\u202f\u205f\u3000\ufeff`]+/,
 
     // Quoted attribute values
     quoted_attribute_value: $ => choice(

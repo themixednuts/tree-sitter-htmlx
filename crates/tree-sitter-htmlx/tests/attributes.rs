@@ -44,6 +44,12 @@ fn test_multiline_attributes_after_blank_line_whitespace_matrix() {
         ("space_before_lf_spaces", "    \n      \n"),
         ("form_feed", "\n\x0c\n"),
         ("vertical_tab", "\n\x0b\n"),
+        ("nbsp_around_lf", "\u{00A0}\n\u{00A0}\n"),
+        ("unicode_line_separator_tabs", "\u{2028}\t\t\u{2028}"),
+        ("unicode_paragraph_separator_tabs", "\u{2029}\t\t\u{2029}"),
+        ("unicode_next_line_tabs", "\u{0085}\t\t\u{0085}"),
+        ("zero_width_space_around_lf", "\u{200B}\n\u{200B}\n"),
+        ("bom_around_lf", "\u{FEFF}\n\u{FEFF}\n"),
     ];
 
     let expected = r#"(document (element (start_tag name: (tag_name) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value))) (attribute name: (attribute_name) value: (quoted_attribute_value (attribute_value)))) (end_tag name: (tag_name))))"#;

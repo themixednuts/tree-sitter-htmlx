@@ -79,15 +79,20 @@ static ALWAYS_INLINE bool is_ascii_alpha(int32_t c) {
   return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
 }
 
-static ALWAYS_INLINE bool is_ascii_space(int32_t c) {
-  // HTML ASCII whitespace: space, tab, LF, FF, CR
-  return c == ' ' || c == '\t' || c == '\n' || c == '\f' || c == '\r';
+static ALWAYS_INLINE bool is_html_space(int32_t c) {
+  // Accept HTML ASCII whitespace plus common Unicode/invisible separators so
+  // hidden editor whitespace cannot be absorbed into tag names.
+  return c == ' ' || c == '\t' || c == '\n' || c == '\f' || c == '\r' ||
+         c == '\v' || c == 0x0085 || c == 0x00A0 || c == 0x1680 ||
+         (c >= 0x2000 && c <= 0x200B) ||
+         c == 0x2028 || c == 0x2029 || c == 0x202F ||
+         c == 0x205F || c == 0x3000 || c == 0xFEFF;
 }
 
 static ALWAYS_INLINE bool is_tag_name_char(int32_t c) {
   // Mirror the source parser: capture the whole tag token until a tag-name
   // terminator, then validate the resulting name later.
-  return c != 0 && !is_ascii_space(c) && c != '/' && c != '>';
+  return c != 0 && !is_html_space(c) && c != '/' && c != '>';
 }
 
 static ALWAYS_INLINE char to_ascii_upper(int32_t c) {
@@ -574,7 +579,7 @@ static bool scan(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
   }
 
   // Skip whitespace (only when not in text content context)
-  while (is_ascii_space(lexer->lookahead)) {
+  while (is_html_space(lexer->lookahead)) {
     skip(lexer);
   }
 
