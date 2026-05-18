@@ -565,30 +565,17 @@ module.exports = grammar({
       ),
     ),
 
-    media_condition: ($) => choice(
-      $.media_not,
-      $.media_and_condition,
-      $.media_or_condition,
-      $.media_condition_term,
-    ),
+    media_condition: ($) =>
+      condition($.media_not, $.media_and_condition, $.media_or_condition, $.media_condition_term),
 
-    media_condition_without_or: ($) => choice(
-      $.media_not,
-      prec(1, $.media_and_condition),
-      $.media_condition_term,
-    ),
+    media_condition_without_or: ($) =>
+      conditionWithoutOr($.media_not, $.media_and_condition, $.media_condition_term),
 
-    media_not: ($) => seq("not", $.media_condition_term),
+    media_not: ($) => notCondition($.media_condition_term),
 
-    media_and_condition: ($) => prec.left(2, seq(
-      $.media_condition_term,
-      repeat1(seq("and", $.media_condition_term)),
-    )),
+    media_and_condition: ($) => andCondition($.media_condition_term),
 
-    media_or_condition: ($) => prec.left(1, seq(
-      $.media_condition_without_or,
-      repeat1(seq("or", $.media_condition_without_or)),
-    )),
+    media_or_condition: ($) => orCondition($.media_condition_without_or),
 
     media_condition_term: ($) => choice(
       $.general_enclosed_parens,
@@ -601,11 +588,7 @@ module.exports = grammar({
       prec.dynamic(1, seq("(", $.media_condition, ")")),
     ),
 
-    media_feature: ($) => seq(
-      "(",
-      choice($.query_feature_plain, $.query_feature_boolean, $.query_feature_range),
-      ")",
-    ),
+    media_feature: ($) => queryFeature($),
 
     container_query: ($) => choice(
       prec(1, seq(
@@ -615,30 +598,17 @@ module.exports = grammar({
       field("condition", $.container_condition),
     ),
 
-    container_condition: ($) => choice(
-      $.container_not,
-      $.container_and_condition,
-      $.container_or_condition,
-      $.container_condition_term,
-    ),
+    container_condition: ($) =>
+      condition($.container_not, $.container_and_condition, $.container_or_condition, $.container_condition_term),
 
-    container_condition_without_or: ($) => choice(
-      $.container_not,
-      prec(1, $.container_and_condition),
-      $.container_condition_term,
-    ),
+    container_condition_without_or: ($) =>
+      conditionWithoutOr($.container_not, $.container_and_condition, $.container_condition_term),
 
-    container_not: ($) => seq("not", $.container_condition_term),
+    container_not: ($) => notCondition($.container_condition_term),
 
-    container_and_condition: ($) => prec.left(2, seq(
-      $.container_condition_term,
-      repeat1(seq("and", $.container_condition_term)),
-    )),
+    container_and_condition: ($) => andCondition($.container_condition_term),
 
-    container_or_condition: ($) => prec.left(1, seq(
-      $.container_condition_without_or,
-      repeat1(seq("or", $.container_condition_without_or)),
-    )),
+    container_or_condition: ($) => orCondition($.container_condition_without_or),
 
     container_condition_term: ($) => choice(
       $.general_enclosed_parens,
@@ -652,11 +622,7 @@ module.exports = grammar({
       prec.dynamic(1, seq("(", $.container_condition, ")")),
     ),
 
-    container_feature: ($) => seq(
-      "(",
-      choice($.query_feature_plain, $.query_feature_boolean, $.query_feature_range),
-      ")",
-    ),
+    container_feature: ($) => queryFeature($),
 
     container_style_query: ($) => seq(
       "style",
@@ -667,30 +633,17 @@ module.exports = grammar({
 
     style_query: ($) => choice($.style_condition, $.style_feature_body),
 
-    style_condition: ($) => choice(
-      $.style_not,
-      $.style_and_condition,
-      $.style_or_condition,
-      $.style_condition_term,
-    ),
+    style_condition: ($) =>
+      condition($.style_not, $.style_and_condition, $.style_or_condition, $.style_condition_term),
 
-    style_condition_without_or: ($) => choice(
-      $.style_not,
-      prec(1, $.style_and_condition),
-      $.style_condition_term,
-    ),
+    style_condition_without_or: ($) =>
+      conditionWithoutOr($.style_not, $.style_and_condition, $.style_condition_term),
 
-    style_not: ($) => seq("not", $.style_condition_term),
+    style_not: ($) => notCondition($.style_condition_term),
 
-    style_and_condition: ($) => prec.left(2, seq(
-      $.style_condition_term,
-      repeat1(seq("and", $.style_condition_term)),
-    )),
+    style_and_condition: ($) => andCondition($.style_condition_term),
 
-    style_or_condition: ($) => prec.left(1, seq(
-      $.style_condition_without_or,
-      repeat1(seq("or", $.style_condition_without_or)),
-    )),
+    style_or_condition: ($) => orCondition($.style_condition_without_or),
 
     style_condition_term: ($) => choice(
       $.general_enclosed_parens,
@@ -703,43 +656,26 @@ module.exports = grammar({
       prec.dynamic(1, seq("(", $.style_condition, ")")),
     ),
 
-    style_feature: ($) => seq("(", $.style_feature_body, ")"),
+    style_feature: ($) => parenthesized($.style_feature_body),
 
-    style_feature_body: ($) => seq(
-      field("name", alias(choice($.identifier, $.custom_property_name), $.feature_name)),
-      ":",
-      optional(field("value", $.declaration_value)),
-    ),
+    style_feature_body: ($) => declarationFeatureBody($),
 
-    supports_condition: ($) => choice(
-      $.supports_not,
-      $.supports_and_condition,
-      $.supports_or_condition,
-      $.supports_condition_term,
-    ),
+    supports_condition: ($) =>
+      condition($.supports_not, $.supports_and_condition, $.supports_or_condition, $.supports_condition_term),
 
-    supports_condition_without_or: ($) => choice(
-      $.supports_not,
-      prec(1, $.supports_and_condition),
-      $.supports_condition_term,
-    ),
+    supports_condition_without_or: ($) =>
+      conditionWithoutOr($.supports_not, $.supports_and_condition, $.supports_condition_term),
 
     supports_function_condition: ($) => choice(
       $.supports_condition,
       $.supports_feature_body,
     ),
 
-    supports_not: ($) => seq("not", $.supports_condition_term),
+    supports_not: ($) => notCondition($.supports_condition_term),
 
-    supports_and_condition: ($) => prec.left(2, seq(
-      $.supports_condition_term,
-      repeat1(seq("and", $.supports_condition_term)),
-    )),
+    supports_and_condition: ($) => andCondition($.supports_condition_term),
 
-    supports_or_condition: ($) => prec.left(1, seq(
-      $.supports_condition_without_or,
-      repeat1(seq("or", $.supports_condition_without_or)),
-    )),
+    supports_or_condition: ($) => orCondition($.supports_condition_without_or),
 
     supports_condition_term: ($) => choice(
       $.general_enclosed_parens,
@@ -762,13 +698,9 @@ module.exports = grammar({
 
     general_enclosed_value: ($) => $._general_enclosed_value,
 
-    supports_feature: ($) => seq("(", $.supports_feature_body, ")"),
+    supports_feature: ($) => parenthesized($.supports_feature_body),
 
-    supports_feature_body: ($) => seq(
-      field("name", alias(choice($.identifier, $.custom_property_name), $.feature_name)),
-      ":",
-      optional(field("value", $.declaration_value)),
-    ),
+    supports_feature_body: ($) => declarationFeatureBody($),
 
     selector_query: ($) => seq("selector", "(", $.selectors, ")"),
 
@@ -990,6 +922,52 @@ function sep(separator, rule) {
 
 function sep1(separator, rule) {
   return seq(rule, repeat(seq(separator, rule)));
+}
+
+function parenthesized(rule) {
+  return seq("(", rule, ")");
+}
+
+function condition(notRule, andRule, orRule, termRule) {
+  return choice(notRule, andRule, orRule, termRule);
+}
+
+function conditionWithoutOr(notRule, andRule, termRule) {
+  return choice(notRule, prec(1, andRule), termRule);
+}
+
+function notCondition(termRule) {
+  return seq("not", termRule);
+}
+
+function andCondition(termRule) {
+  return prec.left(2, seq(
+    termRule,
+    repeat1(seq("and", termRule)),
+  ));
+}
+
+function orCondition(withoutOrRule) {
+  return prec.left(1, seq(
+    withoutOrRule,
+    repeat1(seq("or", withoutOrRule)),
+  ));
+}
+
+function queryFeature($) {
+  return parenthesized(choice(
+    $.query_feature_plain,
+    $.query_feature_boolean,
+    $.query_feature_range,
+  ));
+}
+
+function declarationFeatureBody($) {
+  return seq(
+    field("name", alias(choice($.identifier, $.custom_property_name), $.feature_name)),
+    ":",
+    optional(field("value", $.declaration_value)),
+  );
 }
 
 function selectorVariant($, self, options) {

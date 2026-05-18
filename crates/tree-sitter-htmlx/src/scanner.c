@@ -48,6 +48,19 @@ typedef struct {
     bool open_tag_is_namespaced;
 } State;
 
+static inline bool htmlx_has_open_tag(State *state) {
+    return state->html->tags.size > 0;
+}
+
+static inline Tag *htmlx_current_tag(State *state) {
+    return array_back(&state->html->tags);
+}
+
+static inline void htmlx_pop_open_tag(State *state) {
+    Tag popped = array_pop(&state->html->tags);
+    tag_free(&popped);
+}
+
 static inline bool is_alpha(int32_t c) {
     return (unsigned)(c | 0x20) - 'a' < 26;
 }
@@ -169,11 +182,11 @@ static bool scan_htmlx_text(TSLexer *lexer) {
 }
 
 static bool scan_textarea_text(State *state, TSLexer *lexer, const bool *valid) {
-    if (state->html->tags.size == 0) {
+    if (!htmlx_has_open_tag(state)) {
         return false;
     }
 
-    Tag *tag = array_back(&state->html->tags);
+    Tag *tag = htmlx_current_tag(state);
     if (tag->type != TEXTAREA) {
         return false;
     }
@@ -202,12 +215,28 @@ static bool scan_textarea_text(State *state, TSLexer *lexer, const bool *valid) 
                 // Per HTML spec §13.2.6.1, raw text end tag must be followed by
                 // whitespace, '/', '>', or EOF — not a letter continuation.
                 int32_t next = lexer->lookahead;
-                if (next == '>' || next == '/' || is_space(next) || next == 0) {
+                if (next == '>' || next == '/' || next == 0) {
                     if (!has_content && valid[TEXTAREA_END_BOUNDARY]) {
                         lexer->result_symbol = TEXTAREA_END_BOUNDARY;
                         return true;
                     }
                     break;
+                }
+                if (is_space(next)) {
+                    while (is_space(lexer->lookahead)) {
+                        advance(lexer);
+                    }
+                    if (lexer->lookahead == '>' || lexer->lookahead == '/') {
+                        if (!has_content && valid[TEXTAREA_END_BOUNDARY]) {
+                            lexer->result_symbol = TEXTAREA_END_BOUNDARY;
+                            return true;
+                        }
+                        break;
+                    }
+                    has_content = true;
+                    lexer->mark_end(lexer);
+                    match_index = 0;
+                    continue;
                 }
                 // Not a valid end tag (e.g. "</textaread") — continue scanning
                 has_content = true;
@@ -239,26 +268,25 @@ static bool scan_textarea_text(State *state, TSLexer *lexer, const bool *valid) 
 }
 
 static bool in_textarea(State *state) {
-    if (state->html->tags.size == 0) {
+    if (!htmlx_has_open_tag(state)) {
         return false;
     }
 
-    return array_back(&state->html->tags)->type == TEXTAREA;
+    return htmlx_current_tag(state)->type == TEXTAREA;
 }
 
 static bool scan_void_end(State *state, TSLexer *lexer, const bool *valid) {
-    if (!valid[IMPLICIT_END_TAG] || state->html->tags.size == 0) {
+    if (!valid[IMPLICIT_END_TAG] || !htmlx_has_open_tag(state)) {
         return false;
     }
 
-    Tag *parent = array_back(&state->html->tags);
+    Tag *parent = htmlx_current_tag(state);
     if (!tag_is_void(parent)) {
         return false;
     }
 
     lexer->mark_end(lexer);
-    Tag popped = array_pop(&state->html->tags);
-    tag_free(&popped);
+    htmlx_pop_open_tag(state);
     lexer->result_symbol = IMPLICIT_END_TAG;
     return true;
 }
@@ -382,13 +410,12 @@ static bool scan_end_tag(State *state, TSLexer *lexer, const bool *valid) {
 
     if (valid[END_TAG_NAME] || valid[ERRONEOUS_END_TAG_NAME]) {
         Tag tag = htmlx_tag_for_svelte_name(name, saw_ascii_upper);
-        if (state->html->tags.size > 0 && tag_eq(array_back(&state->html->tags), &tag)) {
+        if (htmlx_has_open_tag(state) && tag_eq(htmlx_current_tag(state), &tag)) {
             if (!valid[END_TAG_NAME]) {
                 tag_free(&tag);
                 return false;
             }
-            Tag popped = array_pop(&state->html->tags);
-            tag_free(&popped);
+            htmlx_pop_open_tag(state);
             lexer->result_symbol = END_TAG_NAME;
         } else {
             if (!valid[ERRONEOUS_END_TAG_NAME]) {
@@ -419,9 +446,8 @@ static bool scan_slash_prefixed(State *state, TSLexer *lexer, const bool *valid)
             // Namespaced tags (e.g. <svelte:window/>) were never pushed
             // onto the tag stack, so don't pop.
             state->open_tag_is_namespaced = false;
-        } else if (state->html->tags.size > 0) {
-            Tag popped = array_pop(&state->html->tags);
-            tag_free(&popped);
+        } else if (htmlx_has_open_tag(state)) {
+            htmlx_pop_open_tag(state);
         }
 
         lexer->result_symbol = SELF_CLOSING_TAG_DELIMITER;
@@ -771,9 +797,8 @@ static bool scan_unterminated_tag_end(State *state, TSLexer *lexer, const bool *
     if (lexer->eof(lexer)) {
         lexer->mark_end(lexer);
         if (!valid[UNTERMINATED_TAG_END]) return false;
-        if (state->html->tags.size > 0) {
-            Tag popped = array_pop(&state->html->tags);
-            tag_free(&popped);
+        if (htmlx_has_open_tag(state)) {
+            htmlx_pop_open_tag(state);
         }
         lexer->result_symbol = UNTERMINATED_TAG_END;
         return true;
@@ -811,9 +836,8 @@ static bool scan_unterminated_tag_end(State *state, TSLexer *lexer, const bool *
         }
 
         if (marker == '#' || marker == ':' || marker == '/') {
-            if (state->html->tags.size > 0) {
-                Tag popped = array_pop(&state->html->tags);
-                tag_free(&popped);
+            if (htmlx_has_open_tag(state)) {
+                htmlx_pop_open_tag(state);
             }
             lexer->result_symbol = UNTERMINATED_TAG_END;
             return true;
@@ -831,7 +855,7 @@ static bool scan_unterminated_tag_end(State *state, TSLexer *lexer, const bool *
     // Check for matching close tag: </matching_tag_name
     // If the close tag matches the current open tag, emit UNTERMINATED_TAG_END_OPEN
     // (keeps tag on stack) so the grammar can match: start_tag + children + end_tag
-    if (next == '<' && state->html->tags.size > 0 && valid[UNTERMINATED_TAG_END_OPEN]) {
+    if (next == '<' && htmlx_has_open_tag(state) && valid[UNTERMINATED_TAG_END_OPEN]) {
         advance(lexer);
         if (lexer->lookahead == '/') {
             advance(lexer);
@@ -845,7 +869,7 @@ static bool scan_unterminated_tag_end(State *state, TSLexer *lexer, const bool *
                 advance(lexer);
             }
             Tag tag = htmlx_tag_for_svelte_name(name, saw_ascii_upper);
-            bool matches = tag_eq(array_back(&state->html->tags), &tag);
+            bool matches = tag_eq(htmlx_current_tag(state), &tag);
             tag_free(&tag);
             if (matches) {
                 lexer->result_symbol = UNTERMINATED_TAG_END_OPEN;
@@ -856,9 +880,8 @@ static bool scan_unterminated_tag_end(State *state, TSLexer *lexer, const bool *
 
     if (!valid[UNTERMINATED_TAG_END]) return false;
 
-    if (state->html->tags.size > 0) {
-        Tag popped = array_pop(&state->html->tags);
-        tag_free(&popped);
+    if (htmlx_has_open_tag(state)) {
+        htmlx_pop_open_tag(state);
     }
 
     lexer->result_symbol = UNTERMINATED_TAG_END;
@@ -866,7 +889,7 @@ static bool scan_unterminated_tag_end(State *state, TSLexer *lexer, const bool *
 }
 
 static bool scan_block_boundary(State *state, TSLexer *lexer) {
-    if (state->html->tags.size == 0) return false;
+    if (!htmlx_has_open_tag(state)) return false;
     if (lexer->lookahead != '{') return false;
 
     // Zero-width element boundary before Svelte-style block close/branch marker.
@@ -927,8 +950,7 @@ static bool scan_block_boundary(State *state, TSLexer *lexer) {
         return false;
     }
 
-    Tag popped = array_pop(&state->html->tags);
-    tag_free(&popped);
+    htmlx_pop_open_tag(state);
 
     lexer->result_symbol = UNTERMINATED_TAG_END;
     return true;

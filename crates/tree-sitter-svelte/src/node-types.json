@@ -76,6 +76,10 @@
             "named": true
           },
           {
+            "type": "incomplete_attribute_expression",
+            "named": true
+          },
+          {
             "type": "quoted_attribute_value",
             "named": true
           },
@@ -1289,6 +1293,11 @@
         }
       ]
     }
+  },
+  {
+    "type": "incomplete_attribute_expression",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "key_block",

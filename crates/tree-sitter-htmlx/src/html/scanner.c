@@ -69,16 +69,20 @@ typedef struct {
   Array(Tag) tags;
 } Scanner;
 
+static ALWAYS_INLINE bool has_open_tag(Scanner *scanner) {
+  return scanner->tags.size > 0;
+}
+
+static ALWAYS_INLINE Tag *current_tag(Scanner *scanner) {
+  return array_back(&scanner->tags);
+}
+
 // ============================================================================
 // ASCII-optimized character operations (no wchar overhead)
 // ============================================================================
 
 static ALWAYS_INLINE bool is_ascii_alpha(int32_t c) {
   return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
-}
-
-static ALWAYS_INLINE bool is_ascii_alnum(int32_t c) {
-  return is_ascii_alpha(c) || (c >= '0' && c <= '9');
 }
 
 static ALWAYS_INLINE bool is_ascii_space(int32_t c) {
@@ -161,10 +165,6 @@ static ALWAYS_INLINE void advance(TSLexer *lexer) {
 
 static ALWAYS_INLINE void skip(TSLexer *lexer) {
   lexer->advance(lexer, true);
-}
-
-static ALWAYS_INLINE void skip_whitespace(TSLexer *lexer) {
-  skip(lexer);
 }
 
 // ============================================================================
@@ -331,12 +331,11 @@ static const struct {
  * Optimized: uses pre-computed delimiter info, avoids strlen in hot path
  */
 static bool scan_raw_text(Scanner *scanner, TSLexer *lexer) {
-  if (UNLIKELY(scanner->tags.size == 0)) {
+  if (UNLIKELY(!has_open_tag(scanner))) {
     return false;
   }
 
-  Tag *current_tag = array_back(&scanner->tags);
-  TagType tag_type = current_tag->type;
+  TagType tag_type = current_tag(scanner)->type;
 
   // Find delimiter info
   const char *delimiter = NULL;
@@ -398,7 +397,7 @@ static ALWAYS_INLINE void pop_tag(Scanner *scanner) {
  * Per §13.1.2.4 - Optional tags
  */
 static bool scan_implicit_end_tag(Scanner *scanner, TSLexer *lexer) {
-  Tag *parent = scanner->tags.size == 0 ? NULL : array_back(&scanner->tags);
+  Tag *parent = has_open_tag(scanner) ? current_tag(scanner) : NULL;
 
   bool is_closing_tag = false;
   if (lexer->lookahead == '/') {
@@ -424,8 +423,7 @@ static bool scan_implicit_end_tag(Scanner *scanner, TSLexer *lexer) {
 
   if (is_closing_tag) {
     // Check if tag correctly closes the topmost element
-    if (scanner->tags.size > 0 &&
-        tag_eq(array_back(&scanner->tags), &next_tag)) {
+    if (has_open_tag(scanner) && tag_eq(current_tag(scanner), &next_tag)) {
       tag_free(&next_tag);
       return false;
     }
@@ -507,7 +505,7 @@ static bool scan_end_tag_name(Scanner *scanner, TSLexer *lexer) {
   Tag tag = tag_for_htmlx_name(tag_name);
 
   // Check if this closes the current element
-  if (scanner->tags.size > 0 && tag_eq(array_back(&scanner->tags), &tag)) {
+  if (has_open_tag(scanner) && tag_eq(current_tag(scanner), &tag)) {
     pop_tag(scanner);
     lexer->result_symbol = END_TAG_NAME;
   } else {
@@ -527,7 +525,7 @@ static bool scan_self_closing_tag_delimiter(Scanner *scanner, TSLexer *lexer) {
 
   if (LIKELY(lexer->lookahead == '>')) {
     advance(lexer);
-    if (scanner->tags.size > 0) {
+    if (has_open_tag(scanner)) {
       pop_tag(scanner);
       lexer->result_symbol = SELF_CLOSING_TAG_DELIMITER;
     }
@@ -576,11 +574,11 @@ static bool scan_text(TSLexer *lexer) {
 
 static bool scan_void_implicit_end_tag(Scanner *scanner, TSLexer *lexer,
                                        const bool *valid_symbols) {
-  if (!valid_symbols[IMPLICIT_END_TAG] || scanner->tags.size == 0) {
+  if (!valid_symbols[IMPLICIT_END_TAG] || !has_open_tag(scanner)) {
     return false;
   }
 
-  Tag *parent = array_back(&scanner->tags);
+  Tag *parent = current_tag(scanner);
   if (!tag_is_void(parent)) {
     return false;
   }
@@ -616,7 +614,7 @@ static bool scan(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
 
   // Skip whitespace (only when not in text content context)
   while (is_ascii_space(lexer->lookahead)) {
-    skip_whitespace(lexer);
+    skip(lexer);
   }
 
   int32_t lookahead = lexer->lookahead;

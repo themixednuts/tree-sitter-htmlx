@@ -101,28 +101,13 @@ module.exports = grammar(HTML, {
       ),
 
     start_tag: ($) =>
-      seq(
-        "<",
-        field("name", alias($._start_tag_name, $.tag_name)),
-        repeat($._tag_attribute_item),
-        ">",
-      ),
+      tag($, $._start_tag_name, ">"),
 
     _unterminated_start_tag: ($) =>
-      seq(
-        "<",
-        field("name", alias($._start_tag_name, $.tag_name)),
-        repeat($._tag_attribute_item),
-        $._unterminated_tag_end,
-      ),
+      tag($, $._start_tag_name, $._unterminated_tag_end),
 
     _unterminated_start_tag_with_close: ($) =>
-      seq(
-        "<",
-        field("name", alias($._start_tag_name, $.tag_name)),
-        repeat($._tag_attribute_item),
-        $._unterminated_tag_end_open,
-      ),
+      tag($, $._start_tag_name, $._unterminated_tag_end_open),
 
     _broken_member_unterminated_start_tag: ($) =>
       seq(
@@ -133,19 +118,10 @@ module.exports = grammar(HTML, {
       ),
 
     self_closing_tag: ($) =>
-      seq(
-        "<",
-        field("name", alias($._start_tag_name, $.tag_name)),
-        repeat($._tag_attribute_item),
-        "/>",
-      ),
+      tag($, $._start_tag_name, "/>"),
 
     end_tag: ($) =>
-      seq(
-        "</",
-        field("name", alias($._end_tag_name, $.tag_name)),
-        ">",
-      ),
+      endTag($, $._end_tag_name),
 
     // Override raw text element to use HTMLX-aware attribute handling
     _raw_text_element: ($) =>
@@ -156,47 +132,22 @@ module.exports = grammar(HTML, {
       ),
 
     _raw_text_start_tag: ($) =>
-      seq(
-        "<",
-        field("name", alias($._raw_text_start_tag_name, $.tag_name)),
-        repeat($._tag_attribute_item),
-        ">",
-      ),
+      tag($, $._raw_text_start_tag_name, ">"),
 
     _raw_text_unterminated_start_tag: ($) =>
-      seq(
-        "<",
-        field("name", alias($._raw_text_start_tag_name, $.tag_name)),
-        repeat($._tag_attribute_item),
-        $._unterminated_tag_end,
-      ),
+      tag($, $._raw_text_start_tag_name, $._unterminated_tag_end),
 
     _namespaced_start_tag: ($) =>
-      seq(
-        "<",
-        field("name", alias($._namespaced_tag_name, $.tag_name)),
-        repeat($._tag_attribute_item),
-        ">",
-      ),
+      tag($, $._namespaced_tag_name, ">"),
 
     _namespaced_unterminated_start_tag: ($) =>
-      seq(
-        "<",
-        field("name", alias($._namespaced_tag_name, $.tag_name)),
-        repeat($._tag_attribute_item),
-        $._unterminated_tag_end,
-      ),
+      tag($, $._namespaced_tag_name, $._unterminated_tag_end),
 
     _namespaced_self_closing_tag: ($) =>
-      seq(
-        "<",
-        field("name", alias($._namespaced_tag_name, $.tag_name)),
-        repeat($._tag_attribute_item),
-        "/>",
-      ),
+      tag($, $._namespaced_tag_name, "/>"),
 
     _namespaced_end_tag: ($) =>
-      seq("</", field("name", alias($._namespaced_tag_name, $.tag_name)), ">"),
+      endTag($, $._namespaced_tag_name),
 
     _namespaced_tag_name: ($) =>
       seq(
@@ -207,28 +158,13 @@ module.exports = grammar(HTML, {
 
     // Member/dotted component tags: UI.Button, Lib.UI.Card
     _member_start_tag: ($) =>
-      seq(
-        "<",
-        field("name", alias($._member_tag_name, $.tag_name)),
-        repeat($._tag_attribute_item),
-        ">",
-      ),
+      tag($, $._member_tag_name, ">"),
 
     _member_unterminated_start_tag: ($) =>
-      seq(
-        "<",
-        field("name", alias($._member_tag_name, $.tag_name)),
-        repeat($._tag_attribute_item),
-        $._unterminated_tag_end,
-      ),
+      tag($, $._member_tag_name, $._unterminated_tag_end),
 
     _member_self_closing_tag: ($) =>
-      seq(
-        "<",
-        field("name", alias($._member_tag_name, $.tag_name)),
-        repeat($._tag_attribute_item),
-        "/>",
-      ),
+      tag($, $._member_tag_name, "/>"),
 
     _tag_attribute_item: ($) => choice($.attribute, $.tag_comment),
 
@@ -239,7 +175,7 @@ module.exports = grammar(HTML, {
       ),
 
     _member_end_tag: ($) =>
-      seq("</", field("name", alias($._member_tag_name, $.tag_name)), ">"),
+      endTag($, $._member_tag_name),
 
     // Member tag name: Object.Property or Object.Nested.Property
     // Use prec.right to prefer continuing with more properties over matching as attributes
@@ -258,7 +194,12 @@ module.exports = grammar(HTML, {
 
     attribute: ($) =>
       choice(
-        seq($._ts_lang_marker, field("name", $.attribute_name), "=", field("value", $.quoted_attribute_value)),
+        seq(
+          $._ts_lang_marker,
+          field("name", $.attribute_name),
+          "=",
+          field("value", $.quoted_attribute_value),
+        ),
         $.shorthand_attribute,
         prec.dynamic(
           3,
@@ -276,12 +217,7 @@ module.exports = grammar(HTML, {
             optional(
               seq(
                 "=",
-                field("value", choice(
-                  $.unquoted_attribute_value, // Match text{expr} patterns
-                  $.quoted_attribute_value,
-                  alias($.attribute_expression, $.expression),
-                  alias($._attribute_value, $.attribute_value), // Plain text value via external scanner
-                )),
+                field("value", attributeValue($)),
               ),
             ),
           ),
@@ -302,51 +238,15 @@ module.exports = grammar(HTML, {
       ),
 
     expression: ($) =>
-      seq(
-        "{",
-        optional(
-          field(
-            "content",
-            choice(
-              alias($._expression_js, $.js),
-              alias($._expression_ts, $.ts),
-            ),
-          ),
-        ),
-        "}",
-      ),
+      bracedJsTs($, $._expression_js, $._expression_ts),
 
     attribute_expression: ($) =>
-      seq(
-        "{",
-        optional(
-          field(
-            "content",
-            choice(
-              alias($._attribute_expression_js, $.js),
-              alias($._attribute_expression_ts, $.ts),
-            ),
-          ),
-        ),
-        "}",
-      ),
+      bracedJsTs($, $._attribute_expression_js, $._attribute_expression_ts),
     // Shorthand attribute: {identifier} or {...spread} - an expression used as an attribute
     // Uses expression structure (not regex) to allow proper precedence resolution
     // with unquoted_attribute_value (text{expr} patterns like style:attr=string{mixed})
     shorthand_attribute: ($) =>
-      seq(
-        "{",
-        optional(
-          field(
-            "content",
-            choice(
-              alias($._expression_js, $.js),
-              alias($._expression_ts, $.ts),
-            ),
-          ),
-        ),
-        "}",
-      ),
+      bracedJsTs($, $._expression_js, $._expression_ts),
 
     // Directives: bind:value, on:click|preventDefault
     // The _directive_marker external scanner consumes the directive name (bind, on, let, etc.)
@@ -387,8 +287,8 @@ module.exports = grammar(HTML, {
 
     quoted_attribute_value: ($) =>
       choice(
-        seq("'", repeat($._quoted_attribute_content_single), "'"),
-        seq('"', repeat($._quoted_attribute_content_double), '"'),
+        quotedAttributeValue("'", $._quoted_attribute_content_single),
+        quotedAttributeValue('"', $._quoted_attribute_content_double),
       ),
     _quoted_attribute_content_single: ($) =>
       choice(
@@ -402,3 +302,49 @@ module.exports = grammar(HTML, {
       ),
   },
 });
+
+function tag($, nameRule, closeRule) {
+  return seq(
+    "<",
+    field("name", alias(nameRule, $.tag_name)),
+    repeat($._tag_attribute_item),
+    closeRule,
+  );
+}
+
+function endTag($, nameRule) {
+  return seq(
+    "</",
+    field("name", alias(nameRule, $.tag_name)),
+    ">",
+  );
+}
+
+function attributeValue($) {
+  return choice(
+    $.unquoted_attribute_value,
+    $.quoted_attribute_value,
+    alias($.attribute_expression, $.expression),
+    alias($._attribute_value, $.attribute_value),
+  );
+}
+
+function bracedJsTs($, jsRule, tsRule) {
+  return seq(
+    "{",
+    optional(
+      field(
+        "content",
+        choice(
+          alias(jsRule, $.js),
+          alias(tsRule, $.ts),
+        ),
+      ),
+    ),
+    "}",
+  );
+}
+
+function quotedAttributeValue(quote, contentRule) {
+  return seq(quote, repeat(contentRule), quote);
+}

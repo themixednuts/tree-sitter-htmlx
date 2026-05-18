@@ -8,6 +8,17 @@ repository = "https://github.com/themixednuts/tree-sitter-htmlx"
 keywords = ["tree-sitter", "parser", "html", "whatwg"]
 categories = ["parsing", "text-editors"]
 build = "build.rs"
+include = [
+  "src/**",
+  "queries/**",
+  "test/**",
+  "grammar.js",
+  "tree-sitter.json",
+  "build.rs",
+  "Cargo.toml",
+  "README*",
+  "LICENSE*",
+]
 
 [lib]
 path = "src/lib.rs"

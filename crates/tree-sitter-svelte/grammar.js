@@ -52,77 +52,25 @@ module.exports = grammar(HTMLX, {
 
     // Typed content helpers — produce nodes with content: js | ts
     _iterator_expression: ($) =>
-      field("content", choice(
-        alias($._iterator_expression_js, $.js),
-        alias($._iterator_expression_ts, $.ts),
-      )),
+      typedJsTsContent($, $._iterator_expression_js, $._iterator_expression_ts),
 
     _key_expression: ($) =>
-      field("content", choice(
-        alias($._key_expression_js, $.js),
-        alias($._key_expression_ts, $.ts),
-      )),
+      typedJsTsContent($, $._key_expression_js, $._key_expression_ts),
 
     _tag_expression: ($) =>
-      field("content", choice(
-        alias($._tag_expression_js, $.js),
-        alias($._tag_expression_ts, $.ts),
-      )),
+      typedJsTsContent($, $._tag_expression_js, $._tag_expression_ts),
 
     _binding_pattern: ($) =>
-      field("content", choice(
-        alias($._binding_pattern_js, $.js),
-        alias($._binding_pattern_ts, $.ts),
-      )),
+      typedJsTsContent($, $._binding_pattern_js, $._binding_pattern_ts),
 
     _snippet_parameter: ($) =>
-      field("content", choice(
-        alias($._snippet_parameter_js, $.js),
-        alias($._snippet_parameter_ts, $.ts),
-      )),
+      typedJsTsContent($, $._snippet_parameter_js, $._snippet_parameter_ts),
 
     _node: ($) =>
-      choice(
-        prec(2, $.if_block),
-        prec(2, $.each_block),
-        prec(2, $.await_block),
-        prec(2, $.key_block),
-        prec(2, $.snippet_block),
-        prec(2, $.html_tag),
-        prec(2, $.debug_tag),
-        prec(2, $.const_tag),
-        prec(2, $.render_tag),
-        prec(2, $.attach_tag),
-        $.doctype,
-        $.entity,
-        $.text,
-        $.element,
-        $.erroneous_end_tag,
-        $.malformed_block,
-        prec(-2, $.orphan_branch),
-        prec(-1, $.expression),
-      ),
+      svelteNodeChoice($, { allowOrphanBranch: true }),
 
     _node_without_orphan_branch: ($) =>
-      choice(
-        prec(2, $.if_block),
-        prec(2, $.each_block),
-        prec(2, $.await_block),
-        prec(2, $.key_block),
-        prec(2, $.snippet_block),
-        prec(2, $.html_tag),
-        prec(2, $.debug_tag),
-        prec(2, $.const_tag),
-        prec(2, $.render_tag),
-        prec(2, $.attach_tag),
-        $.doctype,
-        $.entity,
-        $.text,
-        $.element,
-        $.erroneous_end_tag,
-        $.malformed_block,
-        prec(-1, $.expression),
-      ),
+      svelteNodeChoice($),
 
     _await_recovery_continuation: ($) => choice($.await_branch, $.orphan_branch),
 
@@ -173,24 +121,10 @@ module.exports = grammar(HTMLX, {
     // Node choice excluding erroneous_end_tag — used in unclosed block recovery
     // to prevent the recovery body from consuming end tags that close parent elements.
     _node_in_unclosed_block: ($) =>
-      choice(
-        prec(2, $.if_block),
-        prec(2, $.each_block),
-        prec(2, $.await_block),
-        prec(2, $.key_block),
-        prec(2, $.snippet_block),
-        prec(2, $.html_tag),
-        prec(2, $.debug_tag),
-        prec(2, $.const_tag),
-        prec(2, $.render_tag),
-        prec(2, $.attach_tag),
-        $.doctype,
-        $.entity,
-        $.text,
-        $.element,
-        // erroneous_end_tag intentionally excluded
-        prec(-1, $.expression),
-      ),
+      svelteNodeChoice($, {
+        includeErroneousEndTag: false,
+        includeMalformedBlock: false,
+      }),
 
     // =========================================================================
     // Block end helper (shared by all typed blocks)
@@ -325,25 +259,7 @@ module.exports = grammar(HTMLX, {
         optional(
           seq(
             field("expression", alias($._iterator_expression, $.expression)),
-            optional(
-              seq(
-                "as",
-                field("binding", alias($._binding_pattern, $.pattern)),
-                optional(
-                  seq(
-                    ",",
-                    field("index", alias($._binding_pattern, $.pattern)),
-                  ),
-                ),
-                optional(
-                  seq(
-                    "(",
-                    field("key", alias($._key_expression, $.expression)),
-                    ")",
-                  ),
-                ),
-              ),
-            ),
+            optional($._each_context),
           ),
         ),
         $._block_close,
@@ -354,26 +270,30 @@ module.exports = grammar(HTMLX, {
         alias(token("{#"), $.block_open),
         "each",
         field("expression", alias($._iterator_expression, $.expression)),
-        optional(
-          seq(
-            "as",
-            field("binding", alias($._binding_pattern, $.pattern)),
-            optional(
-              seq(
-                ",",
-                field("index", alias($._binding_pattern, $.pattern)),
-              ),
-            ),
-            optional(
-              seq(
-                "(",
-                field("key", alias($._key_expression, $.expression)),
-                ")",
-              ),
-            ),
-          ),
-        ),
+        optional($._each_context),
         $._block_start_eof,
+      ),
+
+    _each_context: ($) =>
+      choice(
+        seq(
+          "as",
+          field("binding", alias($._binding_pattern, $.pattern)),
+          optional($._each_index),
+          optional($._each_key),
+        ),
+        seq($._each_index, optional($._each_key)),
+        $._each_key,
+      ),
+
+    _each_index: ($) =>
+      seq(",", field("index", alias($._binding_pattern, $.pattern))),
+
+    _each_key: ($) =>
+      seq(
+        "(",
+        field("key", alias($._key_expression, $.expression)),
+        ")",
       ),
 
     // =========================================================================
@@ -670,98 +590,23 @@ module.exports = grammar(HTMLX, {
 
     // {@html expr}
     html_tag: ($) =>
-      choice(
-        seq(
-          alias(token("{@"), $.block_open),
-          "html",
-          optional(
-            field("expression", alias($._tag_expression, $.expression_value)),
-          ),
-          $._block_close,
-        ),
-        seq(
-          alias(token("{@"), $.block_open),
-          "html",
-          field("trailing", $.tag_missing_whitespace_trailing),
-          $._block_close,
-        ),
-      ),
+      svelteTag($, "html"),
 
     // {@debug expr?}
     debug_tag: ($) =>
-      choice(
-        seq(
-          alias(token("{@"), $.block_open),
-          "debug",
-          optional(
-            field("expression", alias($._tag_expression, $.expression_value)),
-          ),
-          $._block_close,
-        ),
-        seq(
-          alias(token("{@"), $.block_open),
-          "debug",
-          field("trailing", $.tag_missing_whitespace_trailing),
-          $._block_close,
-        ),
-      ),
+      svelteTag($, "debug"),
 
     // {@const expr}
     const_tag: ($) =>
-      choice(
-        seq(
-          alias(token("{@"), $.block_open),
-          "const",
-          optional(
-            field("expression", alias($._tag_expression, $.expression_value)),
-          ),
-          $._block_close,
-        ),
-        seq(
-          alias(token("{@"), $.block_open),
-          "const",
-          field("trailing", $.tag_missing_whitespace_trailing),
-          $._block_close,
-        ),
-      ),
+      svelteTag($, "const"),
 
     // {@render expr}
     render_tag: ($) =>
-      choice(
-        seq(
-          alias(token("{@"), $.block_open),
-          "render",
-          optional(
-            field("expression", alias($._tag_expression, $.expression_value)),
-          ),
-          $._block_close,
-        ),
-        seq(
-          alias(token("{@"), $.block_open),
-          "render",
-          field("trailing", $.tag_missing_whitespace_trailing),
-          $._block_close,
-        ),
-      ),
+      svelteTag($, "render"),
 
     // {@attach expr}
     attach_tag: ($) =>
-      choice(
-        seq(
-          alias(token("{@"), $.block_open),
-          "attach",
-          optional(
-            field("expression", alias($._tag_expression, $.expression_value)),
-          ),
-          $._block_close,
-        ),
-        seq(
-          alias(token("{@"), $.block_open),
-          "attach",
-          field("trailing", $.tag_missing_whitespace_trailing),
-          $._block_close,
-        ),
-      ),
+      svelteTag($, "attach"),
 
     // Generic expressions - excludes block/tag markers at start
     _expression_value: ($) => /[^#:/@}\s][^}]*/,
@@ -773,9 +618,34 @@ module.exports = grammar(HTMLX, {
     // We don't override it here - invalid Svelte-specific tag/block placement is
     // represented by allowing existing typed nodes in quoted attribute content.
 
-    // Attributes - extend HTMLX to include attach_tag and typed recovery nodes.
-    attribute: ($, original) => choice(
-      original,
+    // Attributes - HTMLX shape plus attach_tag and typed recovery nodes.
+    attribute: ($) => choice(
+      seq(
+        $._ts_lang_marker,
+        field("name", $.attribute_name),
+        "=",
+        field("value", $.quoted_attribute_value),
+      ),
+      $.shorthand_attribute,
+      prec.dynamic(
+        3,
+        seq(
+          field("name", $.attribute_name),
+          field("tail", $.attribute_expected_equals_tail),
+        ),
+      ),
+      prec.dynamic(
+        2,
+        seq(
+          field("name", $.attribute_name),
+          optional(
+            seq(
+              "=",
+              field("value", svelteAttributeValue($)),
+            ),
+          ),
+        ),
+      ),
       prec(2, $.attach_tag),
     ),
 
@@ -784,36 +654,113 @@ module.exports = grammar(HTMLX, {
       $.attribute_sequence_recovery_tail,
     ),
 
-    // Attributes - extend HTMLX to include attach_tag.
-    attribute: ($, original) => choice(
-      original,
-      prec(2, $.attach_tag),
-    ),
-
     attribute_sequence_recovery_tail: (_) => token(prec(-1, /\}+/)),
 
+    incomplete_attribute_expression: ($) => $._incomplete_attribute_expression,
+
     _quoted_attribute_content_single: ($) =>
-      choice(
-        $.html_tag,
-        $.if_block,
-        $.each_block,
-        $.await_block,
-        $.key_block,
-        $.snippet_block,
-        alias($.attribute_expression, $.expression),
-        alias(/[^'{]+/, $.attribute_value),
-      ),
+      quotedAttributeContent($, /[^'{]+/),
 
     _quoted_attribute_content_double: ($) =>
-      choice(
-        $.html_tag,
-        $.if_block,
-        $.each_block,
-        $.await_block,
-        $.key_block,
-        $.snippet_block,
-        alias($.attribute_expression, $.expression),
-        alias(/[^"{]+/, $.attribute_value),
-      ),
+      quotedAttributeContent($, /[^"{]+/),
   },
 });
+
+function typedJsTsContent($, jsRule, tsRule) {
+  return field("content", choice(
+    alias(jsRule, $.js),
+    alias(tsRule, $.ts),
+  ));
+}
+
+function svelteNodeChoice($, options = {}) {
+  const {
+    allowOrphanBranch = false,
+    includeErroneousEndTag = true,
+    includeMalformedBlock = true,
+  } = options;
+
+  const nodes = [
+    ...svelteBlockNodes($),
+    ...svelteTagNodes($),
+    $.doctype,
+    $.entity,
+    $.text,
+    $.element,
+  ];
+
+  if (includeErroneousEndTag) {
+    nodes.push($.erroneous_end_tag);
+  }
+  if (includeMalformedBlock) {
+    nodes.push($.malformed_block);
+  }
+  if (allowOrphanBranch) {
+    nodes.push(prec(-2, $.orphan_branch));
+  }
+
+  nodes.push(prec(-1, $.expression));
+  return choice(...nodes);
+}
+
+function svelteBlockNodes($) {
+  return [
+    prec(2, $.if_block),
+    prec(2, $.each_block),
+    prec(2, $.await_block),
+    prec(2, $.key_block),
+    prec(2, $.snippet_block),
+  ];
+}
+
+function svelteTagNodes($) {
+  return [
+    prec(2, $.html_tag),
+    prec(2, $.debug_tag),
+    prec(2, $.const_tag),
+    prec(2, $.render_tag),
+    prec(2, $.attach_tag),
+  ];
+}
+
+function svelteTag($, keyword) {
+  return choice(
+    seq(
+      alias(token("{@"), $.block_open),
+      keyword,
+      optional(
+        field("expression", alias($._tag_expression, $.expression_value)),
+      ),
+      $._block_close,
+    ),
+    seq(
+      alias(token("{@"), $.block_open),
+      keyword,
+      field("trailing", $.tag_missing_whitespace_trailing),
+      $._block_close,
+    ),
+  );
+}
+
+function quotedAttributeContent($, textRule) {
+  return choice(
+    $.html_tag,
+    $.if_block,
+    $.each_block,
+    $.await_block,
+    $.key_block,
+    $.snippet_block,
+    alias($.attribute_expression, $.expression),
+    alias(textRule, $.attribute_value),
+  );
+}
+
+function svelteAttributeValue($) {
+  return choice(
+    $.unquoted_attribute_value,
+    $.quoted_attribute_value,
+    $.incomplete_attribute_expression,
+    alias($.attribute_expression, $.expression),
+    alias($._attribute_value, $.attribute_value),
+  );
+}

@@ -80,14 +80,22 @@ static inline bool can_start_pseudo_name(int32_t c) {
     return c == '-' || c == '\\' || is_css_ident_start(c);
 }
 
-static bool scan_css_comment(TSLexer *lexer) {
+static bool is_css_comment_start(TSLexer *lexer) {
     if (lexer->lookahead != '/') {
         return false;
     }
-    advance(lexer);
-    if (lexer->lookahead != '*') {
+
+    TSLexer copy = *lexer;
+    advance(&copy);
+    return copy.lookahead == '*';
+}
+
+static bool consume_css_comment(TSLexer *lexer) {
+    if (!is_css_comment_start(lexer)) {
         return false;
     }
+
+    advance(lexer);
     advance(lexer);
     while (!lexer->eof(lexer)) {
         int32_t c = lexer->lookahead;
@@ -107,18 +115,7 @@ static void skip_css_space_and_comments(TSLexer *lexer) {
             continue;
         }
         if (lexer->lookahead == '/') {
-            TSLexer copy = *lexer;
-            if (scan_css_comment(&copy)) {
-                advance(lexer);
-                advance(lexer);
-                while (!lexer->eof(lexer)) {
-                    int32_t c = lexer->lookahead;
-                    advance(lexer);
-                    if (c == '*' && lexer->lookahead == '/') {
-                        advance(lexer);
-                        break;
-                    }
-                }
+            if (consume_css_comment(lexer)) {
                 continue;
             }
         }
