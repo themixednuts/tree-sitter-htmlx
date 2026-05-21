@@ -20,7 +20,7 @@
     }
   ],
   "metadata": {
-    "version": "0.1.13",
+    "version": "0.1.14",
     "license": "MIT",
     "description": "Svelte 5 grammar for tree-sitter",
     "authors": [

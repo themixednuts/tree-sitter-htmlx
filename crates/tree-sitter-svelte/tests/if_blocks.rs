@@ -68,6 +68,14 @@ fn test_if_else_if() {
 }
 
 #[test]
+fn test_if_else_if_accepts_hidden_whitespace_separator() {
+    assert_eq!(
+        parse("{#if a}1{:else\u{00A0}if b}2{/if}"),
+        "(document (if_block (block_open) expression: (expression content: (js)) (block_close) (text) (else_if_clause (block_open) (branch_kind) expression: (expression_value content: (js)) (block_close) (text)) (block_end (block_open) (block_keyword) (block_close))))"
+    );
+}
+
+#[test]
 fn test_if_else_if_chain() {
     assert_eq!(
         parse("{#if a}1{:else if b}2{:else if c}3{:else}4{/if}"),

@@ -22,7 +22,10 @@ fn test_element_self_closing() {
 #[test]
 fn test_element_void() {
     // Void elements like <br> are parsed as start_tag (HTML behavior)
-    assert_eq!(parse("<br>"), "(document (element (start_tag name: (tag_name))))");
+    assert_eq!(
+        parse("<br>"),
+        "(document (element (start_tag name: (tag_name))))"
+    );
 }
 
 #[test]

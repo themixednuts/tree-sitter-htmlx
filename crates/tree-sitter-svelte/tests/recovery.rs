@@ -309,6 +309,18 @@ fn test_if_block_with_nested_unclosed_elements_recovers_locally() {
 }
 
 #[test]
+fn test_if_block_recovery_accepts_hidden_whitespace_before_block_end() {
+    let source = "{#if foo}\n\t<div>\u{2028}\u{00A0}{/if}";
+    let tree = parse(source);
+
+    assert!(
+        !tree.contains("(ERROR"),
+        "Hidden whitespace before block close should recover without root ERROR: {tree}"
+    );
+    assert!(tree.contains("(block_end"), "{tree}");
+}
+
+#[test]
 fn test_unterminated_tag_breaks_before_block_branches() {
     let source = "{#if ok}\n\t<input\n{:else}\n\t<p>fallback</p>\n{/if}\n\n{#await promise}\n\t<input\n{:then value}\n\t<p>{value}</p>\n{:catch error}\n\t<p>{error}</p>\n{/await}";
     let tree = parse(source);
@@ -407,6 +419,27 @@ fn test_special_tag_missing_whitespace_is_typed() {
         let tree = parse(source);
         assert!(tree.contains("tag_missing_whitespace_trailing"), "{tree}");
     }
+}
+
+#[test]
+fn test_special_tag_hidden_whitespace_is_not_missing_whitespace() {
+    for source in [
+        "{@html\u{00A0}rawHtml}",
+        "{@const\u{2007}label = value}",
+        "{@debug\u{2028}label}",
+        "{@render\u{2029}child()}",
+        "{@attach\u{feff}action}",
+    ] {
+        let tree = parse(source);
+        assert!(tree.contains("expression: (expression_value"), "{tree}");
+        assert!(!tree.contains("tag_missing_whitespace_trailing"), "{tree}");
+    }
+}
+
+#[test]
+fn test_malformed_block_accepts_hidden_whitespace_after_open_brace() {
+    let tree = parse("{\u{200b}#if ok}");
+    assert!(tree.contains("(malformed_block"), "{tree}");
 }
 
 #[test]

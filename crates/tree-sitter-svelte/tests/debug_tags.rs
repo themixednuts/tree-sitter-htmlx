@@ -37,7 +37,10 @@ fn test_debug_property_access() {
 
 #[test]
 fn test_debug_empty() {
-    assert_eq!(parse("{@debug}"), "(document (debug_tag (block_open) (block_close)))");
+    assert_eq!(
+        parse("{@debug}"),
+        "(document (debug_tag (block_open) (block_close)))"
+    );
 }
 
 #[test]

@@ -14,7 +14,7 @@
     }
   ],
   "metadata": {
-    "version": "0.1.13",
+    "version": "0.1.14",
     "license": "MIT",
     "description": "HTML grammar for tree-sitter following the WHATWG HTML Living Standard",
     "authors": [

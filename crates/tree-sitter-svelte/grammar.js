@@ -10,6 +10,11 @@
 
 const HTMLX = require("../tree-sitter-htmlx/grammar");
 
+// Match the scanner's hidden-whitespace policy from the HTML/HTMLX grammars.
+// Keep Svelte grammar regexes aligned so branch/recovery syntax does not fall
+// back to ASCII-only `\s` handling.
+const WHITESPACE = /[ \t\n\f\r\v\u0085\u00a0\u1680\u2000-\u200b\u2028\u2029\u202f\u205f\u3000\ufeff]+/;
+
 module.exports = grammar(HTMLX, {
   name: "svelte",
 
@@ -79,7 +84,7 @@ module.exports = grammar(HTMLX, {
     malformed_block: ($) =>
       seq(
         "{",
-        /\s+/,
+        WHITESPACE,
         field(
           "kind",
           alias(token(seq(/[#:@]/, /[a-z]+/)), $.block_sigil),
@@ -96,7 +101,7 @@ module.exports = grammar(HTMLX, {
         choice(
           seq(
             alias(token("{:"), $.block_open),
-            field("kind", alias(token(seq("else", /\s+/, "if")), $.branch_kind)),
+            field("kind", alias(token(seq("else", WHITESPACE, "if")), $.branch_kind)),
             optional(
               field("expression", alias($._tag_expression, $.expression_value)),
             ),
@@ -146,7 +151,7 @@ module.exports = grammar(HTMLX, {
     // Recovery helper
     // =========================================================================
 
-    _block_recovery_ws: ($) => /[ \t\r\n]+/,
+    _block_recovery_ws: ($) => WHITESPACE,
 
     // =========================================================================
     // {#if expr}...({:else if expr}...)*({:else}...)?{/if}
@@ -206,7 +211,7 @@ module.exports = grammar(HTMLX, {
       prec.right(
         seq(
           alias(token("{:"), $.block_open),
-          alias(token(seq("else", /\s+/, "if")), $.branch_kind),
+          alias(token(seq("else", WHITESPACE, "if")), $.branch_kind),
           optional(
             field("expression", alias($._tag_expression, $.expression_value)),
           ),
@@ -609,9 +614,9 @@ module.exports = grammar(HTMLX, {
       svelteTag($, "attach"),
 
     // Generic expressions - excludes block/tag markers at start
-    _expression_value: ($) => /[^#:/@}\s][^}]*/,
+    _expression_value: ($) => /[^#:/@} \t\n\f\r\v\u0085\u00a0\u1680\u2000-\u200b\u2028\u2029\u202f\u205f\u3000\ufeff][^}]*/,
 
-    tag_missing_whitespace_trailing: (_) => token.immediate(/[^\s}][^}]*/),
+    tag_missing_whitespace_trailing: (_) => token.immediate(/[^} \t\n\f\r\v\u0085\u00a0\u1680\u2000-\u200b\u2028\u2029\u202f\u205f\u3000\ufeff][^}]*/),
 
     // Note: shorthand_attribute is inherited from HTMLX as a structured rule (not regex)
     // to allow proper precedence resolution with unquoted_attribute_value.

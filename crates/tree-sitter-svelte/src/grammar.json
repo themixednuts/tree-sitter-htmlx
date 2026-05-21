@@ -1966,7 +1966,7 @@
         },
         {
           "type": "PATTERN",
-          "value": "\\s+"
+          "value": "[ \\t\\n\\f\\r\\v\\u0085\\u00a0\\u1680\\u2000-\\u200b\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]+"
         },
         {
           "type": "FIELD",
@@ -2040,7 +2040,7 @@
                         },
                         {
                           "type": "PATTERN",
-                          "value": "\\s+"
+                          "value": "[ \\t\\n\\f\\r\\v\\u0085\\u00a0\\u1680\\u2000-\\u200b\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]+"
                         },
                         {
                           "type": "STRING",
@@ -2453,7 +2453,7 @@
     },
     "_block_recovery_ws": {
       "type": "PATTERN",
-      "value": "[ \\t\\r\\n]+"
+      "value": "[ \\t\\n\\f\\r\\v\\u0085\\u00a0\\u1680\\u2000-\\u200b\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]+"
     },
     "if_block": {
       "type": "CHOICE",
@@ -2708,7 +2708,7 @@
                   },
                   {
                     "type": "PATTERN",
-                    "value": "\\s+"
+                    "value": "[ \\t\\n\\f\\r\\v\\u0085\\u00a0\\u1680\\u2000-\\u200b\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]+"
                   },
                   {
                     "type": "STRING",
@@ -4949,13 +4949,13 @@
     },
     "_expression_value": {
       "type": "PATTERN",
-      "value": "[^#:/@}\\s][^}]*"
+      "value": "[^#:/@} \\t\\n\\f\\r\\v\\u0085\\u00a0\\u1680\\u2000-\\u200b\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff][^}]*"
     },
     "tag_missing_whitespace_trailing": {
       "type": "IMMEDIATE_TOKEN",
       "content": {
         "type": "PATTERN",
-        "value": "[^\\s}][^}]*"
+        "value": "[^} \\t\\n\\f\\r\\v\\u0085\\u00a0\\u1680\\u2000-\\u200b\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff][^}]*"
       }
     },
     "attribute_sequence_recovery_tail": {
