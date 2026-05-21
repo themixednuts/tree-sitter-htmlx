@@ -12,5 +12,6 @@
   (await_branch)
   (await_branch_children)
   (key_block)
+  (orphan_branch)
   (snippet_block)
 ] @fold

@@ -409,7 +409,7 @@ static bool scan_balanced_svelte_token(
     int js_symbol,
     int ts_symbol
 ) {
-    while (is_space(lexer->lookahead)) PROFILE_ADVANCE(scan_balanced_bytes, lexer);
+    while (is_space(lexer->lookahead)) PROFILE_SKIP(scan_balanced_bytes, lexer);
     if (!scan_balanced(lexer, stop_char, stop_comma, allow_eof)) return false;
 
     lexer->result_symbol = svelte_js_ts_symbol(state, js_symbol, ts_symbol);
