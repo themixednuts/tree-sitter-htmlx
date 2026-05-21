@@ -116,6 +116,15 @@ pub const INJECTIONS_QUERY: &str = concat!(
     include_str!("../queries/injections.scm"),
 );
 
+/// The folding query for Svelte.
+pub const FOLDS_QUERY: &str = include_str!("../queries/folds.scm");
+
+/// The indentation query for Svelte.
+pub const INDENTS_QUERY: &str = include_str!("../queries/indents.scm");
+
+/// The locals query for Svelte.
+pub const LOCALS_QUERY: &str = include_str!("../queries/locals.scm");
+
 /// The content of the [`node-types.json`] file for Svelte.
 pub const NODE_TYPES: &str = include_str!("../src/node-types.json");
 
@@ -344,5 +353,119 @@ mod tests {
                 "missing @{capture} from Svelte highlights query"
             );
         }
+    }
+
+    #[test]
+    fn test_editor_queries_compile() {
+        let language = language();
+
+        for (name, source, expected_capture) in [
+            ("highlights", HIGHLIGHTS_QUERY, "tag"),
+            ("injections", INJECTIONS_QUERY, "injection.content"),
+            ("folds", FOLDS_QUERY, "fold"),
+            (
+                "htmlx folds",
+                include_str!("../queries/htmlx/folds.scm"),
+                "fold",
+            ),
+            (
+                "html folds",
+                include_str!("../queries/htmlx/html/folds.scm"),
+                "fold",
+            ),
+            ("indents", INDENTS_QUERY, "indent.begin"),
+            (
+                "htmlx indents",
+                include_str!("../queries/htmlx/indents.scm"),
+                "indent.begin",
+            ),
+            (
+                "html indents",
+                include_str!("../queries/htmlx/html/indents.scm"),
+                "indent.begin",
+            ),
+            ("locals", LOCALS_QUERY, "local.scope"),
+            (
+                "htmlx locals",
+                include_str!("../queries/htmlx/locals.scm"),
+                "local.scope",
+            ),
+            (
+                "html locals",
+                include_str!("../queries/htmlx/html/locals.scm"),
+                "local.scope",
+            ),
+        ] {
+            let query = tree_sitter::Query::new(&language, source)
+                .unwrap_or_else(|error| panic!("{name} query should compile: {error}"));
+            assert!(
+                query
+                    .capture_names()
+                    .iter()
+                    .any(|capture| *capture == expected_capture),
+                "missing @{expected_capture} from Svelte {name} query"
+            );
+        }
+    }
+
+    #[test]
+    fn test_svelte_editor_queries_match_real_syntax() {
+        let source = r#"
+{#snippet row(value)}
+  <p>{value}</p>
+{/snippet}
+
+{#each items as item, i (item.id)}
+  {@const label = item.name}
+  {#if item.visible}
+    <Component let:value>{@render row(label, value)}</Component>
+  {:else}
+    <p>{label}</p>
+  {/if}
+{/each}
+"#;
+
+        assert!(capture_count(FOLDS_QUERY, "fold", source) >= 6);
+        assert!(capture_count(INDENTS_QUERY, "indent.begin", source) >= 5);
+        assert!(capture_count(INDENTS_QUERY, "indent.end", source) >= 5);
+        assert!(capture_count(LOCALS_QUERY, "local.definition", source) >= 5);
+        assert_eq!(
+            capture_count(LOCALS_QUERY, "local.definition.function", source),
+            1
+        );
+        assert!(capture_count(LOCALS_QUERY, "local.reference", source) >= 5);
+    }
+
+    fn capture_count(query_source: &str, capture_name: &str, source: &str) -> usize {
+        use tree_sitter::StreamingIterator;
+
+        let language = language();
+        let query = tree_sitter::Query::new(&language, query_source)
+            .expect("editor query should compile before capture assertions");
+
+        let mut parser = tree_sitter::Parser::new();
+        parser
+            .set_language(&language)
+            .expect("Svelte grammar should load");
+        let tree = parser.parse(source, None).expect("source should parse");
+        assert!(!tree.root_node().has_error());
+
+        let capture_names = query.capture_names();
+        let mut cursor = tree_sitter::QueryCursor::new();
+        let mut captures = cursor.captures(&query, tree.root_node(), source.as_bytes());
+        let mut count = 0;
+
+        loop {
+            captures.advance();
+            let Some((query_match, capture_index)) = captures.get() else {
+                break;
+            };
+            let capture = query_match.captures[*capture_index];
+            if capture_names[capture.index as usize] == capture_name {
+                count += 1;
+            }
+        }
+
+        count
     }
 }

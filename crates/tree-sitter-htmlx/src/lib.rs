@@ -47,6 +47,15 @@ pub const HIGHLIGHTS_QUERY: &str = include_str!("../queries/highlights.scm");
 /// The injection query for HTMLX.
 pub const INJECTIONS_QUERY: &str = include_str!("../queries/injections.scm");
 
+/// The folding query for HTMLX.
+pub const FOLDS_QUERY: &str = include_str!("../queries/folds.scm");
+
+/// The indentation query for HTMLX.
+pub const INDENTS_QUERY: &str = include_str!("../queries/indents.scm");
+
+/// The locals query for HTMLX.
+pub const LOCALS_QUERY: &str = include_str!("../queries/locals.scm");
+
 /// The content of the [`node-types.json`] file for HTMLX.
 pub const NODE_TYPES: &str = include_str!("../src/node-types.json");
 
@@ -151,6 +160,44 @@ mod tests {
             assert!(
                 captures.iter().any(|name| *name == capture),
                 "missing @{capture} from HTMLX highlights query"
+            );
+        }
+    }
+
+    #[test]
+    fn test_editor_queries_compile() {
+        let language = language();
+
+        for (name, source, expected_capture) in [
+            ("highlights", HIGHLIGHTS_QUERY, "tag"),
+            ("injections", INJECTIONS_QUERY, "injection.content"),
+            ("folds", FOLDS_QUERY, "fold"),
+            (
+                "html folds",
+                include_str!("../queries/html/folds.scm"),
+                "fold",
+            ),
+            ("indents", INDENTS_QUERY, "indent.begin"),
+            (
+                "html indents",
+                include_str!("../queries/html/indents.scm"),
+                "indent.begin",
+            ),
+            ("locals", LOCALS_QUERY, "local.scope"),
+            (
+                "html locals",
+                include_str!("../queries/html/locals.scm"),
+                "local.scope",
+            ),
+        ] {
+            let query = tree_sitter::Query::new(&language, source)
+                .unwrap_or_else(|error| panic!("{name} query should compile: {error}"));
+            assert!(
+                query
+                    .capture_names()
+                    .iter()
+                    .any(|capture| *capture == expected_capture),
+                "missing @{expected_capture} from HTMLX {name} query"
             );
         }
     }

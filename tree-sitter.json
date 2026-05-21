@@ -8,7 +8,10 @@
       "file-types": ["html", "htm", "xhtml"],
       "injection-regex": "^html$",
       "highlights": "queries/highlights.scm",
-      "injections": "queries/injections.scm"
+      "injections": "queries/injections.scm",
+      "folds": "queries/folds.scm",
+      "indents": "queries/indents.scm",
+      "locals": "queries/locals.scm"
     },
     {
       "name": "htmlx",
@@ -19,7 +22,10 @@
       "file-types": ["htmlx"],
       "injection-regex": "^htmlx$",
       "highlights": ["queries/html/highlights.scm", "queries/highlights.scm"],
-      "injections": "queries/injections.scm"
+      "injections": "queries/injections.scm",
+      "folds": ["queries/html/folds.scm", "queries/folds.scm"],
+      "indents": ["queries/html/indents.scm", "queries/indents.scm"],
+      "locals": ["queries/html/locals.scm", "queries/locals.scm"]
     },
     {
       "name": "svelte",
@@ -38,7 +44,22 @@
         "queries/htmlx/highlights.scm",
         "queries/highlights.scm"
       ],
-      "injections": ["queries/htmlx/injections.scm", "queries/injections.scm"]
+      "injections": ["queries/htmlx/injections.scm", "queries/injections.scm"],
+      "folds": [
+        "queries/htmlx/html/folds.scm",
+        "queries/htmlx/folds.scm",
+        "queries/folds.scm"
+      ],
+      "indents": [
+        "queries/htmlx/html/indents.scm",
+        "queries/htmlx/indents.scm",
+        "queries/indents.scm"
+      ],
+      "locals": [
+        "queries/htmlx/html/locals.scm",
+        "queries/htmlx/locals.scm",
+        "queries/locals.scm"
+      ]
     },
     {
       "name": "css",

@@ -9,7 +9,10 @@
       "file-types": ["htmlx"],
       "injection-regex": "^htmlx$",
       "highlights": "queries/highlights.scm",
-      "injections": "queries/injections.scm"
+      "injections": "queries/injections.scm",
+      "folds": "queries/folds.scm",
+      "indents": "queries/indents.scm",
+      "locals": "queries/locals.scm"
     }
   ],
   "metadata": {

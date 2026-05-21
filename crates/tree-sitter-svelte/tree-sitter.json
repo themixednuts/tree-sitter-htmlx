@@ -13,7 +13,10 @@
       "file-types": ["svelte"],
       "injection-regex": "^svelte$",
       "highlights": "queries/highlights.scm",
-      "injections": ["queries/htmlx/injections.scm", "queries/injections.scm"]
+      "injections": ["queries/htmlx/injections.scm", "queries/injections.scm"],
+      "folds": "queries/folds.scm",
+      "indents": "queries/indents.scm",
+      "locals": "queries/locals.scm"
     }
   ],
   "metadata": {

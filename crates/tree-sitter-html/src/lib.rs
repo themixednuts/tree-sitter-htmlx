@@ -51,6 +51,15 @@ pub const HIGHLIGHTS_QUERY: &str = include_str!("../queries/highlights.scm");
 /// The injection query for HTML (for script/style content).
 pub const INJECTIONS_QUERY: &str = include_str!("../queries/injections.scm");
 
+/// The folding query for HTML.
+pub const FOLDS_QUERY: &str = include_str!("../queries/folds.scm");
+
+/// The indentation query for HTML.
+pub const INDENTS_QUERY: &str = include_str!("../queries/indents.scm");
+
+/// The locals query for HTML.
+pub const LOCALS_QUERY: &str = include_str!("../queries/locals.scm");
+
 /// The content of the node-types.json file for HTML.
 pub const NODE_TYPES: &str = include_str!("node-types.json");
 
@@ -229,5 +238,28 @@ mod tests {
         let tree = parser.parse(source, None).unwrap();
 
         assert!(!tree.root_node().has_error());
+    }
+
+    #[test]
+    fn test_editor_queries_compile() {
+        let language = language();
+
+        for (name, source, expected_capture) in [
+            ("highlights", HIGHLIGHTS_QUERY, "tag"),
+            ("injections", INJECTIONS_QUERY, "injection.content"),
+            ("folds", FOLDS_QUERY, "fold"),
+            ("indents", INDENTS_QUERY, "indent.begin"),
+            ("locals", LOCALS_QUERY, "local.scope"),
+        ] {
+            let query = tree_sitter::Query::new(&language, source)
+                .unwrap_or_else(|error| panic!("{name} query should compile: {error}"));
+            assert!(
+                query
+                    .capture_names()
+                    .iter()
+                    .any(|capture| *capture == expected_capture),
+                "missing @{expected_capture} from HTML {name} query"
+            );
+        }
     }
 }

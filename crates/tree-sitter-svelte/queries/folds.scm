@@ -1,0 +1,16 @@
+; Svelte folding queries
+
+[
+  (comment)
+  (element)
+  (if_block)
+  (else_if_clause)
+  (else_clause)
+  (each_block)
+  (await_block)
+  (await_pending)
+  (await_branch)
+  (await_branch_children)
+  (key_block)
+  (snippet_block)
+] @fold
