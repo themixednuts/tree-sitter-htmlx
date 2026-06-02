@@ -392,6 +392,13 @@ fn locals_trim_leading_whitespace_after_svelte_markers() {
 }
 
 #[test]
+fn locals_skip_empty_const_and_declaration_tags() {
+    let source = "{@const }\n{let }\n{const}";
+
+    assert_captures_exclude(LOCALS_QUERY, "local.definition", source, &[""]);
+}
+
+#[test]
 fn locals_cover_recovery_branch_bindings_and_references() {
     assert_captures_include(
         LOCALS_QUERY,
