@@ -29,6 +29,9 @@ module.exports = grammar(HTMLX, {
       $._key_expression_ts,
       $._tag_expression_js,
       $._tag_expression_ts,
+      $._declaration_block_open,
+      $._declaration_expression_js,
+      $._declaration_expression_ts,
       $._snippet_parameter_js,
       $._snippet_parameter_ts,
       $._snippet_type_params,
@@ -64,6 +67,9 @@ module.exports = grammar(HTMLX, {
 
     _tag_expression: ($) =>
       typedJsTsContent($, $._tag_expression_js, $._tag_expression_ts),
+
+    _declaration_expression: ($) =>
+      typedJsTsContent($, $._declaration_expression_js, $._declaration_expression_ts),
 
     _binding_pattern: ($) =>
       typedJsTsContent($, $._binding_pattern_js, $._binding_pattern_ts),
@@ -605,6 +611,23 @@ module.exports = grammar(HTMLX, {
     const_tag: ($) =>
       svelteTag($, "const"),
 
+    // {let ...} or {const ...}
+    declaration_tag: ($) =>
+      seq(
+        alias($._declaration_block_open, $.block_open),
+        field(
+          "kind",
+          alias(token(prec(2, choice("let", "const"))), $.declaration_kind),
+        ),
+        optional(
+          field(
+            "declaration",
+            alias($._declaration_expression, $.expression_value),
+          ),
+        ),
+        $._block_close,
+      ),
+
     // {@render expr}
     render_tag: ($) =>
       svelteTag($, "render"),
@@ -720,6 +743,7 @@ function svelteBlockNodes($) {
 
 function svelteTagNodes($) {
   return [
+    prec.dynamic(3, $.declaration_tag),
     prec(2, $.html_tag),
     prec(2, $.debug_tag),
     prec(2, $.const_tag),

@@ -47,6 +47,10 @@
   expression: (expression_value
     content: (_) @local.definition))
 
+(declaration_tag
+  declaration: (expression_value
+    content: (_) @local.definition))
+
 ((attribute
   name: (attribute_name
     (attribute_directive) @_directive

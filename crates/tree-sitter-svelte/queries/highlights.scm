@@ -72,6 +72,7 @@
 ] @keyword.control
 
 (block_keyword) @keyword.control
+(declaration_kind) @keyword.control
 
 (block_open) @tag.delimiter
 (block_close) @tag.delimiter

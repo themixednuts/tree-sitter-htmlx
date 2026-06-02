@@ -239,6 +239,7 @@ fn locals_cover_svelte_bindings_and_references() {
     let source = r#"
 {#snippet row(value)}
   {@const label = value.name}
+  {let draft = $state(value.name)}
   <Component let:slotValue {disabled} on:click={handler}>
     {#if ready}
       {@html rawHtml}
@@ -280,6 +281,7 @@ fn locals_cover_svelte_bindings_and_references() {
         &[
             "value",
             "label = value.name",
+            "draft = $state(value.name)",
             "slotValue",
             "item",
             "i",
@@ -333,6 +335,7 @@ fn locals_trim_leading_whitespace_after_svelte_markers() {
 {@debug\n\t\tlabel, slotValue}
 {@render\n\t\trow(label, slotValue)}
 {@const\n\t\tlabel = value.name}
+{let\n\t\tdraft = $state(label)}
 {#if\n\t\tready}
 {:else if\n\t\tpending}
 {/if}
@@ -350,7 +353,15 @@ fn locals_trim_leading_whitespace_after_svelte_markers() {
         LOCALS_QUERY,
         "local.definition",
         source,
-        &["label = value.name", "item", "i", "data", "error", "value"],
+        &[
+            "label = value.name",
+            "draft = $state(label)",
+            "item",
+            "i",
+            "data",
+            "error",
+            "value",
+        ],
     );
     assert_captures_include(
         LOCALS_QUERY,

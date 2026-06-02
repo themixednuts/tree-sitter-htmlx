@@ -71,6 +71,8 @@ pub struct ScannerProfileStats {
     pub scan_tag_expression_calls: u64,
     pub scan_tag_expression_successes: u64,
     pub scan_tag_expression_bytes: u64,
+    pub scan_declaration_expression_calls: u64,
+    pub scan_declaration_expression_successes: u64,
     pub scan_snippet_parameter_calls: u64,
     pub scan_snippet_parameter_successes: u64,
     pub scan_snippet_type_params_calls: u64,

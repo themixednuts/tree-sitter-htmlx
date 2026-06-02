@@ -911,14 +911,7 @@ static bool scan_unterminated_tag_end(State *state, TSLexer *lexer, const bool *
     return true;
 }
 
-static bool scan_block_boundary(State *state, TSLexer *lexer) {
-    if (!htmlx_has_open_tag(state)) return false;
-    if (lexer->lookahead != '{') return false;
-
-    // Zero-width element boundary before Svelte-style block close/branch marker.
-    lexer->mark_end(lexer);
-
-    advance(lexer);
+static bool scan_block_boundary_after_open(State *state, TSLexer *lexer) {
     if (lexer->lookahead == '/') {
         advance(lexer);
 
@@ -977,6 +970,17 @@ static bool scan_block_boundary(State *state, TSLexer *lexer) {
 
     lexer->result_symbol = UNTERMINATED_TAG_END;
     return true;
+}
+
+static bool scan_block_boundary(State *state, TSLexer *lexer) {
+    if (!htmlx_has_open_tag(state)) return false;
+    if (lexer->lookahead != '{') return false;
+
+    // Zero-width element boundary before Svelte-style block close/branch marker.
+    lexer->mark_end(lexer);
+
+    advance(lexer);
+    return scan_block_boundary_after_open(state, lexer);
 }
 
 // Scan attribute name starting with | (like |-wtf)

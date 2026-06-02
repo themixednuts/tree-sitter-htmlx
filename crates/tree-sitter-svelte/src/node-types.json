@@ -308,6 +308,10 @@
           "named": true
         },
         {
+          "type": "declaration_tag",
+          "named": true
+        },
+        {
           "type": "doctype",
           "named": true
         },
@@ -384,6 +388,10 @@
         },
         {
           "type": "debug_tag",
+          "named": true
+        },
+        {
+          "type": "declaration_tag",
           "named": true
         },
         {
@@ -545,6 +553,46 @@
     }
   },
   {
+    "type": "declaration_tag",
+    "named": true,
+    "fields": {
+      "declaration": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "expression_value",
+            "named": true
+          }
+        ]
+      },
+      "kind": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "declaration_kind",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "block_close",
+          "named": true
+        },
+        {
+          "type": "block_open",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "doctype",
     "named": true,
     "fields": {}
@@ -572,6 +620,10 @@
         },
         {
           "type": "debug_tag",
+          "named": true
+        },
+        {
+          "type": "declaration_tag",
           "named": true
         },
         {
@@ -711,6 +763,10 @@
           "named": true
         },
         {
+          "type": "declaration_tag",
+          "named": true
+        },
+        {
           "type": "doctype",
           "named": true
         },
@@ -799,6 +855,10 @@
         },
         {
           "type": "debug_tag",
+          "named": true
+        },
+        {
+          "type": "declaration_tag",
           "named": true
         },
         {
@@ -909,6 +969,10 @@
           "named": true
         },
         {
+          "type": "declaration_tag",
+          "named": true
+        },
+        {
           "type": "doctype",
           "named": true
         },
@@ -1008,6 +1072,10 @@
         },
         {
           "type": "debug_tag",
+          "named": true
+        },
+        {
+          "type": "declaration_tag",
           "named": true
         },
         {
@@ -1224,6 +1292,10 @@
           "named": true
         },
         {
+          "type": "declaration_tag",
+          "named": true
+        },
+        {
           "type": "doctype",
           "named": true
         },
@@ -1344,6 +1416,10 @@
         },
         {
           "type": "debug_tag",
+          "named": true
+        },
+        {
+          "type": "declaration_tag",
           "named": true
         },
         {
@@ -1720,6 +1796,10 @@
           "named": true
         },
         {
+          "type": "declaration_tag",
+          "named": true
+        },
+        {
           "type": "doctype",
           "named": true
         },
@@ -2047,6 +2127,10 @@
   {
     "type": "debug",
     "named": false
+  },
+  {
+    "type": "declaration_kind",
+    "named": true
   },
   {
     "type": "doctype",

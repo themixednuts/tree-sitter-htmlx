@@ -79,6 +79,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ),
         ("scan_tag_expression_bytes", stats.scan_tag_expression_bytes),
         (
+            "scan_declaration_expression_calls",
+            stats.scan_declaration_expression_calls,
+        ),
+        (
+            "scan_declaration_expression_successes",
+            stats.scan_declaration_expression_successes,
+        ),
+        (
             "scan_snippet_parameter_calls",
             stats.scan_snippet_parameter_calls,
         ),

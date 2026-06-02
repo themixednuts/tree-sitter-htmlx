@@ -18,6 +18,9 @@ enum {
     KEY_EXPRESSION_TS,
     TAG_EXPRESSION_JS,
     TAG_EXPRESSION_TS,
+    DECLARATION_BLOCK_OPEN,
+    DECLARATION_EXPRESSION_JS,
+    DECLARATION_EXPRESSION_TS,
     SNIPPET_PARAMETER_JS,
     SNIPPET_PARAMETER_TS,
     SNIPPET_TYPE_PARAMS,
@@ -50,6 +53,8 @@ typedef struct {
     uint64_t scan_tag_expression_calls;
     uint64_t scan_tag_expression_successes;
     uint64_t scan_tag_expression_bytes;
+    uint64_t scan_declaration_expression_calls;
+    uint64_t scan_declaration_expression_successes;
     uint64_t scan_snippet_parameter_calls;
     uint64_t scan_snippet_parameter_successes;
     uint64_t scan_snippet_type_params_calls;
@@ -160,8 +165,8 @@ static bool scan_lt_as_tag_boundary(TSLexer *lexer) {
 // Scan balanced expression with trailing whitespace exclusion, comment handling,
 // tag boundary detection, and Svelte block marker detection.
 // Used for iterator expressions, binding patterns, key expressions, tag expressions,
-// and snippet parameters.
-static bool scan_balanced(TSLexer *lexer, int32_t stop_char, bool stop_comma, bool allow_eof) {
+// declaration expressions, and snippet parameters.
+static bool scan_balanced(TSLexer *lexer, int32_t stop_char, bool stop_comma, bool stop_semicolon, bool allow_eof) {
     PROFILE_COUNT(scan_balanced_calls);
     int depth = 0;
     bool has_content = false;
@@ -176,6 +181,10 @@ static bool scan_balanced(TSLexer *lexer, int32_t stop_char, bool stop_comma, bo
             break;
         }
         if (depth == 0 && stop_comma && c == ',') {
+            found_terminator = true;
+            break;
+        }
+        if (depth == 0 && stop_semicolon && c == ';') {
             found_terminator = true;
             break;
         }
@@ -405,12 +414,13 @@ static bool scan_balanced_svelte_token(
     TSLexer *lexer,
     int32_t stop_char,
     bool stop_comma,
+    bool stop_semicolon,
     bool allow_eof,
     int js_symbol,
     int ts_symbol
 ) {
     while (is_space(lexer->lookahead)) PROFILE_SKIP(scan_balanced_bytes, lexer);
-    if (!scan_balanced(lexer, stop_char, stop_comma, allow_eof)) return false;
+    if (!scan_balanced(lexer, stop_char, stop_comma, stop_semicolon, allow_eof)) return false;
 
     lexer->result_symbol = svelte_js_ts_symbol(state, js_symbol, ts_symbol);
     return true;
@@ -423,6 +433,7 @@ static bool scan_binding(State *state, TSLexer *lexer) {
         lexer,
         '(',
         true,
+        false,
         true,
         BINDING_PATTERN_JS,
         BINDING_PATTERN_TS
@@ -438,6 +449,7 @@ static bool scan_key(State *state, TSLexer *lexer) {
         state,
         lexer,
         ')',
+        false,
         false,
         true,
         KEY_EXPRESSION_JS,
@@ -455,6 +467,7 @@ static bool scan_snippet_parameter(State *state, TSLexer *lexer) {
         lexer,
         ')',
         true,
+        false,
         true,
         SNIPPET_PARAMETER_JS,
         SNIPPET_PARAMETER_TS
@@ -480,10 +493,15 @@ static bool scan_block_eof(TSLexer *lexer) {
     return true;
 }
 
-// Tag expression: content after {@html, {@debug, etc.
-// Requires leading whitespace, then delegates to scan_balanced.
-static bool scan_tag_expression(State *state, TSLexer *lexer) {
-    PROFILE_COUNT(scan_tag_expression_calls);
+// Tag-like expression: content after a tag keyword. Requires leading whitespace,
+// then delegates to scan_balanced.
+static bool scan_tag_like_expression(
+    State *state,
+    TSLexer *lexer,
+    int js_symbol,
+    int ts_symbol,
+    bool stop_semicolon
+) {
     bool has_space = false;
     while (is_space(lexer->lookahead)) {
         PROFILE_SKIP(scan_tag_expression_bytes, lexer);
@@ -495,15 +513,44 @@ static bool scan_tag_expression(State *state, TSLexer *lexer) {
     // Empty expression: produce zero-width token at the terminator position.
     if (lexer->lookahead == '}') {
         lexer->mark_end(lexer);
-        lexer->result_symbol = svelte_js_ts_symbol(state, TAG_EXPRESSION_JS, TAG_EXPRESSION_TS);
-        PROFILE_COUNT(scan_tag_expression_successes);
+        lexer->result_symbol = svelte_js_ts_symbol(state, js_symbol, ts_symbol);
         return true;
     }
 
-    if (!scan_balanced(lexer, '}', false, false)) return false;
+    if (!scan_balanced(lexer, '}', false, stop_semicolon, false)) return false;
 
-    lexer->result_symbol = svelte_js_ts_symbol(state, TAG_EXPRESSION_JS, TAG_EXPRESSION_TS);
+    lexer->result_symbol = svelte_js_ts_symbol(state, js_symbol, ts_symbol);
+    return true;
+}
+
+// Tag expression: content after {@html, {@debug, etc.
+static bool scan_tag_expression(State *state, TSLexer *lexer) {
+    PROFILE_COUNT(scan_tag_expression_calls);
+    if (!scan_tag_like_expression(
+        state,
+        lexer,
+        TAG_EXPRESSION_JS,
+        TAG_EXPRESSION_TS,
+        false
+    )) return false;
+
     PROFILE_COUNT(scan_tag_expression_successes);
+    return true;
+}
+
+// Declaration expression: content after {let or {const. A top-level semicolon is
+// a declaration-tag boundary so `{let x = 1;}` does not parse as a clean tag.
+static bool scan_declaration_expression(State *state, TSLexer *lexer) {
+    PROFILE_COUNT(scan_declaration_expression_calls);
+    if (!scan_tag_like_expression(
+        state,
+        lexer,
+        DECLARATION_EXPRESSION_JS,
+        DECLARATION_EXPRESSION_TS,
+        true
+    )) return false;
+
+    PROFILE_COUNT(scan_declaration_expression_successes);
     return true;
 }
 
@@ -670,18 +717,53 @@ static bool scan_snippet_name_missing(TSLexer *lexer) {
     return true;
 }
 
-// Match {/ only when followed by identifier start (block end like {/if}).
-// Returns false for {/* or {// (JS comments inside expressions).
-static bool scan_block_end_open(TSLexer *lexer) {
+static bool scan_declaration_keyword(TSLexer *lexer, const char *keyword, unsigned length) {
+    for (unsigned i = 0; i < length; i++) {
+        if (lexer->lookahead != keyword[i]) return false;
+        advance(lexer);
+    }
+
+    return !is_ident_char(lexer->lookahead);
+}
+
+// Match declaration-tag `{` and block-end `{/` openings from one lookahead path.
+// The declaration token ends at `{`; its keyword is consumed later by the grammar.
+static bool scan_svelte_brace_open(
+    State *state,
+    TSLexer *lexer,
+    bool declaration_valid,
+    bool block_end_valid,
+    bool unterminated_tag_end_valid
+) {
     PROFILE_COUNT(scan_block_end_open_calls);
     if (lexer->lookahead != '{') return false;
-    PROFILE_ADVANCE(scan_block_end_open_bytes, lexer);
-    if (lexer->lookahead != '/') return false;
-    PROFILE_ADVANCE(scan_block_end_open_bytes, lexer);
-    if (!is_ident_start(lexer->lookahead)) return false;
     lexer->mark_end(lexer);
-    lexer->result_symbol = BLOCK_END_OPEN;
-    PROFILE_COUNT(scan_block_end_open_successes);
+    PROFILE_ADVANCE(scan_block_end_open_bytes, lexer);
+
+    if (block_end_valid && lexer->lookahead == '/') {
+        PROFILE_ADVANCE(scan_block_end_open_bytes, lexer);
+        if (!is_ident_start(lexer->lookahead)) return false;
+        lexer->mark_end(lexer);
+        lexer->result_symbol = BLOCK_END_OPEN;
+        PROFILE_COUNT(scan_block_end_open_successes);
+        return true;
+    }
+
+    if (unterminated_tag_end_valid && htmlx_has_open_tag(state) && scan_block_boundary_after_open(state, lexer)) {
+        return true;
+    }
+
+    if (!declaration_valid) return false;
+
+    lexer->mark_end(lexer);
+    while (is_space(lexer->lookahead)) advance(lexer);
+
+    bool matches =
+        (lexer->lookahead == 'l' && scan_declaration_keyword(lexer, "let", 3)) ||
+        (lexer->lookahead == 'c' && scan_declaration_keyword(lexer, "const", 5));
+    if (!matches) return false;
+
+    lexer->result_symbol = DECLARATION_BLOCK_OPEN;
     return true;
 }
 
@@ -699,7 +781,19 @@ static bool svelte_scan(State *state, TSLexer *lexer, const bool *valid) {
     // BLOCK_END_OPEN: disambiguates {/if} (block end) from {/* comment */} (expression).
     // Only attempt when lookahead is '{' — otherwise fall through to HTMLX scanner
     // so it can produce TEXT and other tokens that don't start with '{'.
-    if (valid[BLOCK_END_OPEN] && lexer->lookahead == '{') return scan_block_end_open(lexer);
+    if (scan_void_end(state, lexer, valid)) {
+        return true;
+    }
+
+    if ((valid[DECLARATION_BLOCK_OPEN] || valid[BLOCK_END_OPEN]) && lexer->lookahead == '{') {
+        return scan_svelte_brace_open(
+            state,
+            lexer,
+            valid[DECLARATION_BLOCK_OPEN],
+            valid[BLOCK_END_OPEN],
+            valid[UNTERMINATED_TAG_END]
+        );
+    }
     if (valid[BLOCK_START_EOF] && lexer->lookahead == 0) return scan_block_start_eof(lexer);
     if (valid[BLOCK_EOF] && lexer->lookahead == 0) return scan_block_eof(lexer);
 
@@ -719,6 +813,7 @@ static bool svelte_scan(State *state, TSLexer *lexer, const bool *valid) {
     if (valid[BINDING_PATTERN_JS] || valid[BINDING_PATTERN_TS]) return scan_binding(state, lexer);
     if (valid[KEY_EXPRESSION_JS] || valid[KEY_EXPRESSION_TS]) return scan_key(state, lexer);
     if (valid[TAG_EXPRESSION_JS] || valid[TAG_EXPRESSION_TS]) return scan_tag_expression(state, lexer);
+    if (valid[DECLARATION_EXPRESSION_JS] || valid[DECLARATION_EXPRESSION_TS]) return scan_declaration_expression(state, lexer);
     if (valid[INCOMPLETE_ATTRIBUTE_EXPRESSION] && lexer->lookahead == '{') {
         return scan_incomplete_attribute_expression(lexer);
     }
