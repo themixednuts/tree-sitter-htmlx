@@ -345,7 +345,29 @@ static bool scan_start_tag(State *state, TSLexer *lexer, const bool *valid) {
             lexer->mark_end(lexer);
         }
         Tag tag = htmlx_tag_for_svelte_name(name, saw_ascii_upper);
-        array_push(&state->html->tags, tag);
+
+        // Append onto the HTML scanner's tag stack.
+        //
+        // This is done explicitly rather than with
+        // `array_push(&state->html->tags, tag)`. array_push() reallocates the
+        // backing buffer through array.h's generic `Array *` type, then writes
+        // the new element back through the concrete `Array(Tag) *` type. When
+        // the array is reached through the `state->html` pointer, GCC's
+        // strict-aliasing analysis at -O2 treats the realloc store and the
+        // element store as non-aliasing and elides the reload of `contents` —
+        // leaving a stale NULL pointer and segfaulting on the first tag of
+        // every document. Keeping every access on the concrete `Array(Tag)`
+        // type avoids the miscompile.
+        Scanner *html = state->html;
+        if (html->tags.size + 1 > html->tags.capacity) {
+            uint32_t new_capacity =
+                html->tags.capacity ? html->tags.capacity * 2 : 8;
+            html->tags.contents = (Tag *)ts_realloc(
+                html->tags.contents, (size_t)new_capacity * sizeof(Tag));
+            html->tags.capacity = new_capacity;
+        }
+        html->tags.contents[html->tags.size++] = tag;
+
         state->open_tag_is_namespaced = false;
 
         switch (tag.type) {
